@@ -3,12 +3,13 @@ services:
     build: ./backend/trackhounds
     container_name: backend
     ports:
-      - "5000:5000"
+      - "8080:8080"
     environment:
       - DB_HOST=mariadb
       - DB_USER=root
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - DB_NAME=${DB_NAME}
+      - IP=mariadb
     depends_on:
       mariadb:
         condition: service_healthy
