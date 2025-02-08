@@ -16,7 +16,7 @@ jobs:
       mariadb:
         image: mariadb:latest
         env:
-          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: trackhounds_test
         ports:
           - 3307:3306
