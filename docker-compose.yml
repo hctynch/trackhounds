@@ -1,0 +1,43 @@
+services:
+  backend:
+    build: ./backend/trackhounds
+    container_name: backend
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=mariadb
+      - DB_USER=root
+      - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - DB_NAME=${DB_NAME}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mariadb_data:
