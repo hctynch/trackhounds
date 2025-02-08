@@ -13,7 +13,7 @@ services:
   mariadb_test:
     image: 'mariadb:latest'
     environment:
-      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MARIADB_ROOT_PASSWORD=
       - MARIADB_DATABASE=trackhounds_test
       - MARIADB_USER=root
     ports:
