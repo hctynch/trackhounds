@@ -1,0 +1,20 @@
+services:
+  mariadb:
+    image: 'mariadb:latest'
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=trackhounds
+      - MARIADB_USER=root
+    ports:
+      - '3306:3306'
+
+  mariadb_test:
+    image: 'mariadb:latest'
+    environment:
+      - MARIADB_ROOT_PASSWORD=root
+      - MARIADB_DATABASE=trackhounds_test
+      - MARIADB_USER=root
+    ports:
+      - '3307:3306'
+    profiles:
+      - test
