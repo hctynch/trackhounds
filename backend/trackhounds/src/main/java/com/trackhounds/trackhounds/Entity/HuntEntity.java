@@ -45,18 +45,22 @@ public class HuntEntity {
      */
     private int interval;
     /**
+     * The stake type range of the hunt.
+     */
+    private StakeType[] stakeTypeRange = new StakeType[4];
+    /**
      * The stake range of the hunt.
      */
-    private StakeRange stakeRange;
+    private int[] stakeRange = new int[4];
 
     public HuntEntity(String title, String dates, StakeType stake, int interval) {
         this.title = title;
         this.dates = dates;
         this.stake = stake;
         this.interval = interval;
-        this.stakeRange = new StakeRange(new int[] { 999, 999, 999, 999 },
-                new StakeType[] { StakeType.ALL_AGE, StakeType.ALL_AGE,
-                        StakeType.ALL_AGE, StakeType.ALL_AGE });
+        this.stakeRange = new int[] { 999, 999, 999, 999 };
+        this.stakeTypeRange = new StakeType[] { StakeType.ALL_AGE, StakeType.ALL_AGE, StakeType.ALL_AGE,
+                StakeType.ALL_AGE };
     }
 
 }
