@@ -15,7 +15,7 @@ function Navbar() {
         { name: 'Reports', path: '/reports', icon: <HiOutlineDocumentReport className='h-10' /> },
     ]
   return (
-      <div className='z-1 border-b-2 border-gray-300 pl-10 flex gap-x-10 justify-start items-center bg-gradient-to-b from-white to-gray-300/60 p-4 shadow-2xl absolute top-0 left-0 w-full'>
+      <div className='z-1 border-b-2 border-gray-300 flex flex-col gap-y-10 justify-start items-start bg-gradient-to-b from-white to-gray-300/60 p-4 shadow-2xl fixed top-0 left-0 h-full'>
           {links.map((link, index) => 
               <a key={index} href={link.path}>
               <div className='flex'>
