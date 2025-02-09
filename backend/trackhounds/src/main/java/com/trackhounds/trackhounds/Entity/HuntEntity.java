@@ -53,6 +53,14 @@ public class HuntEntity {
      */
     private int[] stakeRange = new int[4];
 
+    /**
+     * Constructor for the HuntEntity class.
+     * 
+     * @param title    Title of the hunt.
+     * @param dates    Dates of the hunt.
+     * @param stake    Stake type of the hunt.
+     * @param interval Interval of the hunt.
+     */
     public HuntEntity(String title, String dates, StakeType stake, int interval) {
         this.title = title;
         this.dates = dates;
