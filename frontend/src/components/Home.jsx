@@ -1,6 +1,6 @@
 function Home() {
   return (
-    <div className='flex flex-wrap ml-[16%] mt-4 mr-2 text-black w-full'>
+    <div className='flex flex-wrap text-black w-full my-auto justify-center'>
       <div className='flex flex-col items-start bg-gradient-to-br from-white to-gray-200/80 rounded-lg shadow-2xl px-4 border-black/20 border-2 w-5/12 mr-4'>
         <p className='text-4xl font-semibold my-5 underline decoration-2 underline-offset-4'>
           Hunt Overview
@@ -30,7 +30,7 @@ function Home() {
           </p>
         </div>
       </div>
-      <div className='flex flex-col items-start bg-gradient-to-bl from-white to-gray-200/80 rounded-lg shadow-2xl px-4 border-black/20 border-2 w-[57%]'>
+      <div className='flex flex-col items-start bg-gradient-to-bl from-white to-gray-200/80 rounded-lg shadow-2xl px-4 border-black/20 border-2 w-[56.5%]'>
         <p className='text-4xl font-semibold my-5 underline decoration-2 underline-offset-4'>
           Stakes
         </p>
@@ -85,10 +85,10 @@ function Home() {
           </button>
         </div>
       </div>
-      <div className='w-full flex flex-row items-start bg-gradient-to-t from-white to-gray-200/80 rounded-lg shadow-2xl px-4 border-black/20 border-2 mx-auto mt-20'>
-        <div className='w-2/3 text-start'>
+      <div className='w-[99%] flex flex-row items-start bg-gradient-to-t from-white to-gray-200/80 rounded-lg shadow-2xl px-4 border-black/20 border-2 mx-auto mt-20'>
+        <div className='w-[60%] text-start'>
           <p className='text-4xl font-semibold my-5 underline decoration-2 underline-offset-4'>
-            Edit/New Form
+            Edit/New Hunt Form
           </p>
           <div className='w-full flex'>
             <p className='text-xl 2xl:text-2xl font-medium my-4'>Title: </p>
@@ -125,11 +125,11 @@ function Home() {
             />
           </div>
         </div>
-        <div className='flex justify-center flex-col items-center w-1/3 h-full'>
-          <button className='my-10 bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 border-b-4 border-blue-700 hover:border-blue-500 rounded w-40'>
+        <div className='flex justify-center flex-col items-center w-1/3 h-full mx-auto'>
+          <button className='my-10 bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 border-b-4 border-blue-700 hover:border-blue-500 rounded w-60'>
             Edit Hunt
           </button>
-          <button className='bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 border-b-4 border-green-700 hover:border-green-500 rounded w-40'>
+          <button className='bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 border-b-4 border-green-700 hover:border-green-500 rounded w-60'>
             New Hunt
           </button>
         </div>

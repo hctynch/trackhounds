@@ -31,13 +31,13 @@ function Navbar() {
     },
   ];
   return (
-    <div className='z-1 border-b-2 border-gray-300 flex flex-col gap-y-10 justify-start items-start bg-gradient-to-b from-white to-gray-300/60 p-4 shadow-2xl fixed top-0 left-0 h-full w-[15%]'>
+    <div className='z-1 border-b-2 border-gray-300 flex gap-x-8 justify-start items-start bg-gradient-to-b from-white to-gray-300/60 shadow-2xl fixed top-0 left-0 w-full'>
       {links.map((link, index) => (
         <a
           key={index}
           href={link.path}>
           <div className='flex'>
-            <div className='flex items-center text-black text-2xl hover:bg-gray-800/20 hover:outline-gray-100 rounded-full px-4 py-1 transition duration-275 ease-in-out'>
+            <div className='flex items-center text-black text-2xl hover:bg-gray-800/20 hover:outline-gray-100 rounded-full px-3 py-5 transition duration-275 ease-in-out'>
               {link.icon}
               <p className='ml-2'>{link.name}</p>
             </div>
