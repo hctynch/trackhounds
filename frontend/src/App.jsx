@@ -11,7 +11,7 @@ import ScratchSheet from './components/ScratchSheet'
 function App() {
 
   return (
-    <div className='absolute top-0 left-0 bg-gray-200/80 min-h-screen min-w-screen flex justify-start items-start'>
+    <div className='absolute top-0 left-0 bg-gray-200/80 min-h-screen min-w-screen flex justify-center items-center'>
       <Navbar />
       <BrowserRouter>
         <Routes>
