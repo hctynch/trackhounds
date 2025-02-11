@@ -1,6 +1,6 @@
 services:
   backend:
-    build: ./backend/trackhounds
+    build: ./trackhounds
     container_name: backend
     ports:
       - "8080:8080"
@@ -24,7 +24,7 @@ services:
 
   mariadb:
     image: mariadb:latest
-    container_name: mariadb
+    container_name: trackhounds-mariadb
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - MYSQL_DATABASE=${DB_NAME}
