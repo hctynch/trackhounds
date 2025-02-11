@@ -3,6 +3,7 @@ package com.trackhounds.trackhounds.Service;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -22,10 +23,12 @@ public class HuntService {
     /**
      * The repository for the hunts.
      */
+    @Autowired
     private HuntRepository huntRepository;
 
     /**
      * Create a new Hunt, calls clearOldHunt if another Hunt is in the repository.
+     * 
      * @param hunt Hunt to create
      * @throws TrackHoundsAPIException if the fields of the new hunt are invalid
      * @return newly created Hunt
@@ -35,7 +38,7 @@ public class HuntService {
         if (hunt.getTitle() == null || hunt.getTitle().isEmpty()) {
             errs.put("title", "Title cannot be empty.");
         }
-        if (hunt.getInterval() < 0) {
+        if (hunt.getHuntInterval() < 0) {
             errs.put("interval", "Interval cannot be negative.");
         }
         if (errs.size() > 0)
@@ -55,6 +58,7 @@ public class HuntService {
 
     /**
      * Return the current hunt.
+     * 
      * @throws TrackHoundsAPIException if no current hunt exists
      * @return current hunt.
      */
@@ -67,9 +71,10 @@ public class HuntService {
 
     /**
      * Update the current hunt using the fields map.
+     * 
      * @param fields Map containing the field names and values
      * @throws TrackHoundsAPIException if the edited fields are invalid
-     * @return
+     * @return updated Hunt
      */
     public HuntEntity editHunt(Map<String, String> fields) {
         if (huntRepository.count() == 0)
@@ -77,7 +82,7 @@ public class HuntService {
         Map<String, String> errs = new HashMap<>();
         if (fields.containsKey("title")) {
             String title = fields.get("title");
-            if (title == null|| title.isEmpty())
+            if (title == null || title.isEmpty())
                 errs.put("edit_title", "Title cannot be empty.");
         }
         int interval = -1;
@@ -106,7 +111,48 @@ public class HuntService {
             hunt.setStake(stake);
         }
         if (interval > 0)
-            hunt.setInterval(interval);
+            hunt.setHuntInterval(interval);
         return huntRepository.save(hunt);
+    }
+
+    /**
+     * Set the stakes for the current hunt.
+     * 
+     * @param stakeTypeRange Stake Type Range
+     * @param stakeRange     Stake Range
+     * @throws TrackHoundsAPIException if the stake fields are invalid
+     */
+    @SuppressWarnings("null")
+    public void setStakes(HuntEntity huntEntity) {
+        Map<String, String> errs = new HashMap<>();
+        StakeType[] stakeTypeRange = huntEntity.getStakeTypeRange();
+        int[] stakeRange = huntEntity.getStakeRange();
+        boolean nullCheck = false;
+        if (stakeTypeRange == null) {
+            errs.put("stake_type_range", "Value cannot be null.");
+            nullCheck = true;
+        }
+        if (stakeRange == null) {
+            errs.put("stake_range", "Value cannot be null.");
+            nullCheck = true;
+        }
+        if (nullCheck)
+            throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Stake Fields", errs);
+        if (stakeRange[0] < 0)
+            errs.put("stake_range_1", "Value must be positive.");
+        for (int i = 1; i < stakeRange.length; i++) {
+            if (stakeRange[i] < 0) {
+                errs.put(String.format("stake_range_%d", i), "Value must be positive.");
+            } else if (stakeRange[i] < stakeRange[i - 1]) {
+                stakeTypeRange[i] = StakeType.ALL_AGE;
+                errs.put(String.format("stake_range_%d", i + 1), "Value must be greater than previous value.");
+            }
+        }
+        if (errs.size() > 0)
+            throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Stake Fields", errs);
+        HuntEntity hunt = huntRepository.findAll().get(0);
+        hunt.setStakeTypeRange(stakeTypeRange);
+        hunt.setStakeRange(stakeRange);
+        huntRepository.save(hunt);
     }
 }

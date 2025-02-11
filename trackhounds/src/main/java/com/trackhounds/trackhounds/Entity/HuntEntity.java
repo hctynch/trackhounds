@@ -6,28 +6,30 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 /**
  * Entity class for Hunt's. This class is used to store the information of a
  * hunt in the database.
  * 
  */
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "hunt_entity")
 public class HuntEntity {
     /**
      * The id of the hunt.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
     /**
      * The title of the hunt.
      */
@@ -43,7 +45,7 @@ public class HuntEntity {
     /**
      * The interval of the hunt.
      */
-    private int interval;
+    private int huntInterval;
     /**
      * The stake type range of the hunt.
      */
@@ -51,7 +53,7 @@ public class HuntEntity {
     /**
      * The stake range of the hunt.
      */
-    private int[] stakeRange = new int[4];
+    private int[] stakeRange = new int[3];
 
     /**
      * Constructor for the HuntEntity class.
@@ -65,8 +67,8 @@ public class HuntEntity {
         this.title = title;
         this.dates = dates;
         this.stake = stake;
-        this.interval = interval;
-        this.stakeRange = new int[] { 999, 999, 999, 999 };
+        this.huntInterval = interval;
+        this.stakeRange = new int[] { 999, 999, 999 };
         this.stakeTypeRange = new StakeType[] { StakeType.ALL_AGE, StakeType.ALL_AGE, StakeType.ALL_AGE,
                 StakeType.ALL_AGE };
     }

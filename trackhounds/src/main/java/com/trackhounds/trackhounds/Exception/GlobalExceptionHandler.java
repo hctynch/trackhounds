@@ -13,14 +13,21 @@ import org.springframework.web.context.request.WebRequest;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+	/**
+	 * Handles API exceptions.
+	 * 
+	 * @param exception  Exception type
+	 * @param webRequest Web request
+	 * @return Response entity with error details and status
+	 */
 	@ExceptionHandler(TrackHoundsAPIException.class)
-	public ResponseEntity<ErrorDetails> handleAPIException(final TrackHoundsAPIException exception, final WebRequest webRequest) {
+	public ResponseEntity<ErrorDetails> handleAPIException(final TrackHoundsAPIException exception,
+			final WebRequest webRequest) {
 		final ErrorDetails errorDetails = new ErrorDetails(
 				LocalDateTime.now(),
 				exception.getMessage(),
 				webRequest.getDescription(false),
-				exception.getFields()
-				);
+				exception.getFields());
 
 		return new ResponseEntity<>(errorDetails, exception.getStatus());
 	}
