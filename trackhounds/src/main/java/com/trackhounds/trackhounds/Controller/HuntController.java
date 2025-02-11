@@ -42,10 +42,8 @@ public class HuntController {
     }
 
     @PutMapping("/stakes")
-    public String putStakes(@RequestBody String entity) {
-        // TODO: process PUT request
-
-        return entity;
+    public void putStakes(@RequestBody HuntEntity entity) {
+        huntService.setStakes(entity);
     }
 
 }
