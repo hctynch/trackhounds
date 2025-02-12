@@ -9,9 +9,12 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
+/**
+ * Class representing the TrackHoundsAPIException
+ */
 public class TrackHoundsAPIException extends RuntimeException {
 
-  /** Field representing the serial version UID of the Exception */
+	/** Field representing the serial version UID of the Exception */
 	private static final long serialVersionUID = 1L;
 	/** Field representing the HttpStatus of the Exception */
 	private HttpStatus status;
@@ -22,5 +25,5 @@ public class TrackHoundsAPIException extends RuntimeException {
 	 * message)
 	 */
 	private Map<String, String> fields;
-  
+
 }

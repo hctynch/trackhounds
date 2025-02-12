@@ -12,7 +12,6 @@ class HuntService {
             const response = await this.api.get();
             return response.data;
         } catch (error) {
-            console.error('Error fetching hunt:', error);
             return error;
         }
     }
@@ -22,7 +21,6 @@ class HuntService {
             const response = await this.api.post('', huntData);
             return response.data;
         } catch (error) {
-            console.error('Error creating hunt:', error);
             return error;
         }
     }
@@ -32,7 +30,6 @@ class HuntService {
             const response = await this.api.put('', fields);
             return response.data;
         } catch (error) {
-            console.error('Error editing hunt:', error);
             return error;
         }
     }
@@ -42,7 +39,6 @@ class HuntService {
             const response = await this.api.put('/stakes', stakesData);
             return response.data;
         } catch (error) {
-            console.error('Error setting stakes:', error);
             return error;
         }
     }
