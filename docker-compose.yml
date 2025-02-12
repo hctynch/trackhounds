@@ -13,6 +13,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+    profiles:
+      - dev
 
   frontend:
     build: ./frontend
@@ -21,6 +23,8 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    profiles:
+      - frontend
 
   mariadb:
     image: mariadb:latest
@@ -39,6 +43,9 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    profiles:
+      - dev
+      - frontend
 
 volumes:
   mariadb_data:

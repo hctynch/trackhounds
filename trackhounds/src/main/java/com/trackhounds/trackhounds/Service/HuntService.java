@@ -83,7 +83,7 @@ public class HuntService {
         if (fields.containsKey("title")) {
             String title = fields.get("title");
             if (title == null || title.isEmpty())
-                errs.put("edit_title", "Title cannot be empty.");
+                errs.put("title", "Title cannot be empty.");
         }
         int interval = -1;
         if (fields.containsKey("interval")) {
@@ -91,9 +91,9 @@ public class HuntService {
             try {
                 interval = Integer.parseInt(s_interval);
                 if (interval < 0)
-                    errs.put("edit_interval", "Interval must be positive.");
+                    errs.put("interval", "Interval must be positive.");
             } catch (Exception e) {
-                errs.put("edit_interval", "Interval must be an Integer.");
+                errs.put("interval", "Interval must be an Integer.");
             }
         }
         if (errs.size() > 0)
@@ -110,7 +110,7 @@ public class HuntService {
                 stake = StakeType.DERBY;
             hunt.setStake(stake);
         }
-        if (interval > 0)
+        if (interval >= 0)
             hunt.setHuntInterval(interval);
         return huntRepository.save(hunt);
     }
