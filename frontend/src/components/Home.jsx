@@ -7,20 +7,18 @@ function Home() {
     dates: '',
     stake: '',
     huntInterval: 0,
-    stakeTypeRange: [],
-    stakeRange: [],
   });
 
   const [editFields, setEditFields] = useState({
     title: '',
     dates: '',
-    stake: '',
+    stake: 'ALL_AGE',
     interval: 0,
   });
 
   const [stakeFields, setStakeFields] = useState({
-    stakeTypeRange: [],
-    stakeRange: [],
+    stakeTypeRange: new Array(4).fill('ALL_AGE'),
+    stakeRange: new Array(3).fill(''),
   });
 
   const [errors, setErrors] = useState({});
@@ -35,12 +33,12 @@ function Home() {
         setEditFields({
           title: data.title || '',
           dates: data.dates,
-          stake: data.stake,
+          stake: data.stake || 'ALL_AGE',
           interval: data.huntInterval,
         });
         setStakeFields({
-          stakeTypeRange: data.stakeTypeRange || [],
-          stakeRange: data.stakeRange || [],
+          stakeTypeRange: data.stakeTypeRange || new Array(4).fill('ALL_AGE'),
+          stakeRange: data.stakeRange || new Array(3).fill(''),
         });
       }
     }
@@ -84,18 +82,19 @@ function Home() {
   };
 
   const handleUpdateStakes = async () => {
-    const updatedHunt = await HuntService.setStakes(stakeFields);
-    if (updatedHunt instanceof Error) {
-      setErrors(updatedHunt.response.data.fields);
+    const data = await HuntService.setStakes(stakeFields);
+    if (data instanceof Error) {
+      setErrors(data.response.data.fields);
     } else {
-      setHunt(updatedHunt);
       setErrors({});
     }
   };
 
   const handleCreateHunt = async () => {
     const correctFields = {
-      ...editFields,
+      title: editFields.title,
+      dates: editFields.dates,
+      stake: editFields.stake,
       huntInterval: editFields.interval,
     }
     const newHunt = await HuntService.createHunt(correctFields);
@@ -103,6 +102,10 @@ function Home() {
       setErrors(newHunt.response.data.fields);
     } else {
       setHunt(newHunt);
+      setStakeFields({
+        stakeTypeRange: new Array(4).fill('ALL_AGE'),
+        stakeRange: new Array(3).fill(''),
+      });
       setErrors({});
     }
   };
@@ -148,20 +151,28 @@ function Home() {
               <p>Stake {index + 1}</p>
               <select
                 className='w-2/3 border-2 border-black/40 rounded-lg p-2'
-                value={stakeType}
+                value={stakeType || 'ALL_AGE'}
                 onChange={(e) => handleStakeTypeChange(index, e.target.value)}
               >
                 <option value='ALL_AGE'>All Age</option>
                 <option value='DERBY'>Derby</option>
               </select>
+              {errors[`stake_type_range_${index}`] && (
+                <div className='text-red-500'>{errors[`stake_type_range_${index}`]}</div>
+              )}
               {index > 0 && (
-                <input
-                  type='number'
-                  className='w-2/3 border-2 border-black/40 rounded-lg p-2 mt-2'
-                  value={stakeFields.stakeRange[index - 1]}
-                  onChange={(e) => handleStakeRangeChange(index - 1, e.target.value)}
-                  placeholder='#'
-                />
+                <>
+                  <input
+                    type='number'
+                    className='w-2/3 border-2 border-black/40 rounded-lg p-2 mt-2'
+                    value={stakeFields.stakeRange[index - 1] || ''}
+                    onChange={(e) => handleStakeRangeChange(index - 1, e.target.value)}
+                    placeholder='#'
+                  />
+                  {errors[`stake_range_${index}`] && (
+                    <div className='text-red-500'>{errors[`stake_range_${index}`]}</div>
+                  )}
+                </>
               )}
             </div>
           ))}
@@ -207,7 +218,7 @@ function Home() {
             <p className='text-xl 2xl:text-2xl font-medium my-4'>Stake: </p>
             <select
               name='stake'
-              value={editFields.stake}
+              value={editFields.stake || 'ALL_AGE'}
               onChange={handleInputChange}
               className='w-5/12 text-xl 2xl:text-2xl font-medium my-4 ml-auto text-end border-2 border-black/40 rounded-lg'
             >

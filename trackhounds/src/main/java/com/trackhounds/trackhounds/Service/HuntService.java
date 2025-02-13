@@ -142,7 +142,7 @@ public class HuntService {
             errs.put("stake_range_1", "Value must be positive.");
         for (int i = 1; i < stakeRange.length; i++) {
             if (stakeRange[i] < 0) {
-                errs.put(String.format("stake_range_%d", i), "Value must be positive.");
+                errs.put(String.format("stake_range_%d", i + 1), "Value must be positive.");
             } else if (stakeRange[i] < stakeRange[i - 1]) {
                 stakeTypeRange[i] = StakeType.ALL_AGE;
                 errs.put(String.format("stake_range_%d", i + 1), "Value must be greater than previous value.");
