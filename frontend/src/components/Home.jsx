@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import HuntService from '../services/HuntService';
+import Box from './Box';
 
 function Home() {
   const [hunt, setHunt] = useState({
@@ -111,8 +112,8 @@ function Home() {
   };
 
   return (
-    <div className='flex flex-wrap text-black w-full my-auto justify-center'>
-      <div className='flex flex-col items-start bg-gradient-to-br from-white to-gray-200/80 rounded-lg shadow-2xl px-4 border-black/20 border-2 w-5/12 mr-4'>
+    <div className='flex flex-wrap text-black w-full my-auto justify-evenly'>
+      <Box params='w-5/12 mb-10'>
         <p className='text-4xl font-semibold my-5 underline decoration-2 underline-offset-4'>
           Hunt Overview
         </p>
@@ -140,8 +141,8 @@ function Home() {
             {hunt.huntInterval}
           </p>
         </div>
-      </div>
-      <div className='flex flex-col items-start bg-gradient-to-bl from-white to-gray-200/80 rounded-lg shadow-2xl px-4 border-black/20 border-2 w-[56.5%]'>
+      </Box>
+      <Box params='w-[56.5%] mb-10'>
         <p className='text-4xl font-semibold my-5 underline decoration-2 underline-offset-4'>
           Stakes
         </p>
@@ -185,8 +186,9 @@ function Home() {
             Update
           </button>
         </div>
-      </div>
-      <div className='w-[99%] flex flex-row items-start bg-gradient-to-t from-white to-gray-200/80 rounded-lg shadow-2xl px-4 border-black/20 border-2 mx-auto mt-20 pb-4'>
+      </Box>
+      <Box params='w-[98.5%]'>
+        <div className='w-full flex'>
         <div className='w-[60%] text-start'>
           <p className='text-4xl font-semibold my-5 underline decoration-2 underline-offset-4'>
             Edit/New Hunt Form
@@ -254,7 +256,8 @@ function Home() {
             New Hunt
           </button>
         </div>
-      </div>
+        </div>
+      </Box>
     </div>
   );
 }
