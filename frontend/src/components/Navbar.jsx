@@ -1,28 +1,52 @@
-import { FaHome } from 'react-icons/fa';
-import { GrScorecard } from 'react-icons/gr';
-import { HiOutlineDocumentReport } from 'react-icons/hi';
-import { ImCross } from 'react-icons/im';
+import { useState } from 'react';
+import { GrDocumentMissing, GrScorecard } from 'react-icons/gr';
+import { HiOutlineDocumentReport, HiOutlineHome } from 'react-icons/hi';
 import { MdOutlinePersonSearch } from 'react-icons/md';
+import { RxCaretDown } from 'react-icons/rx';
 import { TbDog } from 'react-icons/tb';
 
 function Navbar() {
+  const [dropdown, setDropdown] = useState(null);
+
   const links = [
-    { name: 'Home', path: '/', icon: <FaHome className='h-10' /> },
-    { name: 'Dogs', path: '/dogs', icon: <TbDog className='h-10' /> },
+    { name: 'Home', path: '/', icon: <HiOutlineHome className='h-10' /> },
+    { 
+      name: 'Dogs', 
+      icon: <TbDog className='h-10' />, 
+      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7'/>,
+      dropdown: [
+        { name: <p className='text-black font-medium'>All Dogs</p>, path: '/dogs/all' },
+        { name: <p className='text-black font-medium'>Add Dogs</p>, path: '/dogs/add' },
+        { name: <p className='text-black font-medium'>Edit/Remove Dogs</p>, path: '/dogs/edit' }
+      ]
+    },
     {
       name: 'Judges',
-      path: '/judges',
       icon: <MdOutlinePersonSearch className='h-10' />,
+      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7'/>,
+      dropdown: [
+        { name: <p className='text-black font-medium'>All Judges</p>, path: '/judges/all' },
+        { name: <p className='text-black font-medium'>Add Judges</p>, path: '/judges/add' },
+        { name: <p className='text-black font-medium'>Edit/Remove Judges</p>, path: '/judges/edit' }
+      ]
     },
     {
       name: 'Score Entry',
-      path: '/score-entry',
       icon: <GrScorecard className='h-10' />,
+      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7'/>,
+      dropdown: [
+        { name: <p className='text-black font-medium'>Enter Score</p>, path: '/score-entry/enter' },
+        { name: <p className='text-black font-medium'>View Scores</p>, path: '/score-entry/view' }
+      ]
     },
     {
       name: 'Scratch Sheet',
-      path: '/scratch-sheet',
-      icon: <ImCross className='h-10' />,
+      icon: <GrDocumentMissing className='h-10' />,
+      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7'/>,
+      dropdown: [
+        { name: <p className='text-black font-medium'>Enter Scratch</p>, path: '/scratch-sheet/enter' },
+        { name: <p className='text-black font-medium'>View Scratches</p>, path: '/scratch-sheet/view' }
+      ]
     },
     {
       name: 'Reports',
@@ -30,20 +54,49 @@ function Navbar() {
       icon: <HiOutlineDocumentReport className='h-10' />,
     },
   ];
+
+  const handleDropdown = (index) => {
+    setDropdown(dropdown === index ? null : index);
+  };
+
   return (
-    <div className='z-1 border-b-2 border-gray-300 flex gap-x-8 justify-start items-start bg-gradient-to-b from-white to-gray-300/60 shadow-2xl fixed top-0 left-0 w-full py-3'>
-      {links.map((link, index) => (
-        <a
-          key={index}
-          href={link.path}>
-          <div className='flex'>
-            <div className='flex items-center text-black text-lg lg:text-xl xl:text-2xl hover:bg-gray-800/20 hover:outline-gray-100 rounded-full px-3 py-2 transition duration-275 ease-in-out'>
-              {link.icon}
-              <p className='ml-2'>{link.name}</p>
-            </div>
+    <div className='z-1 flex flex-col gap-y-2 justify-start items-start bg-white shadow shadow-gray-500 fixed top-0 left-0 h-full rounded-r-lg p-1 w-65'>
+      <div className='flex w-full items-center px-3 py-3'>
+        <div className='border-b-2 border-gray-300 w-full flex pb-2'>
+          <p className='text-black font-semibold text-xl'>trackhounds</p><img/>
+        </div>
+      </div>
+      <div className='h-auto flex flex-col gap-y-4 justify-start items-start px-1 w-full'>
+        {links.map((link, index) => (
+          <div key={index} className='w-full h-auto'>
+            <a
+              href={link.path}
+              className='w-full'
+              onClick={() => link.dropdown && handleDropdown(index)}
+            >
+              <div className='flex w-full'>
+                <div className='flex items-center text-black text-lg hover:bg-gray-800/20 hover:outline-gray-100 rounded-xl px-2 transition duration-275 ease-in-out w-full'>
+                  {link.icon}
+                  <p className='ml-2'>{link.name}</p>
+                  {link.caret && link.caret}
+                </div>
+              </div>
+            </a>
+            {dropdown === index && link.dropdown && (
+              <div className={`flex flex-col items-center ml-4 pr-4 w-full border-l-2 border-gray-300 ${link.dropdown.length > 2 ? 'h-[61.75%]' : 'h-[49.25%]'}`}>
+                {link.dropdown.map((item, subIndex) => (
+                  <div key={subIndex} className='w-full flex items-center justify-start'>
+                    <div className='bg-gray-300 w-4 h-0.5'/>
+                    <a  href={item.path} className='w-full px-2 py-1 text-start text-black text-lg hover:bg-gray-800/20 hover:outline-gray-100 rounded-xl transition duration-275 ease-in-out'>
+                      {item.name}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </a>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
