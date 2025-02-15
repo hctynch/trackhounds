@@ -11,16 +11,22 @@ import ScratchSheet from './components/ScratchSheet'
 function App() {
 
   return (
-    <div className='absolute top-0 left-0 bg-gray-200/80 min-h-screen min-w-screen flex justify-center items-center'>
+    <div className='w-full h-screen bg-slate-100 absolute top-0 left-0'>
       <Navbar />
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<Home />} />
-          <Route path='/dogs' element={<Dogs />} />
-          <Route path='/judges' element={<Judges />} />
-          <Route path='/score-entry' element={<ScoreEntry />} />
-          <Route path='/scratch-sheet' element={<ScratchSheet />} />
-          <Route path='/reports' element={<Reports/>} />
+          <Route path='/dogs/all' element={<Dogs />} />
+          <Route path='/dogs/add' element={<Dogs />} />
+          <Route path='/dogs/edit' element={<Dogs />} />
+          <Route path='/judges/all' element={<Judges />} />
+          <Route path='/judges/add' element={<Judges />} />
+          <Route path='/judges/edit' element={<Judges />} />
+          <Route path='/score-entry/enter' element={<ScoreEntry />} />
+          <Route path='/score-entry/view' element={<ScoreEntry />} />
+          <Route path='/scratch-sheet/enter' element={<ScratchSheet />} />
+          <Route path='/scratch-sheet/view' element={<ScratchSheet />} />
+          <Route path='/reports' element={<Reports />} />
         </Routes>
       </BrowserRouter>
     </div>
