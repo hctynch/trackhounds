@@ -11,7 +11,7 @@ import ScratchSheet from './components/ScratchSheet'
 function App() {
 
   return (
-    <div className='w-full h-screen bg-slate-100 absolute top-0 left-0'>
+    <div className='w-full h-screen bg-slate-100 absolute top-0 left-0 overflow-auto'>
       <Navbar />
       <BrowserRouter>
         <Routes>

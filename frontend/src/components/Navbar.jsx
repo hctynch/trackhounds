@@ -60,10 +60,10 @@ function Navbar() {
   };
 
   return (
-    <div className='z-1 flex flex-col gap-y-2 justify-start items-start bg-white shadow shadow-gray-500 fixed top-0 left-0 h-full rounded-r-lg p-1 w-65'>
+    <div className='z-1 flex flex-col gap-y-2 justify-start items-start bg-white shadow shadow-gray-500 fixed top-0 left-0 h-[calc(100vh-1rem)] rounded-r-lg p-1 w-65 my-2'>
       <div className='flex w-full items-center px-3 py-3'>
-        <div className='border-b-2 border-gray-300 w-full flex pb-2'>
-          <p className='text-black font-semibold text-xl'>trackhounds</p><img/>
+        <div className='border-b-2 border-gray-300 w-full flex pb-6'>
+          <p className='text-black font-semibold text-2xl pt-4'>trackhounds</p><img/>
         </div>
       </div>
       <div className='h-auto flex flex-col gap-y-4 justify-start items-start px-1 w-full'>
@@ -96,6 +96,9 @@ function Navbar() {
             )}
           </div>
         ))}
+      </div>
+      <div className='mt-auto flex italic opacity-50 text-md items-center justify-center w-11/12'>
+        <p className='text-black'>Made by Hunt Tynch (2025)</p>
       </div>
     </div>
   );
