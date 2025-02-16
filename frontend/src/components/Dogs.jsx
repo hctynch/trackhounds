@@ -1,122 +1,89 @@
-import { useState } from 'react';
-import { FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
-import Box from './Box';
-
+import { PiDotsThreeOutlineVertical, PiX } from "react-icons/pi";
+import Box from "./Box";
 function Dogs() {
-  const [addHover, setAddHover] = useState(false);
 
   return (
-    <div className='w-full flex justify-evenly flex-col items-center h-screen pt-15'>
-      <Box params='w-11/12 h-2/5'>
-        <div className='relative flex flex-col text-black w-full h-full'>
-          <p className='text-4xl font-semibold my-5 underline decoration-2 underline-offset-4'>
-            Add Dogs
-          </p>
-          <div className='w-full h-[65%] overflow-y-scroll'>
-            <table className="text-start table-auto w-full border-separate">
-              <thead>
-                <tr className='text-xl sticky top-0 border-2'>
-                  <th></th>
-                  <th className='border-2'>Number</th>
-                  <th className='border-2'>Name</th>
-                  <th className='border-2'>Stake</th>
-                  <th className='border-2'>Owner</th>
-                  <th className='border-2'>Sire</th>
-                  <th className='border-2'>Dam</th>
-                </tr>
-              </thead>
-              <tbody className=''>
-                <tr className='text-md font-medium'>
-                  <td></td>
-                  <td className='border-2'>
-                    <input type='number' placeholder='Number' className='w-full px-2'/>
-                  </td>
-                  <td className='border-2'>
-                    <input type='text' placeholder='Name' className='w-full px-2'/>
-                  </td>
-                  <td className='border-2'>
-                    <input type='text' placeholder='Stake' className='w-full px-2'/>
-                  </td>
-                  <td className='border-2'>
-                    <input type='text' placeholder='Owner' className='w-full px-2'/>
-                  </td>
-                  <td className='border-2'>
-                    <input type='text' placeholder='Sire' className='w-full px-2'/>
-                  </td>
-                  <td className='border-2'>
-                    <input type='text' placeholder='Dam' className='w-full px-2'/>
-                  </td>
-                  <td className=''>
-                    <div className='flex justify-center items-center w-full'>
-                      <button className='flex justify-center items-center text-red-400 hover:text-red-500 rounded-md cursor-pointer'><FaMinusCircle className='w-8 h-8'/></button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td className='text-center' colSpan='1'>
-                    <div className='flex'>
-                      <button className='text-green-500 hover:text-green-600 rounded-m cursor-pointer' onMouseEnter={() => setAddHover(true)} onMouseLeave={() => setAddHover(false)}><FaPlusCircle className='w-8 h-8' /></button>
-                    </div>
-                  </td>
-                  <td className='text-center' colSpan='6'>
-                    <div className={`${addHover ? 'bg-green-600' : 'bg-green-500'} w-full h-2 rounded-2xl`} />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div className='w-full justify-center items-center flex flex-row my-5'>
-            <div className='w-1/3 flex justify-evenly items-center'>
-              <button className='border-blue-700 border-b-4 bg-blue-500 hover:bg-blue-600 hover:border-blue-900 rounded-lg text-white text-xl font-semibold px-4 py-1 cursor-pointer'>Submit</button>
+    <div className='grid grid-cols-2 text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative'>
+      <Box params='bg-white col-span-2 pt-5'>
+        <div className='w-full flex items-center border-b-2 border-gray-300 pb-1'>
+          <p className='text-4xl font-bold'>All Dogs</p>
+          <div className='flex ml-auto items-center'>
+            <div className='flex flex-col items-center'>
+              <p className='font-semibold text-4xl'>100</p>
+              <p>Total Dogs</p>
             </div>
+            <div className='bg-gray-300 h-12 w-0.5 mx-5' />
+            <input type='text' placeholder="Search by Number" className='border border-black/30 rounded-lg px-1'/>
           </div>
         </div>
-      </Box>
-      <Box params='w-11/12 h-2/5'>
-        <div className='relative text-black h-full flex flex-col'>
-          <div className='relative flex justify-center w-full'>
-            <p className=' text-4xl font-semibold my-5 underline decoration-2 underline-offset-4'>
-              All Dogs
-            </p>
-            <input type='number' className='absolute right-5 top-[37%] border-black/60 rounded border-2 w-1/5 text-end font-medium' placeholder='Search #'></input>
-          </div>
-          <div className='w-full h-full overflow-y-scroll'>
-            <table className="text-start table-fixed w-full border-collapse">
-              <thead className='w-full'>
-                <tr className='text-xl sticky top-0 border-2 w-full'>
-                  <th className='border-2 w-1/6'>Number</th>
-                  <th className='border-2 w-1/6'>Name</th>
-                  <th className='border-2 w-1/6'>Stake</th>
-                  <th className='border-2 w-1/6'>Owner</th>
-                  <th className='border-2 w-1/6'>Sire</th>
-                  <th className='border-2 w-1/6'>Dam</th>
-                </tr>
-              </thead>
-              <tbody className='w-full'>
-                <tr className='text-md font-medium w-full'>
-                  <td className='border-2'>
-                    <p className='w-full px-2'>Number</p>
-                  </td>
-                  <td className='border-2'>
-                    <p className='w-full px-2'>Name</p>
-                  </td>
-                  <td className='border-2'>
-                    <p className='w-full px-2'>Stake</p>
-                  </td>
-                  <td className='border-2'>
-                    <p className='w-full px-2'>Owner</p>
-                  </td>
-                  <td className='border-2'>
-                    <p className='w-full px-2'>Sire</p>
-                  </td>
-                  <td className='border-2'>
-                    <p className='w-full px-2'>Dam</p>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Box params='overflow-y-auto w-full p-4 my-8 bg-slate-50 h-full'>
+          <table className='table-auto w-full border-collapse'>
+            <thead>
+              <tr className='border-b-2 border-gray-300'>
+                <th className='text-xl font-semibold text-start'>#</th>
+                <th className='text-xl font-semibold text-start'>Name</th>
+                <th className='text-xl font-semibold text-start'><div className='pr-8'>Stake</div></th>
+                <th className='text-xl font-semibold text-start'>Owner</th>
+                <th className='text-xl font-semibold text-start'>Sire</th>
+                <th className='text-xl font-semibold text-start'>Dam</th>
+                <th className='text-xl font-semibold text-end'>Points</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className='border-y-2 border-gray-200'>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>1</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch&apos;s Stardust</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>All Age</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch Town Kennels</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch Town Kennels Blackrock</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch&apos;s Strawberry</div></td>
+                <td className='text-md xl:text-lg text-end'>100</td>
+                <td className='pl-3 w-30 py-2'><div className='flex items-center justify-evenly'><button className='text-md xl:text-lg px-2 py-2 bg-slate-300 hover:bg-slate-400 rounded-full cursor-pointer'><PiDotsThreeOutlineVertical/></button><button className='text-md xl:text-lg bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2'><PiX className='text-center'/></button></div></td>
+              </tr>
+              <tr className='border-y-2 border-gray-200'>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>1</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch&apos;s Stardust</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>All Age</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch Town Kennels</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch Town Kennels Blackrock</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch&apos;s Strawberry</div></td>
+                <td className='text-md xl:text-lg text-end'>100</td>
+                <td className='pl-3 w-30 py-2'><div className='flex items-center justify-evenly'><button className='text-md xl:text-lg px-2 py-2 bg-slate-300 hover:bg-slate-400 rounded-full cursor-pointer'><PiDotsThreeOutlineVertical/></button><button className='text-md xl:text-lg bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2'><PiX className='text-center'/></button></div></td>
+              </tr>
+              <tr className='border-y-2 border-gray-200'>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>1</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch&apos;s Stardust</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>All Age</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch Town Kennels</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch Town Kennels Blackrock</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch&apos;s Strawberry</div></td>
+                <td className='text-md xl:text-lg text-end'>100</td>
+                <td className='pl-3 w-30 py-2'><div className='flex items-center justify-evenly'><button className='text-md xl:text-lg px-2 py-2 bg-slate-300 hover:bg-slate-400 rounded-full cursor-pointer'><PiDotsThreeOutlineVertical/></button><button className='text-md xl:text-lg bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2'><PiX className='text-center'/></button></div></td>
+              </tr>
+              <tr className='border-y-2 border-gray-200'>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>1</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch&apos;s Stardust</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>All Age</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch Town Kennels</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch Town Kennels Blackrock</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch&apos;s Strawberry</div></td>
+                <td className='text-md xl:text-lg text-end'>100</td>
+                <td className='pl-3 w-30 py-2'><div className='flex items-center justify-evenly'><button className='text-md xl:text-lg px-2 py-2 bg-slate-300 hover:bg-slate-400 rounded-full cursor-pointer'><PiDotsThreeOutlineVertical/></button><button className='text-md xl:text-lg bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2'><PiX className='text-center'/></button></div></td>
+              </tr>
+              <tr className='border-y-2 border-gray-200'>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>1</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch&apos;s Stardust</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>All Age</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch Town Kennels</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch Town Kennels Blackrock</div></td>
+                <td className='text-md xl:text-lg text-start'><div className='pr-4'>Tynch&apos;s Strawberry</div></td>
+                <td className='text-md xl:text-lg text-end'>100</td>
+                <td className='pl-3 w-30 py-2'><div className='flex items-center justify-evenly'><button className='text-md xl:text-lg px-2 py-2 bg-slate-300 hover:bg-slate-400 rounded-full cursor-pointer'><PiDotsThreeOutlineVertical/></button><button className='text-md xl:text-lg bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2'><PiX className='text-center'/></button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </Box>
       </Box>
     </div>
   );
