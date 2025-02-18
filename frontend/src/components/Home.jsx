@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PiDotsThreeOutlineVertical } from "react-icons/pi";
+import { useNavigate } from "react-router-dom";
 import Box from './Box';
 
 function Home() {
@@ -9,9 +10,11 @@ function Home() {
     setShowOverlay(!showOverlay);
   };
 
+  const navigate = useNavigate();
+
   return (
-    <div className='grid grid-cols-2 text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative'>
-      <Box params='col-span-2 pt-5 px-6 bg-white min-h-[calc(50vh-1rem)] max-h-[calc(50vh-1rem)]'>
+    <div className='text-black grid grid-cols-2 ml-[276px] items-start py-2 mr-4 h-full relative'>
+      <Box params='col-span-2 pt-5 px-6 bg-white min-h-[calc(50vh-1rem)] max-h-[calc(50vh-0.5rem)] h-[calc(50vh-1rem)]'>
         <div className='w-full flex items-center border-b-2 border-gray-300 pb-1'>
           <p className='text-4xl font-bold'>Hunt Overview</p>
           <div className='flex ml-auto items-center'>
@@ -28,26 +31,26 @@ function Home() {
             </div>
           </div>
         </div>
-        <div className='flex flex-wrap min-h-[calc(100%-4px-36px-4px-20px)] justify-between w-full'>
-          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] min-h-[calc(50%-2rem)]'>
+        <div className='flex flex-wrap h-full justify-between w-full'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-1rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
               <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Title</p>
               <p className='absolute top-1/2 right-0 w-full text-2xl font-bold text-center'>Masters Fox Hunt Trial</p>
             </div>
           </Box>
-          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] min-h-[calc(50%-2rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-1rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
               <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Date</p>
               <p className='absolute top-1/2 right-0 w-full text-2xl font-bold text-center'>02/18/2025 to 02/20/2025</p>
             </div>
           </Box>
-          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] min-h-[calc(50%-2rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-1rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
               <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Stake</p>
               <p className='absolute top-1/2 right-0 w-full text-2xl font-bold text-center'>All Age</p>
             </div>
           </Box>
-          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] min-h-[calc(50%-2rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-1rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
               <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Interval</p>
               <p className='absolute top-1/2 right-0 w-full text-2xl font-bold text-center'>10</p>
@@ -55,7 +58,7 @@ function Home() {
           </Box>
         </div>
       </Box>
-      <Box params='col-span-1 mt-2 mr-2 pt-5 px-6 bg-white max-h-[calc(50vh-1rem)] min-h-[calc(50vh-1rem)]'>
+      <Box params='col-span-1 mt-2 mr-2 pt-5 px-6 bg-white max-h-[calc(50vh-0.5rem)] min-h-[calc(50vh-0.5rem)]'>
         <div className='w-full flex border-b-2 border-gray-300 items-center pb-1'>
           <p className='text-3xl font-bold'>Top Dogs</p>
         </div>
@@ -103,7 +106,7 @@ function Home() {
           </table>
         </Box>
       </Box>
-      <Box params='col-span-1 mt-2 ml-2 pt-5 px-6 bg-white max-h-[calc(50vh-1rem)] min-h-[calc(50vh-1rem)]'>
+      <Box params='col-span-1 mt-2 ml-2 pt-5 px-6 bg-white max-h-[calc(50vh-0.5rem)] min-h-[calc(50vh-0.5rem)]'>
         <div className='w-full flex border-b-2 border-gray-300 items-center pb-1'>
           <p className='text-3xl font-bold'>Daily 10</p>
         </div>
@@ -173,13 +176,13 @@ function Home() {
       </Box>
 
       {showOverlay && (
-        <div className='absolute top-0 left-0 w-full h-full bg-black/30 rounded-lg flex justify-center items-center'>
+        <div className='absolute top-2 w-full h-[calc(100vh-1rem)] bg-black/30 rounded-lg flex justify-center items-center'>
           <div className='bg-white rounded-lg shadow-lg p-6'>
             <p className='text-2xl font-bold mb-4'>Options</p>
-            <button className='bg-gray-50 hover:bg-gray-200 border border-black/30 font-bold py-2 px-4 rounded mb-2 w-full cursor-pointer'>
+            <button className='bg-gray-50 hover:bg-gray-200 border border-black/30 font-bold py-2 px-4 rounded mb-2 w-full cursor-pointer' onClick={() => navigate('/hunt/create')}>
               Create a New Hunt
             </button>
-            <button className='bg-gray-50 hover:bg-gray-200 border border-black/30 font-bold py-2 px-4 rounded w-full cursor-pointer'>
+            <button className='bg-gray-50 hover:bg-gray-200 border border-black/30 font-bold py-2 px-4 rounded w-full cursor-pointer' onClick={() => navigate('/hunt/edit')}>
               Edit Current Hunt
             </button>
             <button 

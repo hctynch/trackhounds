@@ -1,7 +1,9 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
 import AddDogs from './components/AddDogs'
+import CreateHunt from './components/CreateHunt'
 import Dogs from './components/Dogs'
+import EditHunt from './components/EditHunt'
 import Home from './components/Home'
 import Judges from './components/Judges'
 import Navbar from './components/Navbar'
@@ -17,6 +19,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<Home />} />
+          <Route path='/hunt/create' element={<CreateHunt />} />
+          <Route path='/hunt/edit' element={<EditHunt />} />
           <Route path='/dogs/all' element={<Dogs />} />
           <Route path='/dogs/add' element={<AddDogs />} />
           <Route path='/dogs/edit' element={<Dogs />} />
