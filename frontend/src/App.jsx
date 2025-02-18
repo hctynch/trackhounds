@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
+import AddDogs from './components/AddDogs'
 import Dogs from './components/Dogs'
 import Home from './components/Home'
 import Judges from './components/Judges'
@@ -17,7 +18,7 @@ function App() {
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/dogs/all' element={<Dogs />} />
-          <Route path='/dogs/add' element={<Dogs />} />
+          <Route path='/dogs/add' element={<AddDogs />} />
           <Route path='/dogs/edit' element={<Dogs />} />
           <Route path='/judges/all' element={<Judges />} />
           <Route path='/judges/add' element={<Judges />} />

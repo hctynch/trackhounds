@@ -29,28 +29,28 @@ function Home() {
           </div>
         </div>
         <div className='flex flex-wrap min-h-[calc(100%-4px-36px-4px-20px)] justify-between w-full'>
-          <Box params='my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-2rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] min-h-[calc(50%-2rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
-              <p className='text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Title</p>
-              <p className='flex justify-center w-full my-auto items-center text-2xl font-bold'>Masters Fox Hunt Trial</p>
+              <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Title</p>
+              <p className='absolute top-1/2 right-0 w-full text-2xl font-bold text-center'>Masters Fox Hunt Trial</p>
             </div>
           </Box>
-          <Box params='my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-2rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] min-h-[calc(50%-2rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
-              <p className='text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Date</p>
-              <p className='flex justify-center w-full my-auto items-center text-2xl font-bold'>01-16-2025 to 01-18-2025</p>
+              <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Date</p>
+              <p className='absolute top-1/2 right-0 w-full text-2xl font-bold text-center'>02/18/2025 to 02/20/2025</p>
             </div>
           </Box>
-          <Box params='my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-2rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] min-h-[calc(50%-2rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
-              <p className='text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Stake</p>
-              <p className='flex justify-center w-full my-auto items-center text-2xl font-bold'>All Age</p>
+              <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Stake</p>
+              <p className='absolute top-1/2 right-0 w-full text-2xl font-bold text-center'>All Age</p>
             </div>
           </Box>
-          <Box params='my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-2rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] min-h-[calc(50%-2rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
-              <p className='text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Interval</p>
-              <p className='flex justify-center w-full my-auto items-center text-2xl font-bold'>10</p>
+              <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>Interval</p>
+              <p className='absolute top-1/2 right-0 w-full text-2xl font-bold text-center'>10</p>
             </div>
           </Box>
         </div>

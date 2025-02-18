@@ -1,10 +1,10 @@
-import { PiDotsThreeOutlineVertical, PiX } from "react-icons/pi";
+import { PiDotsThreeOutlineVertical, PiPlusCircle, PiX } from "react-icons/pi";
 import Box from "./Box";
 function Dogs() {
 
   return (
-    <div className='grid grid-cols-2 text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative'>
-      <Box params='bg-white col-span-2 pt-5'>
+    <div className='grid text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative'>
+      <Box params='bg-white pt-5'>
         <div className='w-full flex items-center border-b-2 border-gray-300 pb-1'>
           <p className='text-4xl font-bold'>All Dogs</p>
           <div className='flex ml-auto items-center'>
@@ -16,7 +16,7 @@ function Dogs() {
             <input type='text' placeholder="Search by Number" className='border border-black/30 rounded-lg px-1'/>
           </div>
         </div>
-        <Box params='overflow-y-auto w-full p-4 my-8 bg-slate-50 h-full'>
+        <Box params='overflow-y-auto w-full p-4 mt-8 mb-5 bg-slate-50 h-full'>
           <table className='table-auto w-full border-collapse'>
             <thead>
               <tr className='border-b-2 border-gray-300'>
@@ -84,6 +84,11 @@ function Dogs() {
             </tbody>
           </table>
         </Box>
+        <div className='ml-auto mr-3 flex h-10 items-center mb-4'>
+          <a href='/dogs/add'>
+            <PiPlusCircle className='h-10 w-10 text-green-500'></PiPlusCircle>
+          </a>
+        </div>
       </Box>
     </div>
   );
