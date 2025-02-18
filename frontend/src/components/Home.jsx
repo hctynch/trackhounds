@@ -69,32 +69,32 @@ function Home() {
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
@@ -117,52 +117,52 @@ function Home() {
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
               </tr>
-              <tr>
+              <tr className='border-y-2 border-gray-200'>
                 <td className='text-xl text-start'>1</td>
                 <td className='text-xl text-start'>Rex</td>
                 <td className='text-xl text-end'>100</td>
@@ -183,7 +183,7 @@ function Home() {
               Edit Current Hunt
             </button>
             <button 
-              className='mt-4 bg-red-50 rounded text-red-500 hover:text-red-400 font-bold w-full cursor-pointer'
+              className='mt-4 bg-red-50 rounded text-red-500 hover:text-red-400 hover:bg-red-100 font-bold w-full cursor-pointer'
               onClick={handleOverlay}
             >
               Close

@@ -16,8 +16,7 @@ function Navbar() {
       caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7'/>,
       dropdown: [
         { name: <p className='text-black font-medium'>All Dogs</p>, path: '/dogs/all' },
-        { name: <p className='text-black font-medium'>Add Dogs</p>, path: '/dogs/add' },
-        { name: <p className='text-black font-medium'>Edit/Remove Dogs</p>, path: '/dogs/edit' }
+        { name: <p className='text-black font-medium'>Add Dogs</p>, path: '/dogs/add' }
       ]
     },
     {
