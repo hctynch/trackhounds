@@ -1,22 +1,28 @@
 services:
   mariadb:
-    image: "mariadb:latest"
+    image: 'mariadb:latest'
     environment:
       - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - MARIADB_DATABASE=trackhounds
       - MARIADB_USER=root
     ports:
-      - "3306:3306"
+      - '3306:3306'
     profiles:
       - dev
 
   mariadb_test:
-    image: "mariadb:latest"
+    image: 'mariadb:latest'
     environment:
       - MARIADB_ROOT_PASSWORD=root
       - MARIADB_DATABASE=trackhounds_test
       - MARIADB_USER=root
     ports:
-      - "3307:3306"
+      - '3307:3306'
     profiles:
       - test
+    networks:
+      - trackhounds_test_network
+
+networks:
+  trackhounds_test_network:
+    driver: bridge

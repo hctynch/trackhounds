@@ -62,4 +62,4 @@ jobs:
         uses: actions/upload-artifact@v4 # Latest version
         with:
           name: jacoco-report
-          path: target/site/jacoco/
+          path: trackhounds/target/site/jacoco/
