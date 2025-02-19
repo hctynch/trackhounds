@@ -10,16 +10,16 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Latest version
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4 # Latest version
         with:
           distribution: 'temurin'
           java-version: '21'
 
       - name: Cache Maven Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4 # Latest version
         with:
           path: ~/.m2
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -30,7 +30,7 @@ jobs:
         run: mvn clean verify
 
       - name: Upload JaCoCo Coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4 # Latest version
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: target/site/jacoco/jacoco.xml
@@ -38,7 +38,7 @@ jobs:
           verbose: true
 
       - name: Upload Coverage Report as Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # Latest version
         with:
           name: jacoco-report
           path: target/site/jacoco/
