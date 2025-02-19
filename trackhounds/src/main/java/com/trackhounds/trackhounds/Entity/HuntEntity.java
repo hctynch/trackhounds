@@ -53,7 +53,7 @@ public class HuntEntity {
     /**
      * The stake range of the hunt.
      */
-    private int[] stakeRange = new int[3];
+    private int[] stakeRange = new int[4];
 
     /**
      * Constructor for the HuntEntity class.
@@ -68,7 +68,7 @@ public class HuntEntity {
         this.dates = dates;
         this.stake = stake;
         this.huntInterval = interval;
-        this.stakeRange = new int[] { 999, 999, 999 };
+        this.stakeRange = new int[] { 0, 0, 0, 0 };
         this.stakeTypeRange = new StakeType[] { StakeType.ALL_AGE, StakeType.ALL_AGE, StakeType.ALL_AGE,
                 StakeType.ALL_AGE };
     }

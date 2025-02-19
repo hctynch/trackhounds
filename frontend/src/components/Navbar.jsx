@@ -82,7 +82,7 @@ function Navbar() {
   };
 
   return (
-    <div className='z-1 flex flex-col gap-y-2 justify-start items-start bg-white shadow shadow-gray-500 fixed top-0 left-0 h-[calc(100vh-1rem)] rounded-r-lg p-1 w-65 my-2'>
+    <div className='overflow-y-auto z-1 flex flex-col gap-y-2 justify-start items-start bg-white shadow shadow-gray-500 fixed top-0 left-0 h-[calc(100vh-1rem)] rounded-r-lg p-1 w-65 my-2'>
       <div className='flex w-full items-center px-3 py-3'>
         <div className='border-b-2 border-gray-300 w-full flex pb-6'>
           <p className='text-black font-semibold text-2xl pt-4'>trackhounds</p>

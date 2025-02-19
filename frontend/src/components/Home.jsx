@@ -1,16 +1,34 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PiDotsThreeOutlineVertical } from 'react-icons/pi';
 import { useNavigate } from 'react-router-dom';
+import HuntService from '../services/HuntService';
 import Box from './Box';
 
 function Home() {
   const [showOverlay, setShowOverlay] = useState(false);
-
+  const [hunt, setHunt] = useState({
+    title: '',
+    dates: '',
+    stake: '',
+    huntInterval: 0,
+  });
   const handleOverlay = () => {
     setShowOverlay(!showOverlay);
   };
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    async function getHunt() {
+      const data = await HuntService.getHunt();
+      if (data instanceof Error) {
+        //
+      } else {
+        setHunt(data);
+      }
+    }
+    getHunt();
+  }, []);
 
   return (
     <div className='text-black grid grid-cols-2 ml-[276px] items-start py-2 mr-4 h-full relative'>
@@ -37,7 +55,7 @@ function Home() {
                 Title
               </p>
               <p className='absolute top-1/2 right-0 w-full text-2xl font-medium text-center'>
-                Masters Fox Hunt Trial
+                {hunt.title}
               </p>
             </div>
           </Box>
@@ -47,7 +65,7 @@ function Home() {
                 Date
               </p>
               <p className='absolute top-1/2 right-0 w-full text-2xl font-medium text-center'>
-                02/18/2025 to 02/20/2025
+                {hunt.dates}
               </p>
             </div>
           </Box>
@@ -57,7 +75,7 @@ function Home() {
                 Stake
               </p>
               <p className='absolute top-1/2 right-0 w-full text-2xl font-medium text-center'>
-                All Age
+                {hunt.stake == 'ALL_AGE' ? 'All Age' : 'Derby'}
               </p>
             </div>
           </Box>
@@ -67,7 +85,7 @@ function Home() {
                 Interval
               </p>
               <p className='absolute top-1/2 right-0 w-full text-2xl font-medium text-center'>
-                10
+                {hunt.huntInterval}
               </p>
             </div>
           </Box>

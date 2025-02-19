@@ -1,7 +1,5 @@
 package com.trackhounds.trackhounds.Controller;
 
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,13 +37,8 @@ public class HuntController {
     }
 
     @PutMapping()
-    public HuntEntity editHunt(@RequestBody Map<String, String> fields) {
-        return huntService.editHunt(fields);
-    }
-
-    @PutMapping("/stakes")
-    public void putStakes(@RequestBody HuntEntity entity) {
-        huntService.setStakes(entity);
+    public HuntEntity editHunt(@RequestBody HuntEntity entity) {
+        return huntService.editHunt(entity);
     }
 
 }
