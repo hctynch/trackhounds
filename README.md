@@ -1,5 +1,6 @@
 # trackhounds
 
+![Codecov](https://codecov.io/gh/hctynch/trackhounds/branch/main/graph/badge.svg)
 _By: Hunt Tynch_
 
 _Started: Feb 2025_
