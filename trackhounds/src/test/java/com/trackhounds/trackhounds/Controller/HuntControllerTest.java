@@ -1,8 +1,6 @@
 package com.trackhounds.trackhounds.Controller;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -65,22 +63,11 @@ public class HuntControllerTest {
     @Test
     void testEditHunt() throws Exception {
         HuntEntity hunt = new HuntEntity("Test Hunt", "2025-10-12 to 2025-10-13", StakeType.ALL_AGE, 10);
-        when(huntService.editHunt(anyMap())).thenReturn(hunt);
+        when(huntService.editHunt(any(HuntEntity.class))).thenReturn(hunt);
 
         mockMvc.perform(put("/hunt")
                 .contentType("application/json")
                 .content("{\"title\":\"New Title\",\"dates\":\"Edited\"}"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void testPutStakes() throws Exception {
-        doNothing().when(huntService).setStakes(any(HuntEntity.class));
-
-        mockMvc.perform(put("/hunt/stakes")
-                .contentType("application/json")
-                .content(
-                        "{\"title\":\"Test Hunt\",\"dates\":\"2025-10-12 to 2025-10-13\",\"stake\":\"ALL_AGE\",\"huntInterval\":10,\"stakeTypeRange\":[\"ALL_AGE\",\"DERBY\",\"ALL_AGE\",\"DERBY\"],\"stakeRange\":[250,400,699]}"))
                 .andExpect(status().isOk());
     }
 }

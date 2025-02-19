@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.trackhounds.trackhounds.Entity.HuntEntity;
-import com.trackhounds.trackhounds.Enums.StakeType;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
 import com.trackhounds.trackhounds.Repository.HuntRepository;
 
@@ -40,6 +39,11 @@ public class HuntService {
         }
         if (hunt.getHuntInterval() < 0) {
             errs.put("interval", "Interval cannot be negative.");
+        }
+        int[] stakeRange = hunt.getStakeRange();
+        for (int i = 1; i < 4; i++) {
+            if (stakeRange[i] < stakeRange[i - 1])
+                errs.put(String.format("startingNumber%d", i + 1), "Value cannot be less than previous.");
         }
         if (errs.size() > 0)
             throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields", errs);
@@ -76,83 +80,30 @@ public class HuntService {
      * @throws TrackHoundsAPIException if the edited fields are invalid
      * @return updated Hunt
      */
-    public HuntEntity editHunt(Map<String, String> fields) {
+    public HuntEntity editHunt(HuntEntity entity) {
         if (huntRepository.count() == 0)
             throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "No Hunt has been created to edit.", null);
         Map<String, String> errs = new HashMap<>();
-        if (fields.containsKey("title")) {
-            String title = fields.get("title");
-            if (title == null || title.isEmpty())
-                errs.put("title", "Title cannot be empty.");
+        if (entity.getTitle() == null || entity.getTitle().isEmpty()) {
+            errs.put("title", "Title cannot be empty.");
         }
-        int interval = -1;
-        if (fields.containsKey("interval")) {
-            String s_interval = fields.get("interval");
-            try {
-                interval = Integer.parseInt(s_interval);
-                if (interval < 0)
-                    errs.put("interval", "Interval must be positive.");
-            } catch (Exception e) {
-                errs.put("interval", "Interval must be an Integer.");
-            }
+        if (entity.getHuntInterval() < 0) {
+            errs.put("interval", "Interval must be greater than 0.");
+        }
+        int[] stakeRange = entity.getStakeRange();
+        for (int i = 1; i < 4; i++) {
+            if (stakeRange[i] < stakeRange[i - 1])
+                errs.put(String.format("startingNumber%d", i + 1), "Value cannot be less than previous.");
         }
         if (errs.size() > 0)
             throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Edit Fields", errs);
         HuntEntity hunt = huntRepository.findAll().get(0);
-        if (fields.containsKey("title"))
-            hunt.setTitle(fields.get("title"));
-        if (fields.containsKey("dates"))
-            hunt.setDates(fields.get("dates"));
-        if (fields.containsKey("stake")) {
-            String s_stake = fields.get("stake");
-            StakeType stake = StakeType.ALL_AGE;
-            if (s_stake.equalsIgnoreCase("derby"))
-                stake = StakeType.DERBY;
-            hunt.setStake(stake);
-        }
-        if (interval >= 0)
-            hunt.setHuntInterval(interval);
+        hunt.setTitle(entity.getTitle());
+        hunt.setDates(entity.getDates());
+        hunt.setStake(entity.getStake());
+        hunt.setHuntInterval(entity.getHuntInterval());
+        hunt.setStakeRange(entity.getStakeRange());
+        hunt.setStakeTypeRange(entity.getStakeTypeRange());
         return huntRepository.save(hunt);
-    }
-
-    /**
-     * Set the stakes for the current hunt.
-     * 
-     * @param stakeTypeRange Stake Type Range
-     * @param stakeRange     Stake Range
-     * @throws TrackHoundsAPIException if the stake fields are invalid
-     */
-    @SuppressWarnings("null")
-    public void setStakes(HuntEntity huntEntity) {
-        Map<String, String> errs = new HashMap<>();
-        StakeType[] stakeTypeRange = huntEntity.getStakeTypeRange();
-        int[] stakeRange = huntEntity.getStakeRange();
-        boolean nullCheck = false;
-        if (stakeTypeRange == null) {
-            errs.put("stake_type_range", "Value cannot be null.");
-            nullCheck = true;
-        }
-        if (stakeRange == null) {
-            errs.put("stake_range", "Value cannot be null.");
-            nullCheck = true;
-        }
-        if (nullCheck)
-            throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Stake Fields", errs);
-        if (stakeRange[0] < 0)
-            errs.put("stake_range_1", "Value must be positive.");
-        for (int i = 1; i < stakeRange.length; i++) {
-            if (stakeRange[i] < 0) {
-                errs.put(String.format("stake_range_%d", i + 1), "Value must be positive.");
-            } else if (stakeRange[i] < stakeRange[i - 1]) {
-                stakeTypeRange[i] = StakeType.ALL_AGE;
-                errs.put(String.format("stake_range_%d", i + 1), "Value must be greater than previous value.");
-            }
-        }
-        if (errs.size() > 0)
-            throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Stake Fields", errs);
-        HuntEntity hunt = huntRepository.findAll().get(0);
-        hunt.setStakeTypeRange(stakeTypeRange);
-        hunt.setStakeRange(stakeRange);
-        huntRepository.save(hunt);
     }
 }
