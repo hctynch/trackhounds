@@ -10,42 +10,65 @@ function Navbar() {
 
   const links = [
     { name: 'Home', path: '/', icon: <HiOutlineHome className='h-10' /> },
-    { 
-      name: 'Dogs', 
-      icon: <TbDog className='h-10' />, 
-      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7'/>,
+    {
+      name: 'Dogs',
+      icon: <TbDog className='h-10' />,
+      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7' />,
       dropdown: [
-        { name: <p className='text-black font-medium'>All Dogs</p>, path: '/dogs/all' },
-        { name: <p className='text-black font-medium'>Add Dogs</p>, path: '/dogs/add' }
-      ]
+        {
+          name: <p className='text-black font-medium'>All Dogs</p>,
+          path: '/dogs/all',
+        },
+        {
+          name: <p className='text-black font-medium'>Add Dogs</p>,
+          path: '/dogs/add',
+        },
+      ],
     },
     {
       name: 'Judges',
       icon: <MdOutlinePersonSearch className='h-10' />,
-      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7'/>,
+      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7' />,
       dropdown: [
-        { name: <p className='text-black font-medium'>All Judges</p>, path: '/judges/all' },
-        { name: <p className='text-black font-medium'>Add Judges</p>, path: '/judges/add' },
-        { name: <p className='text-black font-medium'>Edit/Remove Judges</p>, path: '/judges/edit' }
-      ]
+        {
+          name: <p className='text-black font-medium'>All Judges</p>,
+          path: '/judges/all',
+        },
+        {
+          name: <p className='text-black font-medium'>Add Judges</p>,
+          path: '/judges/add',
+        },
+      ],
     },
     {
       name: 'Score Entry',
       icon: <GrScorecard className='h-10' />,
-      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7'/>,
+      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7' />,
       dropdown: [
-        { name: <p className='text-black font-medium'>Enter Score</p>, path: '/score-entry/enter' },
-        { name: <p className='text-black font-medium'>View Scores</p>, path: '/score-entry/view' }
-      ]
+        {
+          name: <p className='text-black font-medium'>Enter Score</p>,
+          path: '/score-entry/enter',
+        },
+        {
+          name: <p className='text-black font-medium'>View Scores</p>,
+          path: '/score-entry/view',
+        },
+      ],
     },
     {
       name: 'Scratch Sheet',
       icon: <GrDocumentMissing className='h-10' />,
-      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7'/>,
+      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7' />,
       dropdown: [
-        { name: <p className='text-black font-medium'>Enter Scratch</p>, path: '/scratch-sheet/enter' },
-        { name: <p className='text-black font-medium'>View Scratches</p>, path: '/scratch-sheet/view' }
-      ]
+        {
+          name: <p className='text-black font-medium'>Enter Scratch</p>,
+          path: '/scratch-sheet/enter',
+        },
+        {
+          name: <p className='text-black font-medium'>View Scratches</p>,
+          path: '/scratch-sheet/view',
+        },
+      ],
     },
     {
       name: 'Reports',
@@ -59,20 +82,22 @@ function Navbar() {
   };
 
   return (
-    <div className='z-1 flex flex-col gap-y-2 justify-start items-start bg-white shadow shadow-gray-500 fixed top-0 left-0 h-[calc(100vh-1rem)] rounded-r-lg p-1 w-65 my-2'>
+    <div className='overflow-y-auto z-1 flex flex-col gap-y-2 justify-start items-start bg-white shadow shadow-gray-500 fixed top-0 left-0 h-[calc(100vh-1rem)] rounded-r-lg p-1 w-65 my-2'>
       <div className='flex w-full items-center px-3 py-3'>
         <div className='border-b-2 border-gray-300 w-full flex pb-6'>
-          <p className='text-black font-semibold text-2xl pt-4'>trackhounds</p><img/>
+          <p className='text-black font-semibold text-2xl pt-4'>trackhounds</p>
+          <img />
         </div>
       </div>
       <div className='h-auto flex flex-col gap-y-4 justify-start items-start px-1 w-full'>
         {links.map((link, index) => (
-          <div key={index} className='w-full h-auto'>
+          <div
+            key={index}
+            className='w-full h-auto'>
             <a
               href={link.path}
               className='w-full'
-              onClick={() => link.dropdown && handleDropdown(index)}
-            >
+              onClick={() => link.dropdown && handleDropdown(index)}>
               <div className='flex w-full'>
                 <div className='flex items-center text-black text-lg hover:bg-gray-800/20 hover:outline-gray-100 rounded-xl px-2 transition duration-275 ease-in-out w-full'>
                   {link.icon}
@@ -82,11 +107,16 @@ function Navbar() {
               </div>
             </a>
             {dropdown === index && link.dropdown && (
-              <div className={`flex flex-col items-center ml-4 pr-4 w-full border-l-2 border-gray-300 ${link.dropdown.length > 2 ? 'h-[61.75%]' : 'h-[49.25%]'}`}>
+              <div
+                className={`flex flex-col items-center ml-4 pr-4 w-full border-l-2 border-gray-300 h-[49.25%]`}>
                 {link.dropdown.map((item, subIndex) => (
-                  <div key={subIndex} className='w-full flex items-center justify-start'>
-                    <div className='bg-gray-300 w-4 h-0.5'/>
-                    <a  href={item.path} className='w-full px-2 py-1 text-start text-black text-lg hover:bg-gray-800/20 hover:outline-gray-100 rounded-xl transition duration-275 ease-in-out'>
+                  <div
+                    key={subIndex}
+                    className='w-full flex items-center justify-start'>
+                    <div className='bg-gray-300 w-4 h-0.5' />
+                    <a
+                      href={item.path}
+                      className='w-full px-2 py-1 text-start text-black text-lg hover:bg-gray-800/20 hover:outline-gray-100 rounded-xl transition duration-275 ease-in-out'>
                       {item.name}
                     </a>
                   </div>
