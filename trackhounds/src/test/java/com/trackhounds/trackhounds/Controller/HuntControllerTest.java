@@ -13,15 +13,18 @@ import org.mockito.InjectMocks;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.trackhounds.trackhounds.Entity.HuntEntity;
 import com.trackhounds.trackhounds.Enums.StakeType;
+import com.trackhounds.trackhounds.Exception.GlobalExceptionHandler;
 import com.trackhounds.trackhounds.Service.HuntService;
 
 @WebMvcTest(HuntController.class)
+@Import(GlobalExceptionHandler.class)
 public class HuntControllerTest {
 
     private MockMvc mockMvc;
