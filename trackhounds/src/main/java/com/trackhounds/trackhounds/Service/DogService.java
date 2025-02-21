@@ -58,6 +58,8 @@ public class DogService {
       if (dogRepository.existsById(d.getNumber())) {
         errs.put(String.format("number%d", i + 1), "Existing dog with matching number.");
       }
+      if (d.getName() == null || d.getName().isEmpty())
+        errs.put(String.format("name%d", i + 1), "Name cannot be empty.");
       if (d.getStake() == null)
         errs.put(String.format("stake%d", i + 1), "Stake type cannot be null.");
     }
@@ -84,9 +86,13 @@ public class DogService {
     DogEntity d = dogRepository.findById(dog.getNumber())
         .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog with this number does not exist.",
             Map.of("number", "Dog with this number does not exist.")));
+    Map<String, String> errs = new HashMap<>();
+    if (d.getName() == null || d.getName().isEmpty())
+      errs.put("name", "Name cannot be empty.");
     if (dog.getStake() == null)
-      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Stake not specified.",
-          Map.of("stake", "Stake not specified."));
+      errs.put("stake", "Stake not specified.");
+    if (errs.size() > 0)
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid fields", errs);
     d.setName(dog.getName());
     d.setOwner(dog.getOwner());
     d.setDam(dog.getDam());

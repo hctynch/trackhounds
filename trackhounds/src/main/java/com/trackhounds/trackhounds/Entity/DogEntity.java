@@ -91,4 +91,57 @@ public class DogEntity {
     setDam(dam);
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + number;
+    result = prime * result + ((name == null) ? 0 : name.hashCode());
+    result = prime * result + ((stake == null) ? 0 : stake.hashCode());
+    result = prime * result + ((owner == null) ? 0 : owner.hashCode());
+    result = prime * result + ((sire == null) ? 0 : sire.hashCode());
+    result = prime * result + ((dam == null) ? 0 : dam.hashCode());
+    result = prime * result + (scratched ? 1231 : 1237);
+    result = prime * result + ((scores == null) ? 0 : scores.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    DogEntity other = (DogEntity) obj;
+    if (number != other.number)
+      return false;
+    if (name == null) {
+      if (other.name != null)
+        return false;
+    } else if (!name.equals(other.name))
+      return false;
+    if (stake != other.stake)
+      return false;
+    if (owner == null) {
+      if (other.owner != null)
+        return false;
+    } else if (!owner.equals(other.owner))
+      return false;
+    if (sire == null) {
+      if (other.sire != null)
+        return false;
+    } else if (!sire.equals(other.sire))
+      return false;
+    if (dam == null) {
+      if (other.dam != null)
+        return false;
+    } else if (!dam.equals(other.dam))
+      return false;
+    if (scratched != other.scratched)
+      return false;
+    return true;
+  }
+
 }
