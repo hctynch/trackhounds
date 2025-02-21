@@ -5,12 +5,14 @@ import java.time.LocalDateTime;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
 /**
  * Handles global errors.
  */
 @ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
 	/**
