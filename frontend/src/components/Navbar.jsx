@@ -27,18 +27,8 @@ function Navbar() {
     },
     {
       name: 'Judges',
+      path: '/judges/all',
       icon: <MdOutlinePersonSearch className='h-10' />,
-      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7' />,
-      dropdown: [
-        {
-          name: <p className='text-black font-medium'>All Judges</p>,
-          path: '/judges/all',
-        },
-        {
-          name: <p className='text-black font-medium'>Add Judges</p>,
-          path: '/judges/add',
-        },
-      ],
     },
     {
       name: 'Score Entry',
