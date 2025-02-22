@@ -60,7 +60,7 @@ function EditDog() {
   };
 
   return (
-    <div className='text-black flex flex-col ml-[276px] items-start py-2 mr-4 h-full'>
+    <div className='text-black flex flex-col ml-[276px] items-start py-2 mr-4 h-full w-[calc(100%-276px-1rem)]'>
       <Box params='h-full w-full bg-white pt-8 overflow-y-auto'>
         <div className='w-full flex border-b-2 border-gray-300 pb-4'>
           <a className='mr-4 cursor-pointer' href='/dogs/all'>
@@ -74,7 +74,7 @@ function EditDog() {
             Edit
           </button>
         </div>
-        <div className='flex flex-col w-full h-full gap-y-4 overflow-y-auto min-h-100'>
+        <div className='flex flex-col w-full h-full gap-y-4'>
         <Box params='w-full bg-slate-50 my-2'>
           <div className='text-start py-2 grid grid-cols-2 w-full'>
             <div className='w-full'>
