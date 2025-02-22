@@ -87,8 +87,8 @@ public class DogController {
    * @param number Number of dog
    */
   @DeleteMapping("/{number}")
-  public void deleteDog(@PathVariable("number") int number) {
-    dogService.deleteDog(number);
+  public List<DogEntity> deleteDog(@PathVariable("number") int number) {
+    return dogService.deleteDog(number);
   }
 
 }
