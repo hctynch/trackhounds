@@ -1,12 +1,67 @@
-import { FaCheck } from 'react-icons/fa6';
+import { useEffect, useState } from 'react';
+import { FaCheck, FaX } from 'react-icons/fa6';
 import { GoHorizontalRule } from 'react-icons/go';
 import { IoAddCircleOutline, IoArrowBackCircleOutline } from 'react-icons/io5';
+import { useNavigate } from 'react-router-dom';
+import DogService from '../services/DogService';
 import Box from './Box';
 
 function AddDogs() {
+  const navigate = useNavigate();
+  const [dogs, setDogs] = useState([{ number: '', name: '', stake: 'ALL_AGE', sire: '', dam: '' },
+    { number: '', name: '', stake: 'ALL_AGE', sire: '', dam: '' },
+    { number: '', name: '', stake: 'ALL_AGE', sire: '', dam: '' },
+    { number: '', name: '', stake: 'ALL_AGE', sire: '', dam: '' },
+    { number: '', name: '', stake: 'ALL_AGE', sire: '', dam: '' },
+    { number: '', name: '', stake: 'ALL_AGE', sire: '', dam: '' },
+    { number: '', name: '', stake: 'ALL_AGE', sire: '', dam: '' }
+  ]);
+  const [status, setStatus] = useState('success');
+  const [owner, setOwner] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const handleInputChange = (index, event) => {
+    const values = [...dogs];
+    values[index][event.target.name] = event.target.value;
+    setDogs(values);
+  };
+
+  const handleOwnerChange = (event) => {
+    setOwner(event.target.value);
+  };
+
+  const handleAddRow = () => {
+    setDogs([...dogs, { number: '', name: '', stake: 'ALL_AGE', sire: '', dam: '' }]);
+  };
+
+  useEffect(() => {
+    const newErrors = {};
+    dogs.forEach((dog, index) => {
+      if ((dog.number || dog.name || dog.sire || dog.dam) && (!dog.number || !dog.name || !dog.stake || !dog.sire || !dog.dam)) {
+        newErrors[`row${index}`] = 'All fields are required';
+      }
+    });
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length !== 0) { setStatus('error') } else { setStatus('success') }
+  }, [dogs]);
+
+  const handleSubmit = async () => {
+    const updatedDogs = dogs
+      .filter(dog => dog.number && dog.name && dog.stake && dog.sire && dog.dam)
+      .map(dog => ({ ...dog, owner: owner }));
+    const call = await DogService.createDogs(updatedDogs);
+    if (call) {
+      setStatus('error');
+      setErrors(call.fields);
+      return;
+    }
+    setStatus('success');
+    navigate('/dogs/all');
+  };
+
   return (
-    <div className='grid text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative'>
-      <Box params='bg-white pt-5'>
+    <div className='grid text-black ml-[276px] h-full relative'>
+      <Box params='bg-white pt-5 h-full max-h-[calc(100vh-1rem)] my-2'>
         <div className='w-full flex items-center border-b-2 border-gray-300 pb-1'>
           <a className='mr-4 cursor-pointer' href='/dogs/all'>
             <IoArrowBackCircleOutline className='text-4xl text-gray-500' />
@@ -14,8 +69,8 @@ function AddDogs() {
           <p className='text-4xl font-bold'>Add Dogs</p>
           <div className='h-16 items-center flex ml-auto'>
             <p className='italic opacity-70 mr-2'>Status:</p>
-            <FaCheck className='h-12 w-12 text-green-400'></FaCheck>
-            {/*<FaX className='h-10 w-10 text-red-400'></FaX>*/}
+            {status === 'success' && <FaCheck className='h-12 w-12 text-green-400' />}
+            {status === 'error' && <FaX className='h-12 w-12 text-red-400' />}
           </div>
         </div>
         <div className='w-full flex items-center'>
@@ -25,253 +80,98 @@ function AddDogs() {
               <input
                 type='text'
                 className='bg-white border w-full border-black/30 rounded-lg px-2 py-1'
+                value={owner}
+                onChange={handleOwnerChange}
               />
             </div>
           </Box>
         </div>
         <Box params='overflow-y-auto w-full p-4 mt-8 mb-5 bg-slate-100 h-full'>
-            <table className='table-auto w-full border-collapse border-2 border-black' style={{ tableLayout: 'fixed' }}>
-              <thead>
-                <tr className='border-2 border-black'>
-                  <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>#</th>
-                  <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>Name</th>
-                  <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>
-                    <div className='pr-8'>Stake</div>
-                  </th>
-                  <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>Sire</th>
-                  <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>Dam</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className='border-y-2 border-black w-full'>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
+          <table className='table-auto w-full border-collapse border-2 border-black overflow-y-auto' style={{ tableLayout: 'fixed' }}>
+            <thead className='sticky -top-5 bg-slate-200'>
+              <tr className='border-2 border-black'>
+                <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>#</th>
+                <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>Name</th>
+                <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>
+                  <div className='pr-8'>Stake</div>
+                </th>
+                <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>Sire</th>
+                <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>Dam</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dogs.map((dog, index) => (
+                <tr key={index} className='border-y-2 border-black w-full'>
+                  <td className={`z-1 text-md xl:text-lg text-start border-2 border-black ${errors[`row${index}`] || errors[`number${index+1}`] ? 'text-red-500' : 'text-black'}`}>
                     <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
+                      <input
+                        className='pl-1 w-full h-full bg-white'
+                        name='number'
+                        value={dog.number}
+                        onChange={(event) => handleInputChange(index, event)}
+                      />
                     </div>
                   </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
+                  <td className={`z-1 text-md xl:text-lg text-start border-2 border-black ${errors[`row${index}`] || errors[`name${index+1}`] ? 'text-red-500' : 'text-black'}`}>
                     <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
+                      <input
+                        className='pl-1 w-full h-full bg-white'
+                        name='name'
+                        value={dog.name}
+                        onChange={(event) => handleInputChange(index, event)}
+                      />
                     </div>
                   </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
+                  <td className={`z-1 text-md xl:text-lg text-start border-2 border-black ${errors[`row${index}`] || errors[`stake${index+1}`] ? 'text-red-500' : 'text-black'}`}>
                     <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
+                      <select
+                        className='pl-1 w-full h-full bg-white'
+                        name='stake'
+                        value={dog.stake}
+                        onChange={(event) => handleInputChange(index, event)}
+                      >
+                        <option value='ALL_AGE'>All Age</option>
+                        <option value='DERBY'>Derby</option>
+                      </select>
                     </div>
                   </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
+                  <td className={`z-1 text-md xl:text-lg text-start border-2 border-black ${errors[`row${index}`] ? 'text-red-500' : 'text-black'}`}>
                     <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
+                      <input
+                        className='pl-1 w-full h-full bg-white'
+                        name='sire'
+                        value={dog.sire}
+                        onChange={(event) => handleInputChange(index, event)}
+                      />
                     </div>
                   </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
+                  <td className={`z-1 text-md xl:text-lg text-start border-2 border-black ${errors[`row${index}`] ? 'text-red-500' : 'text-black'}`}>
                     <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                </tr>
-                <tr className='border-y-2 border-black w-full'>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                </tr>
-                <tr className='border-y-2 border-black w-full'>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
+                      <input
+                        className='pl-1 w-full h-full bg-white'
+                        name='dam'
+                        value={dog.dam}
+                        onChange={(event) => handleInputChange(index, event)}
+                      />
                     </div>
                   </td>
                 </tr>
-                <tr className='border-y-2 border-black w-full'>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                </tr>
-                <tr className='border-y-2 border-black w-full'>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                </tr>
-                <tr className='border-y-2 border-black w-full'>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                </tr>
-                <tr className='border-y-2 border-black w-full'>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                </tr>
-                <tr className='border-y-2 border-black w-full'>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                  <td className='text-md xl:text-lg text-start border-2 border-black'>
-                    <div className='h-8'>
-                      <input className='pl-1 w-full h-full bg-white' />
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div className='mx-auto flex items-center justify-center mt-1 hover:text-green-600 text-green-500/90 cursor-pointer'>
-                <GoHorizontalRule className='text-4xl'/>
-                <IoAddCircleOutline className='h-8 w-8'></IoAddCircleOutline>
-                <GoHorizontalRule className='text-4xl'/>
-            </div>
+              ))}
+            </tbody>
+          </table>
+          <div className='mx-auto flex items-center justify-center mt-1 hover:text-green-600 text-green-500/90 cursor-pointer' onClick={handleAddRow}>
+            <GoHorizontalRule className='text-4xl' />
+            <IoAddCircleOutline className='h-8 w-8' />
+            <GoHorizontalRule className='text-4xl' />
+          </div>
         </Box>
         <div className='mx-auto mb-2'>
-            <button className='cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-full'>
-                Add
-            </button>
+          <button
+            className={` bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-full cursor-pointer`}
+            onClick={handleSubmit}
+          >
+            Add
+          </button>
         </div>
       </Box>
     </div>

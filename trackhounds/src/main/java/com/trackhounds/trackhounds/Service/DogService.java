@@ -73,8 +73,9 @@ public class DogService {
    * 
    * @param number Number of dog
    */
-  public void deleteDog(int number) {
+  public List<DogEntity> deleteDog(int number) {
     dogRepository.deleteById(number);
+    return dogRepository.findAll();
   }
 
   /**
@@ -116,19 +117,31 @@ public class DogService {
    * @return all dogs
    */
   public List<DogEntity> getDogs() {
-    return dogRepository.findAll();
+    List<DogEntity> dogs = dogRepository.findAll();
+    for (DogEntity dog : dogs) {
+      // Calculate the total points for each dog
+      int totalPoints = calculateTotalPoints(dog);
+      dog.setPoints(totalPoints);
+    }
+    return dogs;
   }
 
-  /**
-   * Return a specific dog by number
-   * 
-   * @param number Number of the dog
-   * @return specified dog by its number
-   */
+  private int calculateTotalPoints(DogEntity dog) {
+    // Implement the logic to calculate the total points for the dog
+    // For example, you can sum up the points from various sources
+    int totalPoints = 0;
+    // Add your logic here to calculate the total points
+    return totalPoints;
+  }
+
   public DogEntity getDogByNumber(int number) {
-    return dogRepository.findById(number)
+    DogEntity dog = dogRepository.findById(number)
         .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog does not exist.",
             Map.of("number", "Dog does not exist with this number.")));
+    // Calculate the total points for the dog
+    int totalPoints = calculateTotalPoints(dog);
+    dog.setPoints(totalPoints);
+    return dog;
   }
 
 }

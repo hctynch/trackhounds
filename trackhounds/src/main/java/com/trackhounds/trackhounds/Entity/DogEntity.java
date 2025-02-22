@@ -72,6 +72,8 @@ public class DogEntity {
   @OrderColumn(name = "score_order")
   private List<DailyScore> scores = new ArrayList<>();
 
+  private int points = 0;
+
   /**
    * Default constructor for a dog
    * 

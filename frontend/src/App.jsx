@@ -3,6 +3,7 @@ import './App.css'
 import AddDogs from './components/AddDogs'
 import CreateHunt from './components/CreateHunt'
 import Dogs from './components/Dogs'
+import EditDog from './components/EditDog'
 import EditHunt from './components/EditHunt'
 import Home from './components/Home'
 import Judges from './components/Judges'
@@ -23,7 +24,7 @@ function App() {
           <Route path='/hunt/edit' element={<EditHunt />} />
           <Route path='/dogs/all' element={<Dogs />} />
           <Route path='/dogs/add' element={<AddDogs />} />
-          <Route path='/dogs/edit' element={<Dogs />} />
+          <Route path='/dogs/edit' element={<EditDog />} />
           <Route path='/judges/all' element={<Judges />} />
           <Route path='/judges/add' element={<Judges />} />
           <Route path='/judges/edit' element={<Judges />} />
