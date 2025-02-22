@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { PiDotsThreeOutlineVertical } from 'react-icons/pi';
 import { useNavigate } from 'react-router-dom';
+import DogService from '../services/DogService';
 import HuntService from '../services/HuntService';
 import Box from './Box';
 
 function Home() {
   const [showOverlay, setShowOverlay] = useState(false);
+  const [total, setTotal] = useState(0);
   const [hunt, setHunt] = useState({
     title: '',
     dates: '',
@@ -21,10 +23,16 @@ function Home() {
   useEffect(() => {
     async function getHunt() {
       const data = await HuntService.getHunt();
+      const total = await DogService.getDogTotal();
       if (data instanceof Error) {
         //
       } else {
         setHunt(data);
+      }
+      if (total instanceof Error) {
+        setTotal(0)
+      } else {
+        setTotal(total);
       }
     }
     getHunt();
@@ -37,7 +45,7 @@ function Home() {
           <p className='text-4xl font-bold'>Hunt Overview</p>
           <div className='flex ml-auto items-center'>
             <div className='flex flex-col items-center'>
-              <p className='font-semibold text-4xl'>100</p>
+              <p className='font-semibold text-4xl'>{total}</p>
               <p>Total Dogs</p>
             </div>
             <div className='bg-gray-300 h-12 w-0.5 mx-5' />
