@@ -110,38 +110,12 @@ public class DogEntity {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
     if (obj == null)
       return false;
-    if (getClass() != obj.getClass())
+    if (!(obj instanceof DogEntity))
       return false;
     DogEntity other = (DogEntity) obj;
     if (number != other.number)
-      return false;
-    if (name == null) {
-      if (other.name != null)
-        return false;
-    } else if (!name.equals(other.name))
-      return false;
-    if (stake != other.stake)
-      return false;
-    if (owner == null) {
-      if (other.owner != null)
-        return false;
-    } else if (!owner.equals(other.owner))
-      return false;
-    if (sire == null) {
-      if (other.sire != null)
-        return false;
-    } else if (!sire.equals(other.sire))
-      return false;
-    if (dam == null) {
-      if (other.dam != null)
-        return false;
-    } else if (!dam.equals(other.dam))
-      return false;
-    if (scratched != other.scratched)
       return false;
     return true;
   }
