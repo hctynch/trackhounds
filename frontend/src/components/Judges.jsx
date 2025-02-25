@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PiDotsThreeOutlineVertical, PiX } from 'react-icons/pi';
-import { useNavigate } from 'react-router-dom';
+import JudgeService from '../services/JudgeService';
 import Box from './Box';
 
 function Judges() {
@@ -8,22 +8,22 @@ function Judges() {
   const [filteredJudges, setFilteredJudges] = useState([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
-  const [judge, setJudge] = useState({ name: '', pin: '', number: '' });
-  const [select, setSelect] = useState({ name: '', pin: '', number: '' });
+  const [judge, setJudge] = useState({ name: '', memberPin: '', number: '' });
+  const [select, setSelect] = useState({ name: '', memberPin: '', number: '' });
   const [addErrors, setAddErrors] = useState({});
   const [editErrors, setEditErrors] = useState({});
-  const navigate = useNavigate();
 
   useEffect(() => {
-    // Placeholder data
-    const placeholderJudges = [
-      { number: 1, pin: '123', name: 'Judge A' },
-      { number: 2, pin: '124', name: 'Judge B' },
-      { number: 3, pin: '125', name: 'Judge C' },
-    ];
-    setJudges(placeholderJudges);
-    setFilteredJudges(placeholderJudges);
-    setTotal(placeholderJudges.length);
+    async function getJudges() {
+      const data = await JudgeService.getJudges();
+      setJudges(data);
+      setFilteredJudges(judges);
+    } getJudges();
+
+    async function getTotalJudges() {
+      const data = await JudgeService.getJudgeTotal();
+      setTotal(data);
+    } getTotalJudges();
   }, []);
 
   useEffect(() => {
@@ -35,10 +35,11 @@ function Judges() {
   }, [search, judges]);
 
   function deleteJudge(number) {
+    JudgeService.deleteJudge(number);
     const updatedJudges = judges.filter(judge => judge.number !== number);
     setJudges(updatedJudges);
     setFilteredJudges(updatedJudges);
-    setTotal(updatedJudges.length);
+    setTotal(total - 1);
   }
 
   function editJudge(judge) {
@@ -55,10 +56,21 @@ function Judges() {
       setAddErrors(newErrors);
       return;
     }
-
-    // Placeholder function for adding a judge
-    console.log('Add Judge:', judge);
-    setAddErrors({});
+    async function createJudge() {
+      const data = await JudgeService.createJudge(judge);
+      if (data instanceof Error) {
+        setAddErrors(data.response.data.fields);
+      } else {
+        async function getJudges() {
+          const data = await JudgeService.getJudges();
+          setJudges(data);
+          setFilteredJudges(data);
+        } getJudges();
+        setJudge({ name: '', memberPin: '', number: '' });
+        setTotal(total + 1);
+        setAddErrors({});
+      }
+    } createJudge();
   }
 
   function handleEdit() {
@@ -72,9 +84,17 @@ function Judges() {
       return;
     }
 
-    // Placeholder function for editing a judge
-    console.log('Edit Judge:', select);
-    setEditErrors({});
+    const data = JudgeService.editJudge(select);
+    if (data instanceof Error) {
+      console.log(data.response.data);
+      setEditErrors(data.response.data.fields);
+    } else {
+      const updatedJudges = judges.map(j => j.number === select.number ? select : j);
+      setJudges(updatedJudges);
+      setFilteredJudges(updatedJudges);
+      setSelect({ name: '', memberPin: '', number: '' });
+      setEditErrors({});
+    }
   }
 
   return (
@@ -114,7 +134,7 @@ function Judges() {
                     <div className='pr-3'>{judge.number}</div>
                   </td>
                   <td className='text-sm text-start'>
-                    <div className='pr-3'>{judge.pin}</div>
+                    <div className='pr-3'>{judge.memberPin}</div>
                   </td>
                   <td className='text-sm text-start'>
                     <div className='pr-3'>{judge.name}</div>
@@ -167,8 +187,8 @@ function Judges() {
                 <input
                   type='text'
                   className='border w-full rounded absolute top-1 pl-1'
-                  value={judge.pin}
-                  onChange={(e) => setJudge({ ...judge, pin: e.target.value })}
+                  value={judge.memberPin}
+                  onChange={(e) => setJudge({ ...judge, memberPin: e.target.value })}
                 />
               </div>
             </div>
@@ -234,9 +254,9 @@ function Judges() {
               <div className='w-full flex items-center relative'>
                 <input
                   type='text'
-                  value={select.pin}
+                  value={select.memberPin}
                   className='border w-full rounded absolute top-1 pl-1'
-                  onChange={(e) => setSelect({ ...select, pin: e.target.value })}
+                  onChange={(e) => setSelect({ ...select, memberPin: e.target.value })}
                 />
               </div>
             </div>
