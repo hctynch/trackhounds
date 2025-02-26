@@ -16,12 +16,18 @@ function Judges() {
   useEffect(() => {
     async function getJudges() {
       const data = await JudgeService.getJudges();
+      if (data instanceof Error) {
+        return;
+      }
       setJudges(data);
       setFilteredJudges(judges);
     } getJudges();
 
     async function getTotalJudges() {
       const data = await JudgeService.getJudgeTotal();
+      if (data instanceof Error) {
+        return;
+      }
       setTotal(data);
     } getTotalJudges();
   }, []);
