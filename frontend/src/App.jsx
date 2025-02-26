@@ -11,6 +11,7 @@ import Navbar from './components/Navbar'
 import Reports from './components/Reports'
 import ScoreEntry from './components/ScoreEntry'
 import ScratchSheet from './components/ScratchSheet'
+import ViewScores from './components/ViewScores'
 
 function App() {
 
@@ -27,7 +28,7 @@ function App() {
           <Route path='/dogs/edit' element={<EditDog />} />
           <Route path='/judges/all' element={<Judges />} />
           <Route path='/score-entry/enter' element={<ScoreEntry />} />
-          <Route path='/score-entry/view' element={<ScoreEntry />} />
+          <Route path='/score-entry/view' element={<ViewScores />} />
           <Route path='/scratch-sheet/enter' element={<ScratchSheet />} />
           <Route path='/scratch-sheet/view' element={<ScratchSheet />} />
           <Route path='/reports' element={<Reports />} />
