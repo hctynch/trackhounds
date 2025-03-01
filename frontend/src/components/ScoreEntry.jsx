@@ -29,7 +29,7 @@ function ScoreEntry() {
         </div>
         <div className='w-full h-full flex flex-col justify-start pt-2'>
           <div className='w-full flex gap-x-10'>
-            <Box params='flex items-start text-md bg-slate-50 w-1/2'>
+            <Box params='flex items-start text-md bg-slate-50 w-1/2 min-w-50'>
               <div className='flex w-full flex-col h-full'>
                 <p className='text-start text-md my-2 border-b-1 w-full border-gray-300'>Day</p>
                 <div className='flex w-full flex-wrap justify-start space-x-4'>
@@ -58,15 +58,26 @@ function ScoreEntry() {
               </div>
             </Box>
           </div>
-          <Box params='flex items-start text-md bg-slate-50 mt-4 w-full'>
-            <div className='flex flex-col h-full w-full'>
-              <p className='text-start text-md my-2 border-b-1 border-gray-300'>Judge #</p>
-              <input
-                type='text'
-                className='border border-black/30 rounded-lg px-1 mb-2'
-              />
-            </div>
-          </Box>
+          <div className='w-full flex gap-x-10 mt-4'>
+            <Box params='flex items-start text-md bg-slate-50 mt-4 w-full'>
+              <div className='flex flex-col h-full w-full'>
+                <p className='text-start text-md my-2 border-b-1 border-gray-300'>Judge #</p>
+                <input
+                  type='text'
+                  className='border border-black/30 rounded-lg px-1 mb-2'
+                />
+              </div>
+            </Box>
+            <Box params='flex items-start text-md bg-slate-50 mt-4 w-full'>
+              <div className='flex flex-col h-full w-full'>
+                <p className='text-start text-md my-2 border-b-1 border-gray-300'>Cross Time</p>
+                <input
+                  type='time'
+                  className='border border-black/30 rounded-lg px-1 mb-2'
+                />
+              </div>
+            </Box>
+          </div>
           <Box params='flex items-start text-md bg-slate-50 my-4 h-full'>
             <div className='flex flex-col h-full w-full'>
               <div className='flex w-full justify-start items-center border-b-1 border-gray-300'>
@@ -92,9 +103,9 @@ function ScoreEntry() {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-wrap w-full h-full justify-evenly py-1">
+              <div className="flex flex-wrap w-1/2 mx-auto h-full justify-evenly py-1">
                 {Array(7).fill().map((_, index) => (
-                  <div key={index} className="flex items-center gap-x-2">
+                  <div key={index} className="flex items-center gap-x-2 mx-8">
                     <div className="w-24">
                       <label className="block text-sm font-medium text-gray-700">Dog #{index + 1}</label>
                       <input

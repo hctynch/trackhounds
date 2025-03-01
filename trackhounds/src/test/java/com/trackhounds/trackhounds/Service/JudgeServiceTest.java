@@ -93,6 +93,7 @@ public class JudgeServiceTest {
      * Test deleting a judge.
      */
     @Test
+    @Transactional
     void testDeleteJudge() {
         assertEquals(0, judgeRepository.count());
         JudgeEntity judge = new JudgeEntity(1, "123-4444", "John Doe");
@@ -106,6 +107,7 @@ public class JudgeServiceTest {
      * Test getting all judges.
      */
     @Test
+    @Transactional
     void testGetAllJudges() {
         JudgeEntity judge = new JudgeEntity(1, "123-4444", "John Doe");
         JudgeEntity judge2 = new JudgeEntity(2, "123-4444", "Jane Doe");
@@ -128,6 +130,7 @@ public class JudgeServiceTest {
      * Test getting the judge count.
      */
     @Test
+    @Transactional
     void testGetJudgeCount() {
         assertEquals(0, judgeService.getJudgeCount());
         JudgeEntity judge = new JudgeEntity(1, "123-4444", "John Doe");
@@ -143,6 +146,7 @@ public class JudgeServiceTest {
      * Test updating a judge.
      */
     @Test
+    @Transactional
     void testUpdateJudge() {
         JudgeEntity judge = new JudgeEntity(1, "123-4444", "John Doe");
         judgeRepository.save(judge);

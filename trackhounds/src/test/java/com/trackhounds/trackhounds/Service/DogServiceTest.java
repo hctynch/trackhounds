@@ -15,10 +15,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.trackhounds.trackhounds.Dto.ScoreDto;
+import com.trackhounds.trackhounds.Entity.DailyScore;
 import com.trackhounds.trackhounds.Entity.DogEntity;
+import com.trackhounds.trackhounds.Entity.JudgeEntity;
 import com.trackhounds.trackhounds.Enums.StakeType;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
+import com.trackhounds.trackhounds.Repository.DailyScoreRepository;
+import com.trackhounds.trackhounds.Repository.DaysRepository;
 import com.trackhounds.trackhounds.Repository.DogRepository;
+import com.trackhounds.trackhounds.Repository.JudgeRepository;
+import com.trackhounds.trackhounds.Repository.ScoreRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -35,11 +42,24 @@ public class DogServiceTest {
   @Autowired
   private DogRepository dogRepository;
 
+  @Autowired
+  private DaysRepository daysRepository;
+
+  @Autowired
+  private DailyScoreRepository dailyScoreRepository;
+
+  @Autowired
+  private JudgeRepository judgeRepository;
+
+  @Autowired
+  private ScoreRepository scoreRepository;
   /**
    * Service
    */
   @Autowired
   private DogService dogService;
+
+  private JudgeEntity j;
 
   /**
    * Clear repository
@@ -47,6 +67,8 @@ public class DogServiceTest {
   @BeforeEach
   void setUp() {
     dogRepository.deleteAll();
+    daysRepository.deleteAll();
+    this.j = judgeRepository.save(new JudgeEntity(1, "PIN", "Judgy Judge"));
   }
 
   /**
@@ -96,6 +118,7 @@ public class DogServiceTest {
    * Test editing dogs
    */
   @Test
+  @Transactional
   void testEditDog() {
     DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire", "Dam");
     DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire", "Dam");
@@ -120,6 +143,7 @@ public class DogServiceTest {
    * Test getting dogs by number
    */
   @Test
+  @Transactional
   void testGetDogByNumber() {
     DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire", "Dam");
     DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire", "Dam");
@@ -149,6 +173,7 @@ public class DogServiceTest {
    * Test get all dogs
    */
   @Test
+  @Transactional
   void testGetDogs() {
     DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire", "Dam");
     DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire", "Dam");
@@ -165,4 +190,69 @@ public class DogServiceTest {
         () -> assertTrue(dogs.contains(dog1)));
 
   }
+
+  @Test
+  @Transactional
+  void createScore() {
+    DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire", "Dam");
+    DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire", "Dam");
+    DogEntity dog3 = new DogEntity(3, "Dog3", StakeType.DERBY, "Owner3", "Sire", "Dam");
+    assertAll("Create Dogs", () -> assertDoesNotThrow(() -> dogService.createDogs(List.of(dog1, dog2, dog3))),
+        () -> assertTrue(dogRepository.count() > 0),
+        () -> assertEquals(dogService.getDogTotal(), (int) dogRepository.count()),
+        () -> assertNotNull(dogService.getDogByNumber(1)),
+        () -> assertNotNull(dogService.getDogByNumber(2)),
+        () -> assertNotNull(dogService.getDogByNumber(3)));
+
+    ScoreDto score = new ScoreDto(1, "05:30:00", 1, "05:45:00", new int[] { 1, 2, 3 }, new int[] { 35, 30, 25 }, 10);
+    assertAll("Create Score", () -> {
+      assertDoesNotThrow(() -> dogService.createScore(score));
+      assertEquals(1, dogService.getDogByNumber(1).getScores().size());
+      List<DailyScore> dailyScores = dogService.getDogByNumber(1).getScores();
+      assertEquals(1, dailyScores.size());
+      assertEquals(1, dailyScores.get(0).getTimeBucketScores().size());
+      assertEquals(1, dailyScores.get(0).getHighestScores().size());
+      assertEquals(35, dailyScores.get(0).getHighestScores().iterator().next().getScore().getPoints());
+      assertEquals(35, dogService.getDogByNumber(1).getPoints());
+      List<DailyScore> dailyScores2 = dogService.getDogByNumber(2).getScores();
+      assertEquals(1, dailyScores2.size());
+      assertEquals(1, dailyScores2.get(0).getTimeBucketScores().size());
+      assertEquals(1, dailyScores2.get(0).getHighestScores().size());
+      assertEquals(30, dailyScores2.get(0).getHighestScores().iterator().next().getScore().getPoints());
+      assertEquals(30, dogService.getDogByNumber(2).getPoints());
+      List<DailyScore> dailyScores3 = dogService.getDogByNumber(3).getScores();
+      assertEquals(1, dailyScores3.size());
+      assertEquals(1, dailyScores3.get(0).getTimeBucketScores().size());
+      assertEquals(1, dailyScores3.get(0).getHighestScores().size());
+      assertEquals(25, dailyScores3.get(0).getHighestScores().iterator().next().getScore().getPoints());
+      assertEquals(25, dogService.getDogByNumber(3).getPoints());
+    });
+
+    ScoreDto score2 = new ScoreDto(1, "05:30:00", 1, "05:45:00", new int[] { 3, 2, 1 }, new int[] { 35, 30, 25 }, 10);
+
+    assertAll("Add additional Score", () -> {
+      assertDoesNotThrow(() -> dogService.createScore(score2));
+      assertEquals(1, dogService.getDogByNumber(1).getScores().size());
+      List<DailyScore> dailyScores = dogService.getDogByNumber(1).getScores();
+      assertEquals(1, dailyScores.size());
+      assertEquals(2, dailyScores.get(0).getTimeBucketScores().size());
+      assertEquals(1, dailyScores.get(0).getHighestScores().size());
+      assertEquals(35, dailyScores.get(0).getHighestScores().iterator().next().getScore().getPoints());
+      assertEquals(35, dogService.getDogByNumber(1).getPoints());
+      List<DailyScore> dailyScores2 = dogService.getDogByNumber(2).getScores();
+      assertEquals(1, dailyScores2.size());
+      assertEquals(2, dailyScores2.get(0).getTimeBucketScores().size());
+      assertEquals(1, dailyScores2.get(0).getHighestScores().size());
+      assertEquals(30, dailyScores2.get(0).getHighestScores().iterator().next().getScore().getPoints());
+      assertEquals(30, dogService.getDogByNumber(2).getPoints());
+      List<DailyScore> dailyScores3 = dogService.getDogByNumber(3).getScores();
+      assertEquals(1, dailyScores3.size());
+      assertEquals(2, dailyScores3.get(0).getTimeBucketScores().size());
+      assertEquals(1, dailyScores3.get(0).getHighestScores().size());
+      assertEquals(35, dailyScores3.get(0).getHighestScores().iterator().next().getScore().getPoints());
+      assertEquals(35, dogService.getDogByNumber(3).getPoints());
+    });
+
+  }
+
 }
