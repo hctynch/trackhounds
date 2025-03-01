@@ -26,6 +26,17 @@ function AddDogs() {
   const handleInputChange = (index, event) => {
     const values = [...dogs];
     values[index][event.target.name] = event.target.value;
+
+    if (event.target.name === 'number' && hunt.stakeRange && hunt.stakeTypeRange) {
+      const number = parseInt(event.target.value, 10);
+      for (let i = 0; i < hunt.stakeRange.length; i++) {
+        if (number >= hunt.stakeRange[i] && (i === hunt.stakeRange.length - 1 || number < hunt.stakeRange[i + 1])) {
+          values[index].stake = hunt.stakeTypeRange[i];
+          break;
+        }
+      }
+    }
+
     setDogs(values);
   };
 
@@ -64,7 +75,7 @@ function AddDogs() {
       }
     }
     getHunt();
-  }, [dogs]);
+  }, [dogs, hunt, navigate]);
 
   const handleSubmit = async () => {
     const updatedDogs = dogs
@@ -183,8 +194,12 @@ function AddDogs() {
                         name='stake'
                         value={dog.stake}
                         onChange={(event) => handleInputChange(index, event)}>
-                        <option value='ALL_AGE'>All Age</option>
-                        <option value='DERBY'>Derby</option>
+                        {hunt.stakeTypeRange &&
+                          hunt.stakeTypeRange.map((stake, i) => (
+                            <option key={i} value={stake}>
+                              {stake === 'ALL_AGE' ? 'All Age' : 'Derby'}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </td>
