@@ -7,6 +7,5 @@ import com.trackhounds.trackhounds.Entity.DailyScore;
 /**
  * Repository for DailyScores
  */
-public interface DailyScoreRepository extends JpaRepository<DailyScore, Long> {
-
+public interface DailyScoreRepository extends JpaRepository<DailyScore, Integer> {
 }

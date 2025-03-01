@@ -68,10 +68,13 @@ public class DogEntity {
   /**
    * List of Daily Scores for the dog
    */
-  @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+  @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
   @OrderColumn(name = "score_order")
   private List<DailyScore> scores = new ArrayList<>();
 
+  /**
+   * Points of the dog
+   */
   private int points = 0;
 
   /**

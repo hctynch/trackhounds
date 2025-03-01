@@ -1,5 +1,6 @@
 package com.trackhounds.trackhounds.Service;
 
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,10 +9,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import com.trackhounds.trackhounds.Dto.ScoreDto;
+import com.trackhounds.trackhounds.Entity.DailyScore;
+import com.trackhounds.trackhounds.Entity.Days;
 import com.trackhounds.trackhounds.Entity.DogEntity;
+import com.trackhounds.trackhounds.Entity.Score;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
 import com.trackhounds.trackhounds.Repository.DailyScoreRepository;
+import com.trackhounds.trackhounds.Repository.DaysRepository;
 import com.trackhounds.trackhounds.Repository.DogRepository;
+import com.trackhounds.trackhounds.Repository.JudgeRepository;
 import com.trackhounds.trackhounds.Repository.ScoreRepository;
 
 import lombok.AllArgsConstructor;
@@ -40,6 +47,18 @@ public class DogService {
    */
   @Autowired
   private ScoreRepository scoreRepository;
+
+  /**
+   * Days Repository
+   */
+  @Autowired
+  private DaysRepository daysRepository;
+
+  /**
+   * Judge Repository
+   */
+  @Autowired
+  private JudgeRepository judgeRepository;
 
   /**
    * Create a group of dogs
@@ -127,10 +146,11 @@ public class DogService {
   }
 
   private int calculateTotalPoints(DogEntity dog) {
-    // Implement the logic to calculate the total points for the dog
-    // For example, you can sum up the points from various sources
     int totalPoints = 0;
-    // Add your logic here to calculate the total points
+    List<DailyScore> scores = dog.getScores();
+    for (DailyScore dailyScore : scores) {
+      totalPoints += dailyScore.getHighestScores().stream().mapToInt(hs -> hs.getScore().getPoints()).sum();
+    }
     return totalPoints;
   }
 
@@ -142,6 +162,83 @@ public class DogService {
     int totalPoints = calculateTotalPoints(dog);
     dog.setPoints(totalPoints);
     return dog;
+  }
+
+  /**
+   * Clear all dogs and days
+   */
+  public void clear() {
+    dogRepository.deleteAll();
+    daysRepository.deleteAll();
+  }
+
+  /**
+   * Create a score
+   * 
+   * @param score Score to create
+   */
+  public void createScore(ScoreDto score) {
+    // Implement the logic to create a score
+    Map<String, String> errs = new HashMap<>();
+    if (judgeRepository.findById(score.getJudge()).isEmpty())
+      errs.put("judge", "Judge does not exist.");
+    if (score.getDogNumbers() == null || score.getDogNumbers().length == 0)
+      errs.put("dogNumbers", "Dog numbers cannot be empty.");
+    if (score.getScores() == null || score.getScores().length == 0)
+      errs.put("scores", "Scores cannot be empty.");
+    if (score.getDogNumbers().length != score.getScores().length)
+      errs.put("scores", "Scores and dog numbers do not match.");
+    for (int i = 0; i < score.getDogNumbers().length; i++) {
+      if (dogRepository.findById(score.getDogNumbers()[i]).isEmpty())
+        errs.put(String.format("dogNumbers%d", i), "Dog does not exist.");
+      if (score.getScores()[i] < 0)
+        errs.put(String.format("scores%d", i), "Score cannot be negative.");
+    }
+    if (score.getStartTime() == null || score.getStartTime().isEmpty())
+      errs.put("startTime", "Start time cannot be empty.");
+    if (score.getCrossTime() == null || score.getCrossTime().isEmpty())
+      errs.put("crossTime", "Cross time cannot be empty.");
+    LocalTime crossTime = null;
+    LocalTime startTime = null;
+    try {
+      crossTime = LocalTime.parse(score.getCrossTime());
+    } catch (Exception e) {
+      errs.put("crossTime", "Invalid cross time.");
+    }
+    try {
+      startTime = LocalTime.parse(score.getStartTime());
+    } catch (Exception e) {
+      errs.put("startTime", "Invalid start time.");
+    }
+    if (crossTime != null && startTime != null && crossTime.isBefore(startTime))
+      errs.put("crossTime", "Cross time cannot be before start time.");
+
+    if (errs.size() > 0)
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields", errs);
+
+    Days day = daysRepository.findById(score.getDay()).orElse(new Days(score.getDay(), startTime));
+    if (day.getStartTime() == null)
+      day.setStartTime(startTime);
+    day = daysRepository.save(day);
+    for (int i = 0; i < score.getDogNumbers().length; i++) {
+      DogEntity dog = dogRepository.findById(score.getDogNumbers()[i]).get();
+      List<DailyScore> scores = dog.getScores();
+      if (scores.size() < score.getDay()) {
+        for (int j = scores.size(); j < score.getDay(); j++) {
+          DailyScore dailyScore = new DailyScore(daysRepository.findById(j + 1).get(), dog.getNumber());
+          dailyScore = dailyScoreRepository.save(dailyScore);
+          dog.getScores().add(dailyScore);
+        }
+      }
+      DailyScore dailyScore = dog.getScores().get(score.getDay() - 1);
+      Score s = new Score(score.getScores()[i], crossTime, false);
+      dailyScore.addScore(s, startTime, score.getInterval());
+      scoreRepository.save(s);
+      dailyScore = dailyScoreRepository.save(dailyScore);
+      dog.getScores().set(score.getDay() - 1, dailyScore);
+      dog.setPoints(calculateTotalPoints(dog));
+      dogRepository.save(dog);
+    }
   }
 
 }

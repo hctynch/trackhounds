@@ -98,7 +98,7 @@ function Navbar() {
             </a>
             {dropdown === index && link.dropdown && (
               <div
-                className={`flex flex-col items-center ml-4 pr-4 w-full border-l-2 border-gray-300 h-[49.25%]`}>
+                className={`flex flex-col items-center ml-4 pr-5 border-l-2 border-gray-300 h-[49.25%]`}>
                 {link.dropdown.map((item, subIndex) => (
                   <div
                     key={subIndex}
@@ -116,7 +116,7 @@ function Navbar() {
           </div>
         ))}
       </div>
-      <div className='mt-auto flex italic opacity-50 text-md items-center justify-center w-11/12'>
+      <div className='mt-auto flex italic opacity-50 text-md items-center justify-center w-full'>
         <p className='text-black'>Made by Hunt Tynch (2025)</p>
       </div>
     </div>

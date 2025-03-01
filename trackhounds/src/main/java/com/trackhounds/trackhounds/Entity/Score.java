@@ -46,9 +46,10 @@ public class Score {
    * @param points Points awarded
    * @param time   Time of the cross
    */
-  public Score(int number, int points, LocalTime time, int day) {
+  public Score(int points, LocalTime time, boolean counted) {
     setPoints(points);
     setTime(time);
+    setCounted(counted);
   }
 
 }
