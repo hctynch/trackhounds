@@ -3,6 +3,8 @@ package com.trackhounds.trackhounds.Service;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -183,7 +185,9 @@ public class DogServiceTest {
         () -> assertEquals(dogService.getDogTotal(), (int) dogRepository.count()),
         () -> assertNotNull(dogService.getDogByNumber(1)),
         () -> assertNotNull(dogService.getDogByNumber(2)),
-        () -> assertNotNull(dogService.getDogByNumber(3)));
+        () -> assertNotNull(dogService.getDogByNumber(3)),
+        () -> assertNotEquals(dog2.hashCode(), dog3.hashCode()),
+        () -> assertFalse(dog2.equals(dog3)));
 
     List<DogEntity> dogs = dogService.getDogs();
     assertAll("Got all dogs", () -> assertEquals(3, dogs.size()),
@@ -228,7 +232,7 @@ public class DogServiceTest {
       assertEquals(25, dogService.getDogByNumber(3).getPoints());
     });
 
-    ScoreDto score2 = new ScoreDto(1, "05:30:00", 1, "05:45:00", new int[] { 3, 2, 1 }, new int[] { 35, 30, 25 }, 10);
+    ScoreDto score2 = new ScoreDto(1, "05:30:00", 1, "05:42:00", new int[] { 3, 2, 1 }, new int[] { 35, 30, 25 }, 10);
 
     assertAll("Add additional Score", () -> {
       assertDoesNotThrow(() -> dogService.createScore(score2));
@@ -251,6 +255,44 @@ public class DogServiceTest {
       assertEquals(1, dailyScores3.get(0).getHighestScores().size());
       assertEquals(35, dailyScores3.get(0).getHighestScores().iterator().next().getScore().getPoints());
       assertEquals(35, dogService.getDogByNumber(3).getPoints());
+
+      ScoreDto score3 = new ScoreDto(1, "05:30:00", 1, "05:35:00", new int[] { 1, 2, 3 }, new int[] { 35, 30, 25 }, 10);
+
+      assertAll("Add score in different interval", () -> {
+        assertDoesNotThrow(() -> dogService.createScore(score3));
+        assertEquals(1, dogService.getDogByNumber(1).getScores().size());
+        DogEntity d1 = dogService.getDogByNumber(1);
+        List<DailyScore> dailyScores4 = d1.getScores();
+        assertEquals(1, dailyScores4.size());
+        assertEquals(3, dailyScores4.get(0).getTimeBucketScores().size());
+        assertEquals(2, dailyScores4.get(0).getHighestScores().size());
+        assertEquals(70, d1.getPoints());
+        DogEntity d2 = dogService.getDogByNumber(2);
+        assertEquals(60, d2.getPoints());
+        DogEntity d3 = dogService.getDogByNumber(3);
+        assertEquals(60, d3.getPoints());
+      });
+
+      ScoreDto score4 = new ScoreDto(4, "05:30:00", 1, "05:35:00", new int[] { 1, 2, 3 }, new int[] { 35, 30, 25 }, 10);
+      assertAll("Add score for different day", () -> {
+        assertDoesNotThrow(() -> dogService.createScore(score4));
+        assertEquals(4, dogService.getDogByNumber(1).getScores().size());
+        DogEntity d1 = dogService.getDogByNumber(1);
+        List<DailyScore> dailyScores5 = d1.getScores();
+        assertEquals(4, dailyScores5.size());
+        assertEquals(3, dailyScores5.get(0).getTimeBucketScores().size());
+        assertEquals(0, dailyScores5.get(1).getTimeBucketScores().size());
+        assertEquals(0, dailyScores5.get(2).getTimeBucketScores().size());
+        assertEquals(1, dailyScores5.get(3).getTimeBucketScores().size());
+        assertEquals(2, dailyScores5.get(0).getHighestScores().size());
+        assertEquals(1, dailyScores5.get(3).getHighestScores().size());
+        assertEquals(105, d1.getPoints());
+        DogEntity d2 = dogService.getDogByNumber(2);
+        assertEquals(90, d2.getPoints());
+        DogEntity d3 = dogService.getDogByNumber(3);
+        assertEquals(85, d3.getPoints());
+      });
+
     });
 
   }

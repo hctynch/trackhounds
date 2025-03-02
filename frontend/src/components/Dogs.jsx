@@ -10,20 +10,20 @@ function Dogs() {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
+
   useEffect(() => {
     async function fetchData() {
-      await DogService.getDogs().then((res) => {
-        if (res) {
-          setDogs(res);
-          setFilteredDogs(res);
-        } else {
-          setDogs([]);
-          setFilteredDogs([]);
-        }
-      });
-      await DogService.getDogTotal().then((res) => {
-        setTotal(res);
-      });
+      const res = await DogService.getDogs();
+      if (res) {
+        console.log(res)
+        setDogs(res);
+        setFilteredDogs(res);
+      } else {
+        setDogs([]);
+        setFilteredDogs([]);
+      }
+      const totalRes = await DogService.getDogTotal();
+      setTotal(totalRes);
     }
     fetchData();
   }, []);
