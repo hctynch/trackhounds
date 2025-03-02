@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DogEntity;
 import com.trackhounds.trackhounds.Service.DogService;
 
@@ -89,6 +90,11 @@ public class DogController {
   @DeleteMapping("/{number}")
   public List<DogEntity> deleteDog(@PathVariable("number") int number) {
     return dogService.deleteDog(number);
+  }
+
+  @PostMapping("/scores")
+  public void postScores(@RequestBody ScoreDto score) {
+    dogService.createScore(score);
   }
 
 }

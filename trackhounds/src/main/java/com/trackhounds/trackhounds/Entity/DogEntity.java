@@ -3,6 +3,7 @@ package com.trackhounds.trackhounds.Entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.trackhounds.trackhounds.Enums.StakeType;
 
 import jakarta.persistence.CascadeType;
@@ -68,8 +69,9 @@ public class DogEntity {
   /**
    * List of Daily Scores for the dog
    */
-  @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+  @OneToMany(mappedBy = "dog", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
   @OrderColumn(name = "score_order")
+  @JsonManagedReference
   private List<DailyScore> scores = new ArrayList<>();
 
   /**
