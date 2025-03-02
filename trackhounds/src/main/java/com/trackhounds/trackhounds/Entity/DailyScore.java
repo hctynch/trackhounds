@@ -4,6 +4,9 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -36,12 +39,14 @@ public class DailyScore {
    * List of time bucket scores
    */
   @OneToMany(mappedBy = "dailyScore", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonManagedReference
   private List<TimeBucketScore> timeBucketScores = new ArrayList<>();
 
   /**
    * List of highest scores
    */
   @OneToMany(mappedBy = "dailyScore", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonManagedReference
   private List<HighestScore> highestScores = new ArrayList<>();
 
   /**
@@ -51,18 +56,20 @@ public class DailyScore {
   private Days day;
 
   /**
-   * Number of the dog
+   * Dog associated with the DailyScore
    */
-  private int number;
+  @ManyToOne
+  @JsonBackReference
+  private DogEntity dog;
 
   /**
    * Default constructor for DailyScore
    * 
    * @param day Day of Scores
    */
-  public DailyScore(Days day, int number) {
+  public DailyScore(Days day, DogEntity dog) {
     setDay(day);
-    setNumber(number);
+    setDog(dog);
   }
 
   /**

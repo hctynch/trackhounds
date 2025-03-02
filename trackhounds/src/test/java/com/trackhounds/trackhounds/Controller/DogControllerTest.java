@@ -25,9 +25,13 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.google.gson.Gson;
 import com.trackhounds.trackhounds.GsonUtil;
+import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DogEntity;
+import com.trackhounds.trackhounds.Entity.JudgeEntity;
 import com.trackhounds.trackhounds.Enums.StakeType;
 import com.trackhounds.trackhounds.Repository.DogRepository;
+import com.trackhounds.trackhounds.Repository.JudgeRepository;
+import com.trackhounds.trackhounds.Service.DogService;
 
 import jakarta.transaction.Transactional;
 
@@ -48,6 +52,12 @@ public class DogControllerTest {
   @Autowired
   private DogRepository dogRepository;
 
+  @Autowired
+  private DogService dogService;
+
+  @Autowired
+  private JudgeRepository judgeRepository;
+
   private final Gson gson = GsonUtil.GSON;
 
   /**
@@ -55,7 +65,8 @@ public class DogControllerTest {
    */
   @BeforeEach
   void setUp() {
-    dogRepository.deleteAll();
+    dogService.clear();
+    judgeRepository.deleteAll();
   }
 
   /**
@@ -150,5 +161,27 @@ public class DogControllerTest {
     DogEntity retrievedDog = dogRepository.findById(1).orElse(null);
     assertNotNull(retrievedDog);
     assertEquals("UpdatedName", retrievedDog.getName());
+  }
+
+  /**
+   * Tests creating a score using the POST /dogs/scores endpoint.
+   */
+  @Test
+  @Transactional
+  void testPostScores() throws Exception {
+    ScoreDto score = new ScoreDto(1, "05:30:00", 1, "05:45:00", new int[] { 1, 2, 3 }, new int[] { 35, 30, 25 }, 10);
+    dogRepository.save(new DogEntity(1, "TestDog", StakeType.ALL_AGE, "", "", ""));
+    dogRepository.save(new DogEntity(2, "TestDog2", StakeType.ALL_AGE, "", "", ""));
+    dogRepository.save(new DogEntity(3, "TestDog3", StakeType.ALL_AGE, "", "", ""));
+    judgeRepository.save(new JudgeEntity(1, "PIN", "TestJudge"));
+    mvc.perform(post("/dogs/scores").contentType(MediaType.APPLICATION_JSON)
+        .content(gson.toJson(score)))
+        .andExpect(status().isOk());
+    DogEntity dog = dogRepository.findById(1).get();
+    assertEquals(35, dog.getPoints());
+    DogEntity dog2 = dogRepository.findById(2).get();
+    assertEquals(30, dog2.getPoints());
+    DogEntity dog3 = dogRepository.findById(3).get();
+    assertEquals(25, dog3.getPoints());
   }
 }

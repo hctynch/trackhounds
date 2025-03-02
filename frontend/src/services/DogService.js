@@ -12,7 +12,7 @@ class DogService {
       const response = await this.api.get();
       return response.data;
     } catch (error) {
-        return error.response.data;
+      return error.response.data;
     }
   }
 
@@ -21,7 +21,7 @@ class DogService {
       const response = await this.api.get('/total');
       return response.data;
     } catch (error) {
-        return error.response.data;
+      return error.response.data;
     }
   }
 
@@ -39,7 +39,7 @@ class DogService {
       const response = await this.api.post('', dogsData);
       return response.data;
     } catch (error) {
-        return error.response.data;
+      return error.response.data;
     }
   }
 
@@ -48,13 +48,22 @@ class DogService {
       const response = await this.api.put('', editDog);
       return response.data;
     } catch (error) {
-        return error.response.data;
+      return error.response.data;
     }
   }
 
   async deleteDog(number) {
     try {
       const response = await this.api.delete(`/${number}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  async postCross(cross) {
+    try {
+      const response = await this.api.post('/scores', cross);
       return response.data;
     } catch (error) {
       return error.response.data;

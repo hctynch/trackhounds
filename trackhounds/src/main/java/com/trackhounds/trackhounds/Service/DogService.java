@@ -225,12 +225,14 @@ public class DogService {
       List<DailyScore> scores = dog.getScores();
       if (scores.size() < score.getDay()) {
         for (int j = scores.size(); j < score.getDay(); j++) {
-          DailyScore dailyScore = new DailyScore(daysRepository.findById(j + 1).get(), dog.getNumber());
+          DailyScore dailyScore = new DailyScore(
+              daysRepository.findById(j + 1).orElse(daysRepository.save(new Days(j + 1, null))), dog);
           dailyScore = dailyScoreRepository.save(dailyScore);
           dog.getScores().add(dailyScore);
         }
       }
       DailyScore dailyScore = dog.getScores().get(score.getDay() - 1);
+      dailyScore.setDay(day);
       Score s = new Score(score.getScores()[i], crossTime, false);
       dailyScore.addScore(s, startTime, score.getInterval());
       scoreRepository.save(s);

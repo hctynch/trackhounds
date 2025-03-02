@@ -25,6 +25,9 @@ public class HuntService {
     @Autowired
     private HuntRepository huntRepository;
 
+    @Autowired
+    private DogService dogService;
+
     /**
      * Create a new Hunt, calls clearOldHunt if another Hunt is in the repository.
      * 
@@ -58,6 +61,7 @@ public class HuntService {
      */
     private void clearOldHunt() {
         huntRepository.deleteAll();
+        dogService.clear();
     }
 
     /**
