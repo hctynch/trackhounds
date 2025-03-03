@@ -53,6 +53,7 @@ services:
       - dev
       - frontend
       - ""
+      - db
     networks:
       - trackhounds_network
 
