@@ -102,6 +102,48 @@ public class DailyScore {
   }
 
   /**
+   * Remove a score from the appropriate time bucket
+   * 
+   * @param score Score to remove
+   * @return The removed score
+   */
+  public Score removeScore(Score score) {
+    TimeBucketScore timeBucketScore = timeBucketScores.stream()
+        .filter(tbs -> tbs.getScore().equals(score))
+        .findFirst()
+        .orElse(null);
+    if (timeBucketScore == null) {
+      return null;
+    }
+    if (timeBucketScore != null) {
+      timeBucketScores.remove(timeBucketScore);
+      score.setCounted(false);
+    }
+
+    HighestScore highestScore = highestScores.stream()
+        .filter(hs -> hs.getScore().equals(score))
+        .findFirst()
+        .orElse(null);
+    if (highestScore != null) {
+      highestScores.remove(highestScore);
+    }
+
+    // Find the highest score in the same time bucket
+    int bucket = timeBucketScore.getTimeBucket();
+    TimeBucketScore newHighestScore = timeBucketScores.stream()
+        .filter(tbs -> tbs.getTimeBucket() == bucket)
+        .max((tbs1, tbs2) -> Integer.compare(tbs1.getScore().getPoints(), tbs2.getScore().getPoints()))
+        .orElse(null);
+
+    if (newHighestScore != null) {
+      newHighestScore.getScore().setCounted(true);
+      highestScores.add(new HighestScore(null, bucket, newHighestScore.getScore(), this));
+    }
+
+    return score;
+  }
+
+  /**
    * Get the highest score in each time bucket
    * 
    * @return List of highest scores
