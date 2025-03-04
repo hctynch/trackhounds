@@ -31,6 +31,7 @@ import com.trackhounds.trackhounds.Entity.JudgeEntity;
 import com.trackhounds.trackhounds.Enums.StakeType;
 import com.trackhounds.trackhounds.Repository.DogRepository;
 import com.trackhounds.trackhounds.Repository.JudgeRepository;
+import com.trackhounds.trackhounds.Repository.ScoreRepository;
 import com.trackhounds.trackhounds.Service.DogService;
 
 import jakarta.transaction.Transactional;
@@ -58,6 +59,9 @@ public class DogControllerTest {
   @Autowired
   private JudgeRepository judgeRepository;
 
+  @Autowired
+  private ScoreRepository scoreRepository;
+
   private final Gson gson = GsonUtil.GSON;
 
   /**
@@ -67,6 +71,8 @@ public class DogControllerTest {
   void setUp() {
     dogService.clear();
     judgeRepository.deleteAll();
+    scoreRepository.deleteAll();
+    judgeRepository.save(new JudgeEntity(1, "PIN", "Judgy Judge"));
   }
 
   /**
@@ -183,5 +189,34 @@ public class DogControllerTest {
     assertEquals(30, dog2.getPoints());
     DogEntity dog3 = dogRepository.findById(3).get();
     assertEquals(25, dog3.getPoints());
+  }
+
+  /**
+   * Tests deleting a score using the DELETE /dogs/{dogNumber}/scores/{scoreId}
+   * endpoint.
+   */
+  @Test
+  void testDeleteScore() throws Exception {
+    DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire", "Dam");
+    DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire", "Dam");
+    DogEntity dog3 = new DogEntity(3, "Dog3", StakeType.DERBY, "Owner3", "Sire", "Dam");
+    dogService.createDogs(List.of(dog1, dog2, dog3));
+
+    ScoreDto score = new ScoreDto(1, "05:30:00", 1, "05:45:00", new int[] { 1, 2, 3 }, new int[] { 35, 30, 25 }, 10);
+    mvc.perform(post("/dogs/scores")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(gson.toJson(score)))
+        .andExpect(status().isOk());
+
+    Long scoreId = dogService.getDogByNumber(1).getScores().get(0).getTimeBucketScores().get(0).getScore().getId();
+    mvc.perform(delete("/dogs/1/scores/" + scoreId)
+        .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk());
+
+    DogEntity updatedDog = dogService.getDogByNumber(1);
+    assertNotNull(updatedDog);
+    assertTrue(updatedDog.getScores().get(0).getTimeBucketScores().isEmpty());
+    assertTrue(updatedDog.getScores().get(0).getHighestScores().isEmpty());
+    assertEquals(0, updatedDog.getPoints());
   }
 }

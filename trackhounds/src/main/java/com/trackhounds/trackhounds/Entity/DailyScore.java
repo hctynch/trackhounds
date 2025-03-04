@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,14 +39,14 @@ public class DailyScore {
   /**
    * List of time bucket scores
    */
-  @OneToMany(mappedBy = "dailyScore", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "dailyScore", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   @JsonManagedReference
   private List<TimeBucketScore> timeBucketScores = new ArrayList<>();
 
   /**
    * List of highest scores
    */
-  @OneToMany(mappedBy = "dailyScore", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "dailyScore", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   @JsonManagedReference
   private List<HighestScore> highestScores = new ArrayList<>();
 
@@ -99,6 +100,48 @@ public class DailyScore {
     } else {
       score.setCounted(false);
     }
+  }
+
+  /**
+   * Remove a score from the appropriate time bucket
+   * 
+   * @param score Score to remove
+   * @return The removed score
+   */
+  public Score removeScore(Score score) {
+    TimeBucketScore timeBucketScore = timeBucketScores.stream()
+        .filter(tbs -> tbs.getScore().equals(score))
+        .findFirst()
+        .orElse(null);
+    if (timeBucketScore == null) {
+      return null;
+    }
+    if (timeBucketScore != null) {
+      timeBucketScores.remove(timeBucketScore);
+      score.setCounted(false);
+    }
+
+    HighestScore highestScore = highestScores.stream()
+        .filter(hs -> hs.getScore().equals(score))
+        .findFirst()
+        .orElse(null);
+    if (highestScore != null) {
+      highestScores.remove(highestScore);
+    }
+
+    // Find the highest score in the same time bucket
+    int bucket = timeBucketScore.getTimeBucket();
+    TimeBucketScore newHighestScore = timeBucketScores.stream()
+        .filter(tbs -> tbs.getTimeBucket() == bucket)
+        .max((tbs1, tbs2) -> Integer.compare(tbs1.getScore().getPoints(), tbs2.getScore().getPoints()))
+        .orElse(null);
+
+    if (newHighestScore != null) {
+      newHighestScore.getScore().setCounted(true);
+      highestScores.add(new HighestScore(null, bucket, newHighestScore.getScore(), this));
+    }
+
+    return score;
   }
 
   /**

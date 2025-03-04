@@ -52,4 +52,14 @@ public class Score {
     setCounted(counted);
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o)
+      return true;
+    if (!(o instanceof Score))
+      return false;
+    Score score = (Score) o;
+    return id == score.id;
+  }
+
 }

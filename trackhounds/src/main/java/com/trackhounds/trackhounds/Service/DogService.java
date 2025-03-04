@@ -243,4 +243,31 @@ public class DogService {
     }
   }
 
+  /**
+   * Remove a score
+   * 
+   * @param dogNumber Dog number
+   * @param scoreId   Score ID
+   */
+  public void removeScore(int dogNumber, Long scoreId) {
+    DogEntity dog = dogRepository.findById(dogNumber)
+        .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog does not exist.",
+            Map.of("number", "Dog does not exist with this number.")));
+
+    Score score = scoreRepository.findById(scoreId)
+        .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Score does not exist.",
+            Map.of("scoreId", "Score does not exist with this ID.")));
+
+    DailyScore dailyScore = dog.getScores().stream()
+        .filter(ds -> ds.getTimeBucketScores().stream().anyMatch(tbs -> tbs.getScore().equals(score)))
+        .findFirst()
+        .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "DailyScore does not exist.",
+            Map.of("dailyScore", "DailyScore does not exist for this score.")));
+
+    dailyScore.removeScore(score);
+    scoreRepository.delete(score);
+    dailyScoreRepository.save(dailyScore);
+    dog.setPoints(calculateTotalPoints(dog));
+    dogRepository.save(dog);
+  }
 }
