@@ -92,9 +92,24 @@ public class DogController {
     return dogService.deleteDog(number);
   }
 
+  /**
+   * Create a score
+   * 
+   * @param score Score to create
+   */
   @PostMapping("/scores")
   public void postScores(@RequestBody ScoreDto score) {
     dogService.createScore(score);
   }
 
+  /**
+   * Delete a score by dog number and score ID
+   * 
+   * @param dogNumber Dog number
+   * @param scoreId   Score ID
+   */
+  @DeleteMapping("/{dogNumber}/scores/{scoreId}")
+  public void deleteScore(@PathVariable("dogNumber") int dogNumber, @PathVariable("scoreId") Long scoreId) {
+    dogService.removeScore(dogNumber, scoreId);
+  }
 }
