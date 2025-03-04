@@ -26,7 +26,6 @@ import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
 import com.trackhounds.trackhounds.Repository.DaysRepository;
 import com.trackhounds.trackhounds.Repository.DogRepository;
 import com.trackhounds.trackhounds.Repository.JudgeRepository;
-import com.trackhounds.trackhounds.Repository.ScoreRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -54,12 +53,6 @@ public class DogServiceTest {
    */
   @Autowired
   private JudgeRepository judgeRepository;
-
-  /**
-   * Score Repository
-   */
-  @Autowired
-  private ScoreRepository scoreRepository;
 
   /**
    * Dog Service
