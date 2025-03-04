@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,14 +39,14 @@ public class DailyScore {
   /**
    * List of time bucket scores
    */
-  @OneToMany(mappedBy = "dailyScore", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "dailyScore", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   @JsonManagedReference
   private List<TimeBucketScore> timeBucketScores = new ArrayList<>();
 
   /**
    * List of highest scores
    */
-  @OneToMany(mappedBy = "dailyScore", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "dailyScore", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   @JsonManagedReference
   private List<HighestScore> highestScores = new ArrayList<>();
 
