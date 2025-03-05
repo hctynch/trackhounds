@@ -215,6 +215,7 @@ public class DogServiceTest {
       assertEquals(1, dailyScores.get(0).getHighestScores().size());
       assertEquals(35, dailyScores.get(0).getHighestScores().iterator().next().getScore().getPoints());
       assertEquals(35, dogService.getDogByNumber(1).getPoints());
+      assertEquals("05:30", daysRepository.findById(1).get().getStartTime().toString());
       List<DailyScore> dailyScores2 = dogService.getDogByNumber(2).getScores();
       assertEquals(1, dailyScores2.size());
       assertEquals(1, dailyScores2.get(0).getTimeBucketScores().size());
