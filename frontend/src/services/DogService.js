@@ -69,6 +69,23 @@ class DogService {
       return error.response.data;
     }
   }
+
+  async deleteCross(number, crossId) {
+    try {
+      const response = await this.api.delete(`/${number}/scores/${crossId}`);
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  async getStartTime(day) {
+    try {
+      const response = await this.api.get(`/day/${day}`);
+      return response.data;
+    } catch (error) {
+      return error;
+    }
+  }
 }
 
 export default new DogService();

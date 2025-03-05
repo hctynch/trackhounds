@@ -196,6 +196,7 @@ public class DogControllerTest {
    * endpoint.
    */
   @Test
+  @Transactional
   void testDeleteScore() throws Exception {
     DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire", "Dam");
     DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire", "Dam");

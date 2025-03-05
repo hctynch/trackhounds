@@ -170,6 +170,7 @@ public class DogService {
   public void clear() {
     dogRepository.deleteAll();
     daysRepository.deleteAll();
+    scoreRepository.deleteAll();
   }
 
   /**
@@ -178,7 +179,6 @@ public class DogService {
    * @param score Score to create
    */
   public void createScore(ScoreDto score) {
-    // Implement the logic to create a score
     Map<String, String> errs = new HashMap<>();
     if (judgeRepository.findById(score.getJudge()).isEmpty())
       errs.put("judge", "Judge does not exist.");
@@ -225,15 +225,19 @@ public class DogService {
       List<DailyScore> scores = dog.getScores();
       if (scores.size() < score.getDay()) {
         for (int j = scores.size(); j < score.getDay(); j++) {
-          DailyScore dailyScore = new DailyScore(
-              daysRepository.findById(j + 1).orElse(daysRepository.save(new Days(j + 1, null))), dog);
+          final int dayIndex = j + 1;
+          Days d = daysRepository.findByDay(dayIndex).orElseGet(() -> {
+            Days newDay = new Days(dayIndex, null);
+            return daysRepository.save(newDay);
+          });
+          DailyScore dailyScore = new DailyScore(d, dog);
           dailyScore = dailyScoreRepository.save(dailyScore);
           dog.getScores().add(dailyScore);
         }
       }
       DailyScore dailyScore = dog.getScores().get(score.getDay() - 1);
       dailyScore.setDay(day);
-      Score s = new Score(score.getScores()[i], crossTime, false);
+      Score s = new Score(score.getScores()[i], crossTime, false, score.getJudge());
       dailyScore.addScore(s, startTime, score.getInterval());
       scoreRepository.save(s);
       dailyScore = dailyScoreRepository.save(dailyScore);
@@ -269,5 +273,16 @@ public class DogService {
     dailyScoreRepository.save(dailyScore);
     dog.setPoints(calculateTotalPoints(dog));
     dogRepository.save(dog);
+  }
+
+  /**
+   * Get the start time for a day
+   * 
+   * @param day Day number
+   * @return Start time
+   */
+  public LocalTime getStartTime(int day) {
+    return daysRepository.findById(day).orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST,
+        "Day does not exist.", Map.of("day", "Day does not exist."))).getStartTime();
   }
 }
