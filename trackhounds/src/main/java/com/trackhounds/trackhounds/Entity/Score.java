@@ -41,15 +41,21 @@ public class Score {
   private boolean counted = false;
 
   /**
+   * The number of the judge that awarded the score
+   */
+  private int judgeNumber;
+
+  /**
    * Default constructor for a score
    * 
    * @param points Points awarded
    * @param time   Time of the cross
    */
-  public Score(int points, LocalTime time, boolean counted) {
+  public Score(int points, LocalTime time, boolean counted, int judgeNumber) {
     setPoints(points);
     setTime(time);
     setCounted(counted);
+    setJudgeNumber(judgeNumber);
   }
 
   @Override

@@ -1,5 +1,6 @@
 package com.trackhounds.trackhounds.Controller;
 
+import java.time.LocalTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,5 +112,16 @@ public class DogController {
   @DeleteMapping("/{dogNumber}/scores/{scoreId}")
   public void deleteScore(@PathVariable("dogNumber") int dogNumber, @PathVariable("scoreId") Long scoreId) {
     dogService.removeScore(dogNumber, scoreId);
+  }
+
+  /**
+   * Get the start time of a day
+   * 
+   * @param day Day
+   * @return Start time of the day
+   */
+  @GetMapping("/day/{day}")
+  public LocalTime getStartTime(@PathVariable("day") int day) {
+    return dogService.getStartTime(day);
   }
 }
