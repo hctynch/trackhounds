@@ -55,6 +55,7 @@ function ScoreEntry() {
     // Call the API to submit the score
     const data = await DogService.postCross(score);
     if (data) {
+      console.log(data)
       setError(data.fields);
     } else {
       navigate('/score-entry/view');
