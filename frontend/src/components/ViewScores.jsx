@@ -3,6 +3,7 @@ import { IoArrowBackCircleOutline } from "react-icons/io5";
 import { PiX } from "react-icons/pi";
 import DogService from "../services/DogService";
 import Box from "./Box";
+import StyledTable from "./StyledTable";
 
 function ViewScores() {
   const [search, setSearch] = useState("");
@@ -45,14 +46,40 @@ function ViewScores() {
     dog.number.toString().includes(search)
   );
 
+  const columns = ["Cross Time", "Judge #", "Dog Number & Name", "Points", ""];
+
+  const data = filteredDogs
+    .filter((dog) =>
+      dog.scores.some((score) => score.day.day === day)
+    )
+    .flatMap((dog) =>
+      dog.scores
+        .filter((score) => score.day.day === day)
+        .flatMap((score) =>
+          score.timeBucketScores.map((tbs) => [
+            tbs.score.time,
+            tbs.score.judgeNumber,
+            `${dog.number} ${dog.name}`,
+            tbs.score.points,
+            <button
+              className="text-sm ml-1 bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2"
+              onClick={() => handleDelete(dog.number, tbs.score.id)}
+            >
+              <PiX className="text-center" />
+            </button>,
+          ])
+        )
+    );
+
   return (
     <div className="grid text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative">
       <Box params="h-full bg-white pt-5 overflow-y-auto">
         <div className="w-full flex items-center border-b-2 border-gray-300 pb-1">
           <a
-            className='mr-4 cursor-pointer'
-            href='/score-entry/enter'>
-            <IoArrowBackCircleOutline className='text-4xl text-gray-500' />
+            className="mr-4 cursor-pointer"
+            href="/score-entry/enter"
+          >
+            <IoArrowBackCircleOutline className="text-4xl text-gray-500" />
           </a>
           <p className="text-4xl font-bold">Scores</p>
           <div className="flex ml-auto items-center h-16">
@@ -80,61 +107,8 @@ function ViewScores() {
             </select>
           </div>
         </div>
-        <Box params="overflow-y-auto w-full p-4 mt-4 mb-4 bg-slate-50 h-full">
-          <table className="table-auto w-full border-collapse">
-            <thead>
-              <tr className="border-b-2 border-gray-300">
-                <th className="text-md font-semibold text-start">Cross Time</th>
-                <th className="text-md font-semibold text-start">Judge #</th>
-                <th className="text-md font-semibold text-start">Dog Number & Name</th>
-                <th className="text-md font-semibold text-start">Points</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDogs
-                .filter((dog) =>
-                  dog.scores.some((score) => score.day.day === day)
-                )
-                .map((dog) =>
-                  dog.scores
-                    .filter((score) => score.day.day === day)
-                    .flatMap((score) =>
-                      score.timeBucketScores.map((tbs, index) => (
-                        <tr className="border-y-2 border-gray-200" key={index}>
-                          <td className="text-sm text-start">
-                            <div className="pr-3">{tbs.score.time}</div>
-                          </td>
-                          <td className="text-sm text-start">
-                            <div className="pr-3">{tbs.score.judgeNumber}</div>
-                          </td>
-                          <td className="text-sm text-start">
-                            <div className="pr-3 flex flex-col">
-                              <p>
-                                <span className="mr-4">{dog.number}</span>
-                                {dog.name}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="text-sm text-start">
-                            <div className="pr-3">{tbs.score.points}</div>
-                          </td>
-                          <td className="pl-2 py-2">
-                            <div className="flex items-center justify-evenly">
-                              <button
-                                className="text-sm ml-1 bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2"
-                                onClick={() => handleDelete(dog.number, tbs.score.id)}
-                              >
-                                <PiX className="text-center" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )
-                )}
-            </tbody>
-          </table>
+        <Box params="overflow-y-auto w-full mt-4 mb-4 bg-slate-50 h-full">
+          <StyledTable columns={columns} data={data} />
         </Box>
       </Box>
     </div>

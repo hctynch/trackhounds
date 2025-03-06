@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import DogService from '../services/DogService';
 import HuntService from '../services/HuntService';
 import Box from './Box';
+import StyledTable from './StyledTable';
 
 function AddDogs() {
   const [hunt, setHunt] = useState({});
@@ -22,8 +23,10 @@ function AddDogs() {
   const [status, setStatus] = useState('success');
   const [owner, setOwner] = useState('');
   const [errors, setErrors] = useState({});
+  const [submitErrors, setSubmitErrors] = useState(false);
 
   const handleInputChange = (index, event) => {
+    setSubmitErrors(false); // Reset the flag on input change
     const values = [...dogs];
     values[index][event.target.name] = event.target.value;
 
@@ -61,11 +64,18 @@ function AddDogs() {
         newErrors[`row${index}`] = 'All fields are required';
       }
     });
-    setErrors(newErrors);
+    if (submitErrors) {
+      setErrors({...errors, ...newErrors});
+    } else {
+      setErrors(newErrors);
+    }
     if (Object.keys(newErrors).length !== 0) {
       setStatus('error');
     } else {
       setStatus('success');
+      if (submitErrors) {
+        setStatus('error');
+      }
     }
     async function getHunt() {
       const data = await HuntService.getHunt();
@@ -87,15 +97,75 @@ function AddDogs() {
     if (call) {
       setStatus('error');
       setErrors(call.fields);
+      setSubmitErrors(true); // Set the flag to indicate errors from submit
+      console.log(call)
       return;
     }
     setStatus('success');
+    setSubmitErrors(false); // Reset the flag on successful submit
     navigate('/dogs/all');
   };
 
+  const columns = ['#', 'Name', 'Stake', 'Sire', 'Dam'];
+  const data = dogs.map((dog, index) => [
+    <input
+      className={`pl-1 w-full h-full bg-gray-100 ${
+        errors[`row${index}`] || errors[`number${index + 1}`]
+          ? 'text-red-500'
+          : 'text-black'
+      }`}
+      name='number'
+      value={dog.number}
+      onChange={(event) => handleInputChange(index, event)}
+    />,
+    <input
+      className={`pl-1 w-full h-full bg-gray-100 ${
+        errors[`row${index}`] || errors[`name${index + 1}`]
+          ? 'text-red-500'
+          : 'text-black'
+      }`}
+      name='name'
+      value={dog.name}
+      onChange={(event) => handleInputChange(index, event)}
+    />,
+    <select
+      className={`pr-2 h-full bg-gray-100 ${
+        errors[`row${index}`] || errors[`stake${index + 1}`]
+          ? 'text-red-500'
+          : 'text-black'
+      }`}
+      name='stake'
+      value={dog.stake}
+      onChange={(event) => handleInputChange(index, event)}
+    >
+      {hunt.stakeTypeRange &&
+        ['ALL_AGE', 'DERBY'].map((stake, i) => (
+          <option key={i} value={stake}>
+            {stake === 'ALL_AGE' ? 'All Age' : 'Derby'}
+          </option>
+        ))}
+    </select>,
+    <input
+      className={`pl-1 w-full h-full bg-gray-100 ${
+        errors[`row${index}`] ? 'text-red-500' : 'text-black'
+      }`}
+      name='sire'
+      value={dog.sire}
+      onChange={(event) => handleInputChange(index, event)}
+    />,
+    <input
+      className={`pl-1 w-full h-full bg-gray-100 ${
+        errors[`row${index}`] ? 'text-red-500' : 'text-black'
+      }`}
+      name='dam'
+      value={dog.dam}
+      onChange={(event) => handleInputChange(index, event)}
+    />,
+  ]);
+
   return (
     <div className='grid text-black ml-[276px] h-full relative'>
-      <Box params='bg-white pt-5 h-full max-h-[calc(100vh-1rem)] my-2'>
+      <Box params='bg-white pt-5 h-full max-h-[calc(100vh-1rem)] my-2 mr-4'>
         <div className='w-full flex items-center border-b-2 border-gray-300 pb-1'>
           <a
             className='mr-4 cursor-pointer'
@@ -125,114 +195,7 @@ function AddDogs() {
           </Box>
         </div>
         <Box params='overflow-y-auto w-full p-4 mt-8 mb-5 bg-slate-100 h-full'>
-          <table
-            className='table-auto w-full border-collapse border-2 border-black overflow-y-auto'
-            style={{ tableLayout: 'fixed' }}>
-            <thead className='sticky -top-5 bg-slate-200'>
-              <tr className='border-2 border-black'>
-                <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>
-                  #
-                </th>
-                <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>
-                  Name
-                </th>
-                <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>
-                  <div className='pr-8'>Stake</div>
-                </th>
-                <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>
-                  Sire
-                </th>
-                <th className='pl-1 text-xl font-semibold text-start w-1/5 border-2 border-black'>
-                  Dam
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {dogs.map((dog, index) => (
-                <tr
-                  key={index}
-                  className='border-y-2 border-black w-full'>
-                  <td
-                    className={`z-1 text-md xl:text-lg text-start border-2 border-black ${
-                      errors[`row${index}`] || errors[`number${index + 1}`]
-                        ? 'text-red-500'
-                        : 'text-black'
-                    }`}>
-                    <div className='h-8'>
-                      <input
-                        className='pl-1 w-full h-full bg-white'
-                        name='number'
-                        value={dog.number}
-                        onChange={(event) => handleInputChange(index, event)}
-                      />
-                    </div>
-                  </td>
-                  <td
-                    className={`z-1 text-md xl:text-lg text-start border-2 border-black ${
-                      errors[`row${index}`] || errors[`name${index + 1}`]
-                        ? 'text-red-500'
-                        : 'text-black'
-                    }`}>
-                    <div className='h-8'>
-                      <input
-                        className='pl-1 w-full h-full bg-white'
-                        name='name'
-                        value={dog.name}
-                        onChange={(event) => handleInputChange(index, event)}
-                      />
-                    </div>
-                  </td>
-                  <td
-                    className={`z-1 text-md xl:text-lg text-start border-2 border-black ${
-                      errors[`row${index}`] || errors[`stake${index + 1}`]
-                        ? 'text-red-500'
-                        : 'text-black'
-                    }`}>
-                    <div className='h-8'>
-                      <select
-                        className='pl-1 w-full h-full bg-white'
-                        name='stake'
-                        value={dog.stake}
-                        onChange={(event) => handleInputChange(index, event)}>
-                        {hunt.stakeTypeRange &&
-                          hunt.stakeTypeRange.map((stake, i) => (
-                            <option key={i} value={stake}>
-                              {stake === 'ALL_AGE' ? 'All Age' : 'Derby'}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                  </td>
-                  <td
-                    className={`z-1 text-md xl:text-lg text-start border-2 border-black ${
-                      errors[`row${index}`] ? 'text-red-500' : 'text-black'
-                    }`}>
-                    <div className='h-8'>
-                      <input
-                        className='pl-1 w-full h-full bg-white'
-                        name='sire'
-                        value={dog.sire}
-                        onChange={(event) => handleInputChange(index, event)}
-                      />
-                    </div>
-                  </td>
-                  <td
-                    className={`z-1 text-md xl:text-lg text-start border-2 border-black ${
-                      errors[`row${index}`] ? 'text-red-500' : 'text-black'
-                    }`}>
-                    <div className='h-8'>
-                      <input
-                        className='pl-1 w-full h-full bg-white'
-                        name='dam'
-                        value={dog.dam}
-                        onChange={(event) => handleInputChange(index, event)}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <StyledTable columns={columns} data={data} />
           <div
             className='mx-auto flex items-center justify-center mt-1 hover:text-green-600 text-green-500/90 cursor-pointer'
             onClick={handleAddRow}>

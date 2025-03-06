@@ -76,7 +76,7 @@ function ScoreEntry() {
   return (
     <div className="grid text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative">
       <Box params='h-full bg-white pt-5'>
-        <div className='w-full flex items-center border-b-2 border-gray-300 pb-1 h-17.5'>
+        <div className='w-full flex items-center border-b-2 border-gray-300 pb-1 h-19.25'>
           <p className='text-4xl font-bold'>Enter Score</p>
         </div>
         <div className='w-full h-full flex flex-col justify-start pt-2'>
