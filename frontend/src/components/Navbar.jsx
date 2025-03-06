@@ -48,17 +48,7 @@ function Navbar() {
     {
       name: 'Scratch Sheet',
       icon: <GrDocumentMissing className='h-10' />,
-      caret: <RxCaretDown className='ml-auto text-gray-500 h-7 w-7' />,
-      dropdown: [
-        {
-          name: <p className='text-black font-medium'>Enter Scratch</p>,
-          path: '/scratch-sheet/enter',
-        },
-        {
-          name: <p className='text-black font-medium'>View Scratches</p>,
-          path: '/scratch-sheet/view',
-        },
-      ],
+      path: '/scratch-sheet/view',
     },
     {
       name: 'Reports',

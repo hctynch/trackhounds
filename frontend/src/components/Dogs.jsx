@@ -53,7 +53,7 @@ function Dogs() {
     <div className='grid text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative'>
       <Box params='bg-white pt-5 overflow-y-auto'>
         <div className='w-full flex items-center border-b-2 border-gray-300 pb-1'>
-          <p className='text-4xl font-bold'>All Dogs</p>
+          <p className='text-4xl font-bold'>Dogs</p>
           <div className='flex ml-auto items-center'>
             <div className='flex flex-col items-center'>
               <p className='font-semibold text-4xl'>{total}</p>
