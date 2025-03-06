@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { IoArrowBackCircleOutline } from "react-icons/io5";
 import { PiX } from "react-icons/pi";
 import DogService from "../services/DogService";
 import Box from "./Box";
@@ -48,6 +49,11 @@ function ViewScores() {
     <div className="grid text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative">
       <Box params="h-full bg-white pt-5 overflow-y-auto">
         <div className="w-full flex items-center border-b-2 border-gray-300 pb-1">
+          <a
+            className='mr-4 cursor-pointer'
+            href='/score-entry/enter'>
+            <IoArrowBackCircleOutline className='text-4xl text-gray-500' />
+          </a>
           <p className="text-4xl font-bold">Scores</p>
           <div className="flex ml-auto items-center h-16">
             <input

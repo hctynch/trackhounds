@@ -107,7 +107,7 @@ function Judges() {
     <div className='grid grid-cols-2 items-center grid-rows-2 text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative'>
       <Box params='col-span-1 row-span-2 h-full bg-white pt-5 overflow-y-auto mr-2'>
         <div className='w-full flex items-center border-b-2 border-gray-300 pb-1'>
-          <p className='text-4xl font-bold'>All Judges</p>
+          <p className='text-4xl font-bold'>Judges</p>
           <div className='flex ml-auto items-center'>
             <div className='flex flex-col items-center'>
               <p className='font-semibold text-4xl'>{total}</p>

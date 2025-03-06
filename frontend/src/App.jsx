@@ -29,7 +29,6 @@ function App() {
           <Route path='/judges/all' element={<Judges />} />
           <Route path='/score-entry/enter' element={<ScoreEntry />} />
           <Route path='/score-entry/view' element={<ViewScores />} />
-          <Route path='/scratch-sheet/enter' element={<ScratchSheet />} />
           <Route path='/scratch-sheet/view' element={<ScratchSheet />} />
           <Route path='/reports' element={<Reports />} />
         </Routes>
