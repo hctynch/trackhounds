@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { PiDotsThreeOutlineVertical, PiX } from 'react-icons/pi';
 import JudgeService from '../services/JudgeService';
 import Box from './Box';
+import StyledTable from './StyledTable';
 
 function Judges() {
   const [judges, setJudges] = useState([]);
@@ -20,7 +21,7 @@ function Judges() {
         return;
       }
       setJudges(data);
-      setFilteredJudges(judges);
+      setFilteredJudges(data);
     } getJudges();
 
     async function getTotalJudges() {
@@ -103,6 +104,21 @@ function Judges() {
     }
   }
 
+  const columns = ['#', 'Member PIN', 'Name', ''];
+  const data = filteredJudges.map((judge, index) => [
+    judge.number,
+    judge.memberPin,
+    judge.name,
+    <div className='flex items-center justify-evenly'>
+      <button className='text-sm mr-1 px-2 py-2 bg-slate-300 hover:bg-slate-400 rounded-full cursor-pointer' onClick={() => editJudge(judge)}>
+        <PiDotsThreeOutlineVertical />
+      </button>
+      <button className='text-sm ml-1 bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2' onClick={() => deleteJudge(judge.number)}>
+        <PiX className='text-center' />
+      </button>
+    </div>
+  ]);
+
   return (
     <div className='grid grid-cols-2 items-center grid-rows-2 text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative'>
       <Box params='col-span-1 row-span-2 h-full bg-white pt-5 overflow-y-auto mr-2'>
@@ -123,42 +139,8 @@ function Judges() {
             />
           </div>
         </div>
-        <Box params='overflow-y-auto w-full p-4 my-8 bg-slate-50 h-full'>
-          <table className='table-auto w-full border-collapse'>
-            <thead>
-              <tr className='border-b-2 border-gray-300'>
-                <th className='text-md font-semibold text-start'>#</th>
-                <th className='text-md font-semibold text-start'>Member PIN</th>
-                <th className='text-md font-semibold text-start'>Name</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredJudges.map((judge, index) => (
-                <tr className='border-y-2 border-gray-200' key={index}>
-                  <td className='text-sm text-start'>
-                    <div className='pr-3'>{judge.number}</div>
-                  </td>
-                  <td className='text-sm text-start'>
-                    <div className='pr-3'>{judge.memberPin}</div>
-                  </td>
-                  <td className='text-sm text-start'>
-                    <div className='pr-3'>{judge.name}</div>
-                  </td>
-                  <td className='pl-2 py-2'>
-                    <div className='flex items-center justify-evenly'>
-                      <button className='text-sm mr-1 px-2 py-2 bg-slate-300 hover:bg-slate-400 rounded-full cursor-pointer' onClick={() => editJudge(judge)}>
-                        <PiDotsThreeOutlineVertical />
-                      </button>
-                      <button className='text-sm ml-1 bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2' onClick={() => deleteJudge(judge.number)}>
-                        <PiX className='text-center' />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <Box params='overflow-y-auto w-full my-8 bg-slate-50 h-full'>
+          <StyledTable columns={columns} data={data} />
         </Box>
       </Box>
       <Box params='col-span-1 row-span-1 bg-white ml-2 mb-2 py-5'>
@@ -213,7 +195,6 @@ function Judges() {
                   onChange={(e) => setJudge({ ...judge, name: e.target.value })}
                 />
                 {addErrors.name && <p className='absolute -bottom-1 text-red-500 text-sm italic opacity-60'>{addErrors.name}</p>}
-
               </div>
             </div>
           </Box>
