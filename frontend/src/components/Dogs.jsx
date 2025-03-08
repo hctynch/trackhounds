@@ -59,7 +59,7 @@ function Dogs() {
     dog.sire,
     dog.dam,
     dog.points,
-    <div className='flex items-center justify-evenly'>
+    <div key={index} className='flex items-center justify-evenly'>
       <button className='text-sm mr-1 px-2 py-2 bg-slate-300 hover:bg-slate-400 rounded-full cursor-pointer' onClick={() => editDog(dog)}>
         <PiDotsThreeOutlineVertical />
       </button>

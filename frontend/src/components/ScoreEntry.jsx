@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DogService from "../services/DogService";
 import HuntService from "../services/HuntService";
@@ -14,19 +14,7 @@ function ScoreEntry() {
   const [crossTime, setCrossTime] = useState('');
   const [error, setError] = useState({});
   const navigate = useNavigate();
-  useEffect(() => {
-    const fetchStartTime = async () => {
-      const startTime = await DogService.getStartTime(selectedDay);
-      if (startTime instanceof Error) {
-        setError(startTime.response.data.fields)
-        setStartTime('');
-      } else {
-        setStartTime(startTime);
-      }
-    };
-    fetchStartTime();
-   }, [selectedDay]);
-   
+
   const handleDogChange = (index, value) => {
     const newDogs = [...dogs];
     newDogs[index] = value;
@@ -55,28 +43,16 @@ function ScoreEntry() {
     // Call the API to submit the score
     const data = await DogService.postCross(score);
     if (data) {
-      console.log(data)
       setError(data.fields);
     } else {
-      navigate('/score-entry/view');
-    }
-  }
-
-  const handleSelectDay = async (day) => {
-    setSelectedDay(day);
-    const startTime = await DogService.getStartTime(day);
-    if (startTime instanceof Error) {
-      setError(startTime.response.data.fields)
-      setStartTime('');
-    } else {
-      setStartTime(startTime);
+      navigate('/score-entry/all');
     }
   }
 
   return (
     <div className="grid text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative">
       <Box params='h-full bg-white pt-5'>
-        <div className='w-full flex items-center border-b-2 border-gray-300 pb-1 h-19.25'>
+        <div className='w-full flex items-center border-b-2 border-gray-300 pb-1 h-17.5'>
           <p className='text-4xl font-bold'>Enter Score</p>
         </div>
         <div className='w-full h-full flex flex-col justify-start pt-2'>
@@ -91,7 +67,7 @@ function ScoreEntry() {
                         type="radio"
                         value={day}
                         checked={selectedDay === day}
-                        onChange={() => handleSelectDay(day)}
+                        onChange={() => setSelectedDay(day)}
                         className="mr-2 cursor-pointer"
                       />
                       <span>{day}</span>
