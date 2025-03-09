@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import DogService from '../services/DogService';
 import HuntService from '../services/HuntService';
 import Box from './Box';
+import StyledTable from './StyledTable';
 
 function Home() {
   const [showOverlay, setShowOverlay] = useState(false);
@@ -38,9 +39,12 @@ function Home() {
     getHunt();
   }, []);
 
+  const columns = ['#', 'Name', 'Points']
+  const data = [[1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100]]
+
   return (
-    <div className='text-black grid grid-cols-2 ml-[276px] items-start py-2 mr-4 h-full relative'>
-      <Box params='col-span-2 pt-5 px-6 bg-white min-h-[calc(50vh-1rem)] max-h-[calc(50vh-0.5rem)] h-[calc(50vh-1rem)]'>
+    <div className='text-black grid grid-cols-2 grid-rows-2 ml-[276px] items-start py-2 mr-4 h-[calc(100%-1rem)] relative'>
+      <Box params='col-span-2 pt-5 px-6 bg-white h-full w-full row-span-1'>
         <div className='w-full flex items-center border-b-2 border-gray-300 pb-1'>
           <p className='text-4xl font-bold'>Hunt Overview</p>
           <div className='flex ml-auto items-center'>
@@ -57,7 +61,7 @@ function Home() {
           </div>
         </div>
         <div className='flex flex-wrap h-full justify-between w-full'>
-          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-1rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-2rem)] h-[calc(50%-2rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
               <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>
                 Title
@@ -67,7 +71,7 @@ function Home() {
               </p>
             </div>
           </Box>
-          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-1rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-2rem)] h-[calc(50%-2rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
               <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>
                 Date
@@ -77,7 +81,7 @@ function Home() {
               </p>
             </div>
           </Box>
-          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-1rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-2rem)] h-[calc(50%-2rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
               <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>
                 Stake
@@ -87,7 +91,7 @@ function Home() {
               </p>
             </div>
           </Box>
-          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-1rem)] h-[calc(50%-1rem)]'>
+          <Box params='relative container my-auto bg-slate-50 w-[calc(50%-2rem)] h-[calc(50%-2rem)]'>
             <div className='w-full h-full flex flex-col items-center'>
               <p className='h-10 text-start text-2xl font-medium pt-2 w-full border-b-2 border-gray-300'>
                 Interval
@@ -99,120 +103,20 @@ function Home() {
           </Box>
         </div>
       </Box>
-      <Box params='col-span-1 mt-2 mr-2 pt-5 px-6 bg-white max-h-[calc(50vh-0.5rem)] min-h-[calc(50vh-0.5rem)]'>
+      <Box params='col-span-1 mt-8 mr-4 pt-5 px-6 bg-white row-span-1 h-[calc(100%-1rem)]'>
         <div className='w-full flex border-b-2 border-gray-300 items-center pb-1'>
           <p className='text-3xl font-semibold'>Top Dogs</p>
         </div>
-        <Box params='overflow-y-auto w-full p-4 my-8 bg-slate-50 h-full'>
-          <table className='table-auto w-full h-full'>
-            <thead>
-              <tr className='border-b-2 border-gray-300'>
-                <th className='text-xl font-semibold text-start'>#</th>
-                <th className='text-xl font-semibold text-start'>Name</th>
-                <th className='text-xl font-semibold text-end'>Points</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-            </tbody>
-          </table>
+        <Box params='overflow-y-auto w-full my-4 bg-slate-50 h-full'>
+          <StyledTable columns={columns} data={data}/>
         </Box>
       </Box>
-      <Box params='col-span-1 mt-2 ml-2 pt-5 px-6 bg-white max-h-[calc(50vh-0.5rem)] min-h-[calc(50vh-0.5rem)]'>
+      <Box params='col-span-1 mt-8 ml-4 pt-5 px-6 bg-white row-span-1 h-[calc(100%-1rem)]'>
         <div className='w-full flex border-b-2 border-gray-300 items-center pb-1'>
           <p className='text-3xl font-semibold'>Daily 10</p>
         </div>
-        <Box params='overflow-y-auto w-full p-4 my-8 bg-slate-50 h-full'>
-          <table className='table-auto w-full h-full'>
-            <thead>
-              <tr className='border-b-2 border-gray-300'>
-                <th className='text-xl font-semibold text-start'>#</th>
-                <th className='text-xl font-semibold text-start'>Name</th>
-                <th className='text-xl font-semibold text-end'>Points</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-              <tr className='border-y-2 border-gray-200'>
-                <td className='text-xl text-start'>1</td>
-                <td className='text-xl text-start'>Rex</td>
-                <td className='text-xl text-end'>100</td>
-              </tr>
-            </tbody>
-          </table>
+        <Box params='overflow-y-auto w-full my-4 bg-slate-50 h-full'>
+          <StyledTable columns={columns} data={data}/>
         </Box>
       </Box>
 

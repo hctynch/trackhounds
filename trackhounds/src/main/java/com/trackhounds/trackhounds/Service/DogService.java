@@ -4,6 +4,7 @@ import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,13 +14,16 @@ import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DailyScore;
 import com.trackhounds.trackhounds.Entity.Days;
 import com.trackhounds.trackhounds.Entity.DogEntity;
+import com.trackhounds.trackhounds.Entity.JudgeEntity;
 import com.trackhounds.trackhounds.Entity.Score;
+import com.trackhounds.trackhounds.Entity.Scratch;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
 import com.trackhounds.trackhounds.Repository.DailyScoreRepository;
 import com.trackhounds.trackhounds.Repository.DaysRepository;
 import com.trackhounds.trackhounds.Repository.DogRepository;
 import com.trackhounds.trackhounds.Repository.JudgeRepository;
 import com.trackhounds.trackhounds.Repository.ScoreRepository;
+import com.trackhounds.trackhounds.Repository.ScratchRepository;
 
 import lombok.AllArgsConstructor;
 
@@ -61,9 +65,19 @@ public class DogService {
   private JudgeRepository judgeRepository;
 
   /**
+   * Scratch Repository
+   */
+  @Autowired
+  private ScratchRepository scratchRepository;
+
+  /**
    * Create a group of dogs
    * 
    * @param dogs List of dogs to create
+   * @throws TrackHoundsAPIException if dog number is not specified, dog with
+   *                                 matching number already exists, name is
+   *                                 empty,
+   *                                 stake is null.
    */
   public void createDogs(List<DogEntity> dogs) {
     Map<String, String> errs = new HashMap<>();
@@ -101,6 +115,9 @@ public class DogService {
    * Edit a dog
    * 
    * @param dog Edited Dog
+   * @throws TrackHoundsAPIException if dog does not exist, name is empty, stake
+   *                                 is null
+   *                                 or dog number is not specified
    */
   public void editDog(DogEntity dog) {
     DogEntity d = dogRepository.findById(dog.getNumber())
@@ -145,6 +162,12 @@ public class DogService {
     return dogs;
   }
 
+  /**
+   * Calculate the total points for a dog
+   * 
+   * @param dog Dog to calculate points for
+   * @return total points
+   */
   private int calculateTotalPoints(DogEntity dog) {
     int totalPoints = 0;
     List<DailyScore> scores = dog.getScores();
@@ -154,6 +177,13 @@ public class DogService {
     return totalPoints;
   }
 
+  /**
+   * Get a dog by number
+   * 
+   * @param number Number of dog
+   * @throws TrackHoundsAPIException if dog does not exist
+   * @return Dog with the specified number
+   */
   public DogEntity getDogByNumber(int number) {
     DogEntity dog = dogRepository.findById(number)
         .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog does not exist.",
@@ -177,6 +207,13 @@ public class DogService {
    * Create a score
    * 
    * @param score Score to create
+   * @throws TrackHoundsAPIException if judge does not exist, dog does not exist,
+   *                                 scores
+   *                                 and dog numbers do not match, scores are
+   *                                 negative,
+   *                                 start time is empty, cross time is empty,
+   *                                 cross time is before
+   *                                 start time.
    */
   public void createScore(ScoreDto score) {
     Map<String, String> errs = new HashMap<>();
@@ -252,6 +289,8 @@ public class DogService {
    * 
    * @param dogNumber Dog number
    * @param scoreId   Score ID
+   * @throws TrackHoundsAPIException if dog or score does not exist
+   * @throws TrackHoundsAPIException if score does not exist for dog
    */
   public void removeScore(int dogNumber, Long scoreId) {
     DogEntity dog = dogRepository.findById(dogNumber)
@@ -279,10 +318,55 @@ public class DogService {
    * Get the start time for a day
    * 
    * @param day Day number
+   * @throws TrackHoundsAPIException if day does not exist
    * @return Start time
    */
   public LocalTime getStartTime(int day) {
     return daysRepository.findById(day).orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST,
         "Day does not exist.", Map.of("day", "Day does not exist."))).getStartTime();
+  }
+
+  /**
+   * Scratch a dog
+   * 
+   * @param dogNumber Dog number
+   * @throws TrackHoundsAPIException if dog does not exist
+   */
+  public void scratchDog(Scratch scratch) {
+    Map<String, String> errs = new HashMap<>();
+    if (scratch.getReason() == null || scratch.getReason().isEmpty())
+      errs.put("reason", "Reason cannot be empty.");
+    if (scratch.getTime() == null)
+      errs.put("time", "Time cannot be empty.");
+    Optional<DogEntity> dogRetrieval = dogRepository.findById(scratch.getDogNumber());
+    if (dogRetrieval.isEmpty())
+      errs.put("dogNumber", "Dog does not exist.");
+    Optional<JudgeEntity> judgeRetrieval = judgeRepository.findById(scratch.getJudgeNumber());
+    if (judgeRetrieval.isEmpty())
+      errs.put("judgeNumber", "Judge does not exist.");
+    if (errs.size() > 0)
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields", errs);
+    DogEntity dog = dogRetrieval.get();
+    dog.setScratched(true);
+    scratchRepository.save(scratch);
+    dogRepository.save(dog);
+  }
+
+  /**
+   * Get all scratches
+   * 
+   * @return List of scratches
+   */
+  public List<Scratch> getScratches() {
+    return scratchRepository.findAll();
+  }
+
+  /**
+   * Delete a scratch
+   * 
+   * @param id ID of scratch
+   */
+  public void deleteScratch(Long id) {
+    scratchRepository.deleteById(id);
   }
 }

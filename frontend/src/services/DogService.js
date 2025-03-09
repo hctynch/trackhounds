@@ -86,6 +86,33 @@ class DogService {
       return error;
     }
   }
+
+  async getScratches() {
+    try {
+      const response = await this.api.get('/scratches');
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  async postScratch(scratch) {
+    try {
+      const response = await this.api.post('/scratches', scratch);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  async deleteScratch(id) {
+    try {
+      const response = await this.api.delete(`/scratches/${id}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
 }
 
 export default new DogService();
