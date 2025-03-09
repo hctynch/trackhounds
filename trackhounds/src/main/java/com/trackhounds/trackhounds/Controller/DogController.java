@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DogEntity;
+import com.trackhounds.trackhounds.Entity.Scratch;
 import com.trackhounds.trackhounds.Service.DogService;
 
 /**
@@ -123,5 +124,35 @@ public class DogController {
   @GetMapping("/day/{day}")
   public LocalTime getStartTime(@PathVariable("day") int day) {
     return dogService.getStartTime(day);
+  }
+
+  /**
+   * Get all scratches
+   * 
+   * @return List of scratches
+   */
+  @GetMapping("/scratches")
+  public List<Scratch> getScratches() {
+    return dogService.getScratches();
+  }
+
+  /**
+   * Create a scratch
+   * 
+   * @param scratch Scratch to create
+   */
+  @PostMapping("/scratches")
+  public void postScratch(@RequestBody Scratch scratch) {
+    dogService.scratchDog(scratch);
+  }
+
+  /**
+   * Delete a scratch by ID
+   * 
+   * @param id ID of scratch
+   */
+  @DeleteMapping("/scratches/{id}")
+  public void deleteScratch(@PathVariable("id") Long id) {
+    dogService.deleteScratch(id);
   }
 }

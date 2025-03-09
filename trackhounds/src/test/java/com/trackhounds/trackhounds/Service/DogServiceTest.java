@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.LocalTime;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,7 @@ import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DailyScore;
 import com.trackhounds.trackhounds.Entity.DogEntity;
 import com.trackhounds.trackhounds.Entity.JudgeEntity;
+import com.trackhounds.trackhounds.Entity.Scratch;
 import com.trackhounds.trackhounds.Enums.StakeType;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
 import com.trackhounds.trackhounds.Repository.DaysRepository;
@@ -372,5 +374,123 @@ public class DogServiceTest {
       assertEquals(1, dogService.getDogByNumber(1).getScores().get(0).getHighestScores().size());
       assertEquals(25, dogService.getDogByNumber(1).getPoints());
     });
+  }
+
+  /**
+   * Test scratching a dog
+   */
+  @Test
+  @Transactional
+  void testScratchDog() {
+    DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire", "Dam");
+    assertDoesNotThrow(() -> dogService.createDogs(List.of(dog1)));
+
+    Scratch scratch = new Scratch();
+    scratch.setDogNumber(1);
+    scratch.setJudgeNumber(1);
+    scratch.setTime(LocalTime.now());
+    scratch.setReason("Test reason");
+
+    assertAll("Scratch dog",
+        () -> assertDoesNotThrow(() -> dogService.scratchDog(scratch)),
+        () -> assertTrue(dogService.getDogByNumber(1).isScratched()));
+
+    // Test validation scenarios
+    Scratch invalidDogScratch = new Scratch();
+    invalidDogScratch.setDogNumber(999);
+    invalidDogScratch.setJudgeNumber(1);
+    invalidDogScratch.setTime(LocalTime.now());
+    invalidDogScratch.setReason("Test reason");
+
+    TrackHoundsAPIException exception = assertThrows(TrackHoundsAPIException.class,
+        () -> dogService.scratchDog(invalidDogScratch));
+    assertTrue(exception.getFields().containsKey("dogNumber"));
+
+    Scratch invalidJudgeScratch = new Scratch();
+    invalidJudgeScratch.setDogNumber(1);
+    invalidJudgeScratch.setJudgeNumber(999);
+    invalidJudgeScratch.setTime(LocalTime.now());
+    invalidJudgeScratch.setReason("Test reason");
+
+    exception = assertThrows(TrackHoundsAPIException.class,
+        () -> dogService.scratchDog(invalidJudgeScratch));
+    assertTrue(exception.getFields().containsKey("judgeNumber"));
+
+    Scratch missingReasonScratch = new Scratch();
+    missingReasonScratch.setDogNumber(1);
+    missingReasonScratch.setJudgeNumber(1);
+    missingReasonScratch.setTime(LocalTime.now());
+    missingReasonScratch.setReason("");
+
+    exception = assertThrows(TrackHoundsAPIException.class,
+        () -> dogService.scratchDog(missingReasonScratch));
+    assertTrue(exception.getFields().containsKey("reason"));
+
+    Scratch missingTimeScratch = new Scratch();
+    missingTimeScratch.setDogNumber(1);
+    missingTimeScratch.setJudgeNumber(1);
+    missingTimeScratch.setTime(null);
+    missingTimeScratch.setReason("Test reason");
+
+    exception = assertThrows(TrackHoundsAPIException.class,
+        () -> dogService.scratchDog(missingTimeScratch));
+    assertTrue(exception.getFields().containsKey("time"));
+  }
+
+  /**
+   * Test retrieving all scratches
+   */
+  @Test
+  @Transactional
+  void testGetScratches() {
+    DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire", "Dam");
+    DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire", "Dam");
+    dogService.createDogs(List.of(dog1, dog2));
+
+    Scratch scratch1 = new Scratch();
+    scratch1.setDogNumber(1);
+    scratch1.setJudgeNumber(1);
+    scratch1.setTime(LocalTime.now());
+    scratch1.setReason("Reason 1");
+
+    Scratch scratch2 = new Scratch();
+    scratch2.setDogNumber(2);
+    scratch2.setJudgeNumber(1);
+    scratch2.setTime(LocalTime.now());
+    scratch2.setReason("Reason 2");
+
+    assertAll("Create scratches",
+        () -> assertDoesNotThrow(() -> dogService.scratchDog(scratch1)),
+        () -> assertDoesNotThrow(() -> dogService.scratchDog(scratch2)));
+
+    List<Scratch> scratches = dogService.getScratches();
+    assertEquals(2, scratches.size());
+  }
+
+  /**
+   * Test deleting a scratch
+   */
+  @Test
+  @Transactional
+  void testDeleteScratch() {
+    DogEntity dog = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire", "Dam");
+    dogService.createDogs(List.of(dog));
+
+    Scratch scratch = new Scratch();
+    scratch.setDogNumber(1);
+    scratch.setJudgeNumber(1);
+    scratch.setTime(LocalTime.now());
+    scratch.setReason("Test reason");
+
+    assertDoesNotThrow(() -> dogService.scratchDog(scratch));
+
+    List<Scratch> scratches = dogService.getScratches();
+    assertEquals(1, scratches.size());
+
+    Long scratchId = scratches.get(0).getId();
+
+    assertAll("Delete scratch",
+        () -> assertDoesNotThrow(() -> dogService.deleteScratch(scratchId)),
+        () -> assertEquals(0, dogService.getScratches().size()));
   }
 }

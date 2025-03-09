@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalTime;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -28,10 +29,12 @@ import com.trackhounds.trackhounds.GsonUtil;
 import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DogEntity;
 import com.trackhounds.trackhounds.Entity.JudgeEntity;
+import com.trackhounds.trackhounds.Entity.Scratch;
 import com.trackhounds.trackhounds.Enums.StakeType;
 import com.trackhounds.trackhounds.Repository.DogRepository;
 import com.trackhounds.trackhounds.Repository.JudgeRepository;
 import com.trackhounds.trackhounds.Repository.ScoreRepository;
+import com.trackhounds.trackhounds.Repository.ScratchRepository;
 import com.trackhounds.trackhounds.Service.DogService;
 
 import jakarta.transaction.Transactional;
@@ -61,6 +64,9 @@ public class DogControllerTest {
 
   @Autowired
   private ScoreRepository scoreRepository;
+
+  @Autowired
+  private ScratchRepository scratchRepository;
 
   private final Gson gson = GsonUtil.GSON;
 
@@ -219,5 +225,109 @@ public class DogControllerTest {
     assertTrue(updatedDog.getScores().get(0).getTimeBucketScores().isEmpty());
     assertTrue(updatedDog.getScores().get(0).getHighestScores().isEmpty());
     assertEquals(0, updatedDog.getPoints());
+  }
+
+  /**
+   * Tests the creation of a scratch using the POST /dogs/scratches endpoint.
+   */
+  @Test
+  @Transactional
+  void testPostScratch() throws Exception {
+    // First create a dog to scratch
+    DogEntity dog = new DogEntity(1, "TestDog", StakeType.ALL_AGE, "", "", "");
+    dogRepository.save(dog);
+
+    // Create the scratch request
+    Scratch scratch = new Scratch();
+    scratch.setDogNumber(1);
+    scratch.setJudgeNumber(1);
+    scratch.setTime(LocalTime.of(9, 30));
+    scratch.setReason("Test reason");
+
+    mvc.perform(post("/dogs/scratches")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(gson.toJson(scratch)))
+        .andExpect(status().isOk());
+
+    // Verify dog is marked as scratched
+    DogEntity scratchedDog = dogRepository.findById(1).orElse(null);
+    assertNotNull(scratchedDog);
+    assertTrue(scratchedDog.isScratched());
+
+    // Verify scratch is saved in repository
+    List<Scratch> scratches = scratchRepository.findAll();
+    assertEquals(1, scratches.size());
+    assertEquals("Test reason", scratches.get(0).getReason());
+    assertEquals(1, scratches.get(0).getDogNumber());
+  }
+
+  /**
+   * Tests getting all scratches using the GET /dogs/scratches endpoint.
+   */
+  @Test
+  @Transactional
+  void testGetScratches() throws Exception {
+    // Create dogs
+    DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "", "", "");
+    DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "", "", "");
+    dogRepository.saveAll(List.of(dog1, dog2));
+
+    // Create scratches
+    Scratch scratch1 = new Scratch();
+    scratch1.setDogNumber(1);
+    scratch1.setJudgeNumber(1);
+    scratch1.setTime(LocalTime.of(9, 30));
+    scratch1.setReason("Reason 1");
+
+    Scratch scratch2 = new Scratch();
+    scratch2.setDogNumber(2);
+    scratch2.setJudgeNumber(1);
+    scratch2.setTime(LocalTime.of(10, 15));
+    scratch2.setReason("Reason 2");
+
+    // Save scratches and mark dogs as scratched
+    scratchRepository.save(scratch1);
+    scratchRepository.save(scratch2);
+    dog1.setScratched(true);
+    dog2.setScratched(true);
+    dogRepository.saveAll(List.of(dog1, dog2));
+
+    mvc.perform(get("/dogs/scratches")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].reason").value("Reason 1"))
+        .andExpect(jsonPath("$[1].reason").value("Reason 2"));
+  }
+
+  /**
+   * Tests deleting a scratch using the DELETE /dogs/scratches/{id} endpoint.
+   */
+  @Test
+  @Transactional
+  void testDeleteScratch() throws Exception {
+    // Create dog and scratch
+    DogEntity dog = new DogEntity(1, "TestDog", StakeType.ALL_AGE, "", "", "");
+    dogRepository.save(dog);
+
+    Scratch scratch = new Scratch();
+    scratch.setDogNumber(1);
+    scratch.setJudgeNumber(1);
+    scratch.setTime(LocalTime.of(9, 30));
+    scratch.setReason("Test reason");
+
+    Scratch savedScratch = scratchRepository.save(scratch);
+    dog.setScratched(true);
+    dogRepository.save(dog);
+
+    // Verify scratch exists
+    assertEquals(1, scratchRepository.count());
+
+    mvc.perform(delete("/dogs/scratches/" + savedScratch.getId())
+        .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk());
+
+    // Verify scratch was deleted
+    assertEquals(0, scratchRepository.count());
   }
 }
