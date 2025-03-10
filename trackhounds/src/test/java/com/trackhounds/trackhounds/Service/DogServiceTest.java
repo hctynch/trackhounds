@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -492,5 +493,155 @@ public class DogServiceTest {
     assertAll("Delete scratch",
         () -> assertDoesNotThrow(() -> dogService.deleteScratch(scratchId)),
         () -> assertEquals(0, dogService.getScratches().size()));
+  }
+
+  /**
+   * Test methods for dog scores by day and top-scoring dogs
+   */
+  @Test
+  @Transactional
+  void testDogScoresMethods() {
+    // Create test dogs
+    DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
+    DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
+    DogEntity dog3 = new DogEntity(3, "Dog3", StakeType.DERBY, "Owner3", "Sire3", "Dam3");
+
+    dogService.createDogs(List.of(dog1, dog2, dog3));
+
+    // Add scores for day 1
+    ScoreDto score1Day1 = new ScoreDto(
+        1, "05:30:00", 1, "05:45:00",
+        new int[] { 1, 2, 3 },
+        new int[] { 40, 30, 20 },
+        10);
+
+    // Add scores for day 2
+    ScoreDto score1Day2 = new ScoreDto(
+        2, "06:30:00", 1, "06:45:00",
+        new int[] { 1, 2, 3 },
+        new int[] { 25, 35, 15 },
+        10);
+
+    // Add more scores for day 1 (different time bucket)
+    ScoreDto score2Day1 = new ScoreDto(
+        1, "05:30:00", 1, "06:00:00",
+        new int[] { 1, 2, 3 },
+        new int[] { 30, 15, 45 },
+        10);
+
+    // Create the scores
+    dogService.createScore(score1Day1);
+    dogService.createScore(score1Day2);
+    dogService.createScore(score2Day1);
+
+    // Test getDogScoresByDay
+    List<Map<String, Object>> day1Scores = dogService.getDogScoresByDay(1);
+    List<Map<String, Object>> day2Scores = dogService.getDogScoresByDay(2);
+
+    assertAll("getDogScoresByDay",
+        () -> assertEquals(3, day1Scores.size()),
+        () -> assertEquals(3, day2Scores.size()),
+        () -> assertTrue(day1Scores.stream()
+            .anyMatch(score -> score.get("dogNumber").equals(1) && score.get("totalPoints").equals(70))),
+        () -> assertTrue(day1Scores.stream()
+            .anyMatch(score -> score.get("dogNumber").equals(2) && score.get("totalPoints").equals(45))),
+        () -> assertTrue(day1Scores.stream()
+            .anyMatch(score -> score.get("dogNumber").equals(3) && score.get("totalPoints").equals(65))),
+        () -> assertTrue(day2Scores.stream()
+            .anyMatch(score -> score.get("dogNumber").equals(1) && score.get("totalPoints").equals(25))),
+        () -> assertTrue(day2Scores.stream()
+            .anyMatch(score -> score.get("dogNumber").equals(2) && score.get("totalPoints").equals(35))),
+        () -> assertTrue(day2Scores.stream()
+            .anyMatch(score -> score.get("dogNumber").equals(3) && score.get("totalPoints").equals(15))));
+
+    // Test getTopScoringDogsByDay
+    List<Map<String, Object>> top2DogsDay1 = dogService.getTopScoringDogsByDay(1, 2);
+
+    assertAll("getTopScoringDogsByDay",
+        () -> assertEquals(2, top2DogsDay1.size()),
+        () -> assertEquals(1, top2DogsDay1.get(0).get("dogNumber")), // Dog1 should be first with 70 points
+        () -> assertEquals(3, top2DogsDay1.get(1).get("dogNumber")) // Dog3 should be second with 45 points
+    );
+
+    // Test getTop10ScoringDogsByDay
+    List<Map<String, Object>> top10DogsDay1 = dogService.getTop10ScoringDogsByDay(1);
+
+    assertAll("getTop10ScoringDogsByDay",
+        () -> assertEquals(3, top10DogsDay1.size()), // Only 3 dogs total
+        () -> assertEquals(1, top10DogsDay1.get(0).get("dogNumber")), // Dog1 first
+        () -> assertEquals(3, top10DogsDay1.get(1).get("dogNumber")), // Dog3 second
+        () -> assertEquals(2, top10DogsDay1.get(2).get("dogNumber")) // Dog2 third
+    );
+
+    // Test getTop10ScoringDogsOverall
+    List<Map<String, Object>> top10DogsOverall = dogService.getTop10ScoringDogsOverall();
+
+    assertAll("getTop10ScoringDogsOverall",
+        () -> assertEquals(3, top10DogsOverall.size()), // Only 3 dogs total
+        () -> assertEquals(1, top10DogsOverall.get(0).get("dogNumber")), // Dog1 should be first with 70+25=95 points
+        () -> assertEquals(2, top10DogsOverall.get(1).get("dogNumber")), // Dog3 should be second with 45+15=60 points
+        () -> assertEquals(3, top10DogsOverall.get(2).get("dogNumber")) // Dog2 should be third with 30+35=65 points
+    );
+
+    // Test with a day that has no scores
+    List<Map<String, Object>> day3Scores = dogService.getDogScoresByDay(3);
+
+    assertAll("Empty day scores",
+        () -> assertEquals(0, day3Scores.size()));
+
+    // Test with limit higher than available dogs
+    List<Map<String, Object>> allDogsWithHighLimit = dogService.getTopScoringDogsByDay(1, 10);
+
+    assertAll("High limit test",
+        () -> assertEquals(3, allDogsWithHighLimit.size()) // Still only 3 dogs
+    );
+  }
+
+  /**
+   * Test edge cases for score calculation methods
+   */
+  @Test
+  @Transactional
+  void testDogScoresMethodsEdgeCases() {
+    // Create a dog with no scores
+    DogEntity dogWithNoScores = new DogEntity(10, "NoScores", StakeType.ALL_AGE, "Owner", "Sire", "Dam");
+    dogService.createDogs(List.of(dogWithNoScores));
+
+    // Test getDogScoresByDay with a dog that has no scores
+    List<Map<String, Object>> noScores = dogService.getDogScoresByDay(1);
+
+    assertAll("No scores test",
+        () -> assertEquals(0, noScores.size()));
+
+    // Test getTop10ScoringDogsOverall with no scored dogs
+    List<Map<String, Object>> noTopDogs = dogService.getTop10ScoringDogsOverall();
+
+    assertAll("No top dogs test",
+        () -> assertEquals(1, noTopDogs.size()),
+        () -> assertEquals(10, noTopDogs.get(0).get("dogNumber")),
+        () -> assertEquals(0, noTopDogs.get(0).get("totalPoints")));
+
+    // Create multiple dogs with same score to test sorting stability
+    DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
+    DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
+
+    dogService.createDogs(List.of(dog1, dog2));
+
+    // Give them the exact same scores
+    ScoreDto sameScore = new ScoreDto(
+        1, "05:30:00", 1, "05:45:00",
+        new int[] { 1, 2 },
+        new int[] { 50, 50 },
+        10);
+
+    dogService.createScore(sameScore);
+
+    // Check that they are sorted correctly with same scores
+    List<Map<String, Object>> sameScoreDogs = dogService.getTop10ScoringDogsByDay(1);
+
+    assertAll("Same score test",
+        () -> assertEquals(2, sameScoreDogs.size()),
+        () -> assertEquals(50, sameScoreDogs.get(0).get("totalPoints")),
+        () -> assertEquals(50, sameScoreDogs.get(1).get("totalPoints")));
   }
 }

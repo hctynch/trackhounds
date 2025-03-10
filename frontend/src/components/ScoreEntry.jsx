@@ -45,7 +45,7 @@ function ScoreEntry() {
     if (data) {
       setError(data.fields);
     } else {
-      navigate('/score-entry/all');
+      navigate('/score-entry/view');
     }
   }
 

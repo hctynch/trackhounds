@@ -113,6 +113,42 @@ class DogService {
       return error.response.data;
     }
   }
+
+  async getDogScoresByDay(day) {
+    try {
+      const response = await this.api.get(`/scores/day/${day}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  async getTopScoringDogsByDay(day, limit) {
+    try {
+      const response = await this.api.get(`/scores/day/${day}/top/${limit}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  async getTop10ScoringDogsByDay(day) {
+    try {
+      const response = await this.api.get(`/scores/day/${day}/top10`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  async getTop10ScoringDogsOverall() {
+    try {
+      const response = await this.api.get(`/scores/top10/overall`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
 }
 
 export default new DogService();

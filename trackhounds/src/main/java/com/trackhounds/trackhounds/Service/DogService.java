@@ -1,10 +1,12 @@
 package com.trackhounds.trackhounds.Service;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -368,5 +370,107 @@ public class DogService {
    */
   public void deleteScratch(Long id) {
     scratchRepository.deleteById(id);
+  }
+
+  /**
+   * Get total scores for all dogs on a specific day
+   * 
+   * @param day The day number (1-4)
+   * @return List of dogs with their total scores for the specified day
+   */
+  public List<Map<String, Object>> getDogScoresByDay(int day) {
+    List<DogEntity> allDogs = dogRepository.findAll();
+    List<Map<String, Object>> dogScores = new ArrayList<>();
+
+    for (DogEntity dog : allDogs) {
+      Optional<DailyScore> dailyScoreOpt = dog.getScores().stream()
+          .filter(score -> score.getDay().getDay() == day)
+          .findFirst();
+
+      if (dailyScoreOpt.isPresent()) {
+        DailyScore dailyScore = dailyScoreOpt.get();
+        int totalPoints = calculateDailyPoints(dailyScore);
+
+        Map<String, Object> dogScore = new HashMap<>();
+        dogScore.put("dogNumber", dog.getNumber());
+        dogScore.put("dogName", dog.getName());
+        dogScore.put("owner", dog.getOwner());
+        dogScore.put("stake", dog.getStake());
+        dogScore.put("totalPoints", totalPoints);
+
+        dogScores.add(dogScore);
+      }
+    }
+
+    return dogScores;
+  }
+
+  /**
+   * Calculate total points for a dog's daily score
+   * 
+   * @param dailyScore The daily score
+   * @return Total points from highest scores
+   */
+  private int calculateDailyPoints(DailyScore dailyScore) {
+    return dailyScore.getHighestScores().stream()
+        .mapToInt(highestScore -> highestScore.getScore().getPoints())
+        .sum();
+  }
+
+  /**
+   * Get the top 10 highest scoring dogs for a specific day
+   * 
+   * @param day The day number (1-4)
+   * @return List of top 10 dogs with their scores
+   */
+  public List<Map<String, Object>> getTopScoringDogsByDay(int day, int limit) {
+    List<Map<String, Object>> dogScores = getDogScoresByDay(day);
+
+    return dogScores.stream()
+        .sorted((d1, d2) -> Integer.compare(
+            (Integer) d2.get("totalPoints"),
+            (Integer) d1.get("totalPoints")))
+        .limit(limit)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Get the top 10 highest scoring dogs for a specific day
+   * 
+   * @param day The day number (1-4)
+   * @return List of top 10 dogs with their scores
+   */
+  public List<Map<String, Object>> getTop10ScoringDogsByDay(int day) {
+    return getTopScoringDogsByDay(day, 10);
+  }
+
+  /**
+   * Get the top 10 highest scoring dogs overall (across all days)
+   * 
+   * @return List of top 10 dogs with their total scores
+   */
+  public List<Map<String, Object>> getTop10ScoringDogsOverall() {
+    List<DogEntity> allDogs = dogRepository.findAll();
+    List<Map<String, Object>> dogScores = new ArrayList<>();
+
+    for (DogEntity dog : allDogs) {
+      int totalPoints = dog.getPoints(); // Using the existing points field
+
+      Map<String, Object> dogScore = new HashMap<>();
+      dogScore.put("dogNumber", dog.getNumber());
+      dogScore.put("dogName", dog.getName());
+      dogScore.put("owner", dog.getOwner());
+      dogScore.put("stake", dog.getStake());
+      dogScore.put("totalPoints", totalPoints);
+
+      dogScores.add(dogScore);
+    }
+
+    return dogScores.stream()
+        .sorted((d1, d2) -> Integer.compare(
+            (Integer) d2.get("totalPoints"),
+            (Integer) d1.get("totalPoints")))
+        .limit(10)
+        .collect(Collectors.toList());
   }
 }
