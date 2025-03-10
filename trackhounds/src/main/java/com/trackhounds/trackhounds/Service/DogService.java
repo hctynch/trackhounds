@@ -203,6 +203,7 @@ public class DogService {
     dogRepository.deleteAll();
     daysRepository.deleteAll();
     scoreRepository.deleteAll();
+    scratchRepository.deleteAll();
   }
 
   /**
