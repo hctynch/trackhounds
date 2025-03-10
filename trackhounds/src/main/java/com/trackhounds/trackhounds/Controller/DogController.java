@@ -2,6 +2,7 @@ package com.trackhounds.trackhounds.Controller;
 
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -154,5 +155,51 @@ public class DogController {
   @DeleteMapping("/scratches/{id}")
   public void deleteScratch(@PathVariable("id") Long id) {
     dogService.deleteScratch(id);
+  }
+
+  /**
+   * Get dog scores by day
+   * 
+   * @param day The day number (1-4)
+   * @return List of dogs with their scores for the specified day
+   */
+  @GetMapping("/scores/day/{day}")
+  public List<Map<String, Object>> getDogScoresByDay(@PathVariable("day") int day) {
+    return dogService.getDogScoresByDay(day);
+  }
+
+  /**
+   * Get the top scoring dogs for a specific day with a limit
+   * 
+   * @param day   The day number (1-4)
+   * @param limit The maximum number of dogs to return
+   * @return List of top scoring dogs for the specified day
+   */
+  @GetMapping("/scores/day/{day}/top/{limit}")
+  public List<Map<String, Object>> getTopScoringDogsByDay(
+      @PathVariable("day") int day,
+      @PathVariable("limit") int limit) {
+    return dogService.getTopScoringDogsByDay(day, limit);
+  }
+
+  /**
+   * Get the top 10 highest scoring dogs for a specific day
+   * 
+   * @param day The day number (1-4)
+   * @return List of top 10 dogs with their scores for the specified day
+   */
+  @GetMapping("/scores/day/{day}/top10")
+  public List<Map<String, Object>> getTop10ScoringDogsByDay(@PathVariable("day") int day) {
+    return dogService.getTop10ScoringDogsByDay(day);
+  }
+
+  /**
+   * Get the top 10 highest scoring dogs overall (across all days)
+   * 
+   * @return List of top 10 dogs with their total scores
+   */
+  @GetMapping("/scores/top10/overall")
+  public List<Map<String, Object>> getTop10ScoringDogsOverall() {
+    return dogService.getTop10ScoringDogsOverall();
   }
 }

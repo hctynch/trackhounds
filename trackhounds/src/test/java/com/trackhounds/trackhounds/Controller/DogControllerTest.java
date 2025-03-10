@@ -330,4 +330,199 @@ public class DogControllerTest {
     // Verify scratch was deleted
     assertEquals(0, scratchRepository.count());
   }
+
+  /**
+   * Sets up test data for dog scores tests.
+   * Creates dogs and adds scores for different days.
+   */
+  private void setupTestScores() throws Exception {
+    // Create test dogs
+    dogRepository.saveAll(List.of(
+        new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1"),
+        new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2"),
+        new DogEntity(3, "Dog3", StakeType.DERBY, "Owner3", "Sire3", "Dam3")));
+
+    // Add scores for day 1
+    ScoreDto scoreDay1 = new ScoreDto(
+        1, "05:30:00", 1, "05:45:00",
+        new int[] { 1, 2, 3 },
+        new int[] { 40, 30, 20 },
+        10);
+
+    // Add scores for day 2
+    ScoreDto scoreDay2 = new ScoreDto(
+        2, "06:30:00", 1, "06:45:00",
+        new int[] { 1, 2, 3 },
+        new int[] { 25, 35, 15 },
+        10);
+
+    // Create the scores
+    mvc.perform(post("/dogs/scores")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(gson.toJson(scoreDay1)))
+        .andExpect(status().isOk());
+
+    mvc.perform(post("/dogs/scores")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(gson.toJson(scoreDay2)))
+        .andExpect(status().isOk());
+  }
+
+  /**
+   * Tests getting dog scores by day using the GET /dogs/scores/day/{day}
+   * endpoint.
+   */
+  @Test
+  @Transactional
+  void testGetDogScoresByDay() throws Exception {
+    setupTestScores();
+
+    // Test day 1 scores
+    mvc.perform(get("/dogs/scores/day/1")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(3))
+        .andExpect(jsonPath("$[0].dogNumber").value(1))
+        .andExpect(jsonPath("$[0].dogName").value("Dog1"))
+        .andExpect(jsonPath("$[0].totalPoints").exists());
+
+    // Test day with no scores
+    mvc.perform(get("/dogs/scores/day/3")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+  }
+
+  /**
+   * Tests getting top scoring dogs for a specific day with a limit using the
+   * GET /dogs/scores/day/{day}/top/{limit} endpoint.
+   */
+  @Test
+  @Transactional
+  void testGetTopScoringDogsByDay() throws Exception {
+    setupTestScores();
+
+    // Test getting top 2 dogs for day 1
+    mvc.perform(get("/dogs/scores/day/1/top/2")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].dogNumber").value(1)) // Dog1 should be first (40 points)
+        .andExpect(jsonPath("$[1].dogNumber").value(2)); // Dog2 should be second (30 points)
+
+    // Test getting top 2 dogs for day 2
+    mvc.perform(get("/dogs/scores/day/2/top/2")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].dogNumber").value(2)) // Dog2 should be first (35 points)
+        .andExpect(jsonPath("$[1].dogNumber").value(1)); // Dog1 should be second (25 points)
+
+    // Test day with no scores
+    mvc.perform(get("/dogs/scores/day/3/top/2")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+
+    // Test with limit higher than available dogs
+    mvc.perform(get("/dogs/scores/day/1/top/10")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(3)); // Should return all 3 dogs
+  }
+
+  /**
+   * Tests getting top 10 scoring dogs for a specific day using the
+   * GET /dogs/scores/day/{day}/top10 endpoint.
+   */
+  @Test
+  @Transactional
+  void testGetTop10ScoringDogsByDay() throws Exception {
+    setupTestScores();
+
+    // Test getting top 10 dogs for day 1
+    mvc.perform(get("/dogs/scores/day/1/top10")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(3)) // Should return all 3 dogs
+        .andExpect(jsonPath("$[0].dogNumber").value(1)) // Dog1 should be first (40 points)
+        .andExpect(jsonPath("$[1].dogNumber").value(2)) // Dog2 should be second (30 points)
+        .andExpect(jsonPath("$[2].dogNumber").value(3)); // Dog3 should be third (20 points)
+
+    // Test day with no scores
+    mvc.perform(get("/dogs/scores/day/3/top10")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+  }
+
+  /**
+   * Tests getting top 10 scoring dogs overall using the
+   * GET /dogs/scores/top10/overall endpoint.
+   */
+  @Test
+  @Transactional
+  void testGetTop10ScoringDogsOverall() throws Exception {
+    setupTestScores();
+
+    // Verify dog points from both days are combined
+    DogEntity dog1 = dogRepository.findById(1).get();
+    DogEntity dog2 = dogRepository.findById(2).get();
+    DogEntity dog3 = dogRepository.findById(3).get();
+
+    assertEquals(65, dog1.getPoints()); // 40 + 25 = 65
+    assertEquals(65, dog2.getPoints()); // 30 + 35 = 65
+    assertEquals(35, dog3.getPoints()); // 20 + 15 = 35
+
+    // Test getting top 10 dogs overall
+    mvc.perform(get("/dogs/scores/top10/overall")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(3)) // Should return all 3 dogs
+        // Dogs 1 and 2 have the same total (65), so either could be first/second
+        // Only check Dog3 is last since it has lowest score
+        .andExpect(jsonPath("$[2].dogNumber").value(3)) // Dog3 should be third (35 points)
+        .andExpect(jsonPath("$[2].totalPoints").value(35));
+  }
+
+  /**
+   * Tests edge cases for score endpoints.
+   */
+  @Test
+  @Transactional
+  void testScoreEndpointsEdgeCases() throws Exception {
+    // Test with no dogs in database
+    mvc.perform(get("/dogs/scores/day/1")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+
+    mvc.perform(get("/dogs/scores/day/1/top/10")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+
+    mvc.perform(get("/dogs/scores/day/1/top10")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+
+    mvc.perform(get("/dogs/scores/top10/overall")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+
+    // Create dogs with no scores
+    dogRepository.saveAll(List.of(
+        new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1"),
+        new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2")));
+
+    // Test overall scores with dogs that have no scores
+    mvc.perform(get("/dogs/scores/top10/overall")
+        .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].totalPoints").value(0))
+        .andExpect(jsonPath("$[1].totalPoints").value(0));
+  }
 }

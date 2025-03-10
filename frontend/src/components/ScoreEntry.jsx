@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react"; // Added useEffect
 import { useNavigate } from "react-router-dom";
 import DogService from "../services/DogService";
 import HuntService from "../services/HuntService";
@@ -14,6 +14,20 @@ function ScoreEntry() {
   const [crossTime, setCrossTime] = useState('');
   const [error, setError] = useState({});
   const navigate = useNavigate();
+  
+  // Added useEffect to fetch start time when day changes
+  useEffect(() => {
+    const fetchStartTime = async () => {
+      const startTime = await DogService.getStartTime(selectedDay);
+      if (startTime instanceof Error) {
+        setError(prev => ({...prev, startTime: startTime.response?.data?.fields?.startTime}));
+        setStartTime('');
+      } else {
+        setStartTime(startTime);
+      }
+    };
+    fetchStartTime();
+  }, [selectedDay]);
 
   const handleDogChange = (index, value) => {
     const newDogs = [...dogs];
@@ -45,9 +59,14 @@ function ScoreEntry() {
     if (data) {
       setError(data.fields);
     } else {
-      navigate('/score-entry/all');
+      navigate('/score-entry/view');
     }
   }
+  
+  // Added handleSelectDay function
+  const handleSelectDay = (day) => {
+    setSelectedDay(day);
+  };
 
   return (
     <div className="grid text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative">
@@ -67,7 +86,7 @@ function ScoreEntry() {
                         type="radio"
                         value={day}
                         checked={selectedDay === day}
-                        onChange={() => setSelectedDay(day)}
+                        onChange={() => handleSelectDay(day)} // Updated to use handleSelectDay
                         className="mr-2 cursor-pointer"
                       />
                       <span>{day}</span>
