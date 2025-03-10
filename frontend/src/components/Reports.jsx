@@ -7,7 +7,7 @@ function Reports() {
 
   const reports = [
     {
-      type: 'Dog Reports',
+      type: 'Daily Reports',
       items: [
         {
           title: 'Dog Scratches Report',
@@ -22,7 +22,7 @@ function Reports() {
       ],
     },
     {
-      type: 'General Reports',
+      type: 'Total Reports',
       items: [
         {
           title: 'Another Report',
@@ -56,21 +56,57 @@ function Reports() {
             ['Data 4', 'Data 5', 'Data 6'],
           ],
         },
-        // Add more general reports as needed
       ],
     },
-    // Add more report types as needed
+    {
+      type: 'Dog Specific Reports',
+      items: [
+        {
+          title: 'Another Report',
+          columns: ['Column 1', 'Column 2', 'Column 3'],
+          data: [
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 4', 'Data 5', 'Data 6'],
+            ['Data 1', 'Data 2', 'Data 3'],
+            ['Data 4', 'Data 5', 'Data 6'],
+          ],
+        },
+      ],
+    },
   ];
 
   return (
     <div className="reports-container ml-[276px] h-full text-black grid mr-4">
-      <Box params="h-full bg-white my-2 max-h-[calc(100%-1rem)] min-h-[calc(100%-1rem)] pt-5">
+      <Box params="h-full grid grid-rows-15 bg-white my-2 max-h-[calc(100%-1rem)] min-h-[calc(100%-1rem)] pt-5">
         <div className='w-full flex items-center border-b-2 border-gray-300 pb-1 h-17.25'>
           <p className="text-4xl font-bold mb-3">Reports</p>
         </div>
+        <Box params='bg-slate-50 w-full row-span-14 h-[calc(100%-1rem)]'>
         {reports.map((reportGroup, groupIndex) => (
           <div key={groupIndex} className="grid grid-cols-1 w-full my-6">
-            <h2 className="text-2xl font-semibold mb-2">{reportGroup.type}</h2>
+            <p className="text-3xl font-semibold pb-1 mb-4 text-start border-b-2 border-gray-300">{reportGroup.type}</p>
             <div className="report-buttons grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {reportGroup.items.map((report, index) => (
                 <button
@@ -91,6 +127,7 @@ function Reports() {
             data={selectedReport.data}
           />
         )}
+        </Box>
       </Box>
     </div>
   );
