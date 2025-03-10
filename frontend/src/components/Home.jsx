@@ -15,6 +15,12 @@ function Home() {
     stake: '',
     huntInterval: 0,
   });
+  // New state variables for the dog scores data
+  const [topDogsOverall, setTopDogsOverall] = useState([]);
+  const [topDogsDaily, setTopDogsDaily] = useState([]);
+  const [selectedDay, setSelectedDay] = useState(1); // Default to day 1
+  const [availableDays, setAvailableDays] = useState([1, 2, 3, 4]); // Default available days
+
   const handleOverlay = () => {
     setShowOverlay(!showOverlay);
   };
@@ -29,6 +35,11 @@ function Home() {
         //
       } else {
         setHunt(data);
+        // Set available days based on hunt duration (if available)
+        if (data.huntDays) {
+          const days = Array.from({length: data.huntDays}, (_, i) => i + 1);
+          setAvailableDays(days);
+        }
       }
       if (total instanceof Error) {
         setTotal(0)
@@ -38,9 +49,46 @@ function Home() {
     }
     getHunt();
   }, []);
-
-  const columns = ['#', 'Name', 'Points']
-  const data = [[1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100], [1, 'Rex', 100]]
+  
+  // Fetch top dogs overall
+  useEffect(() => {
+    async function fetchTopDogsOverall() {
+      const data = await DogService.getTop10ScoringDogsOverall();
+      if (!(data instanceof Error)) {
+        setTopDogsOverall(data);
+      }
+    }
+    fetchTopDogsOverall();
+  }, []);
+  
+  // Fetch top dogs for selected day
+  useEffect(() => {
+    async function fetchTopDogsDaily() {
+      const data = await DogService.getTop10ScoringDogsByDay(selectedDay);
+      if (!(data instanceof Error)) {
+        setTopDogsDaily(data);
+      }
+    }
+    fetchTopDogsDaily();
+  }, [selectedDay]);
+  
+  // Format data for overall top dogs table
+  const overallColumns = ['#', 'Name', 'Owner', 'Points'];
+  const overallData = topDogsOverall.map(dog => [
+    dog.dogNumber,
+    dog.dogName,
+    dog.owner,
+    dog.totalPoints
+  ]);
+  
+  // Format data for daily top dogs table
+  const dailyColumns = ['#', 'Name', 'Owner', 'Points'];
+  const dailyData = topDogsDaily.map(dog => [
+    dog.dogNumber,
+    dog.dogName,
+    dog.owner,
+    dog.totalPoints
+  ]);
 
   return (
     <div className='text-black grid grid-cols-2 grid-rows-2 ml-[276px] items-start py-2 mr-4 h-[calc(100%-1rem)] relative'>
@@ -106,17 +154,41 @@ function Home() {
       <Box params='col-span-1 mt-8 mr-4 pt-5 px-6 bg-white row-span-1 h-[calc(100%-1rem)]'>
         <div className='w-full flex border-b-2 border-gray-300 items-center pb-1'>
           <p className='text-3xl font-semibold'>Top Dogs</p>
+          {overallData.length === 0 && (
+            <p className="ml-4 text-gray-500">(No data available)</p>
+          )}
         </div>
         <Box params='overflow-y-auto w-full my-4 bg-slate-50 h-full'>
-          <StyledTable columns={columns} data={data}/>
+          {overallData.length > 0 ? (
+            <StyledTable columns={overallColumns} data={overallData} />
+          ) : (
+            <p className="p-4 text-gray-500 text-center">No top dogs data available.</p>
+          )}
         </Box>
       </Box>
       <Box params='col-span-1 mt-8 ml-4 pt-5 px-6 bg-white row-span-1 h-[calc(100%-1rem)]'>
         <div className='w-full flex border-b-2 border-gray-300 items-center pb-1'>
-          <p className='text-3xl font-semibold'>Daily 10</p>
+          <p className='text-3xl font-semibold'>Daily Top 10</p>
+          <div className="ml-auto flex items-center">
+            <label htmlFor="daySelect" className="mr-2 font-medium">Day:</label>
+            <select 
+              id="daySelect" 
+              value={selectedDay}
+              onChange={(e) => setSelectedDay(parseInt(e.target.value))}
+              className="border border-gray-300 rounded px-2 py-1"
+            >
+              {availableDays.map(day => (
+                <option key={day} value={day}>Day {day}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <Box params='overflow-y-auto w-full my-4 bg-slate-50 h-full'>
-          <StyledTable columns={columns} data={data}/>
+          {dailyData.length > 0 ? (
+            <StyledTable columns={dailyColumns} data={dailyData} />
+          ) : (
+            <p className="p-4 text-gray-500 text-center">No data available for Day {selectedDay}.</p>
+          )}
         </Box>
       </Box>
 
