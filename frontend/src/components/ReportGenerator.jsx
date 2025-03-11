@@ -5,27 +5,44 @@ import StyledTable from './StyledTable';
 
 const ReportGenerator = ({ title, columns, data }) => {
   const contentRef = useRef();
+  const tableContainerRef = useRef();
 
   const handlePrint = useReactToPrint({
     contentRef: contentRef,
     documentTitle: title,
   });
-
+  
   return (
-    <div className="report-generator w-full h-[calc(100%-60px)]">
-      <Box params="h-full bg-white w-full">
-        <div ref={contentRef} className="report-content w-full overflow-auto max-h-[calc(100%-5rem)] print:m-0 print:p-0">
-          <div className='w-full border-b border-gray-200 pb-3 mb-4 print:mt-0'>
-            <p className='text-3xl font-bold text-center'>{title}</p>
-          </div>
-          <div className="w-full">
-            <StyledTable columns={columns} data={data} />
+    <div className="report-generator w-full h-3/4">
+      <Box params="h-full bg-white w-full relative">
+        <div ref={contentRef} className="flex h-full report-content w-full p-3 overflow-auto max-h-[calc(100%-5rem)] print:m-0 print:p-0 print:overflow-visible print:max-h-none absolute top-0 left-0">
+          {/* Using Tailwind table layout for printing */}
+          <div className="w-full print:table print:w-full">
+            {/* Header as table header group so it repeats on each page */}
+            <div className="print:table-header-group">
+              <div className="report-header w-full border-b-2 border-blue-900 print:border-b-2 print:border-blue-900">
+                <p className="text-3xl font-bold text-start italic text-blue-900 print:text-blue-900">{title}</p>
+                <div className="text-start text-lg mt-2 italic font-medium text-blue-900 flex justify-between print:text-blue-900">
+                  <p>Hunt: {}</p>
+                  <p>Day: {}</p>
+                  <p>Date: {}</p>
+                  <p>Start Time: {}</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Table content as table row group */}
+            <div className="print:table-row-group">
+              <div className="w-full" ref={tableContainerRef}>
+                <StyledTable columns={columns} data={data} />
+              </div>
+            </div>
           </div>
         </div>
         <div className="mt-4 flex w-full justify-center print:hidden">
           <button 
             onClick={handlePrint} 
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full absolute bottom-4"
           >
             Print Report
           </button>
@@ -35,34 +52,42 @@ const ReportGenerator = ({ title, columns, data }) => {
   );
 };
 
-// Add global print styles to ensure reports start at the top
-const printStyles = `
+// Add minimal custom CSS for print styling
+const printStyle = document.createElement('style');
+printStyle.textContent = `
   @media print {
     @page {
-      margin: 0.5cm;
-      size: portrait;
+      margin: 1cm;
     }
+
     body {
-      margin: 0;
-      padding: 0;
+      margin: 0 !important;
+      padding: 0 !important;
     }
-    .report-content {
-      position: absolute;
-      top: 0;
-      left: 0;
-      margin: 0;
-      padding: 0;
-      height: auto !important;
-      max-height: none !important;
-      overflow: visible !important;
+    
+    /* Force Tailwind colors to print */
+    .print\\:text-blue-900 {
+      color: #1e3a8a !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    /* Force table header to repeat */
+    thead {
+      display: table-header-group !important;
+    }
+    
+    /* Prevent rows from breaking across pages */
+    tr {
+      break-inside: avoid !important;
     }
   }
 `;
 
-// Add the print styles to the document head
-const styleSheet = document.createElement("style");
-styleSheet.type = "text/css";
-styleSheet.innerText = printStyles;
-document.head.appendChild(styleSheet);
+// Only add the style once
+if (typeof document !== 'undefined' && !document.getElementById('report-print-style')) {
+  printStyle.id = 'report-print-style';
+  document.head.appendChild(printStyle);
+}
 
 export default ReportGenerator;

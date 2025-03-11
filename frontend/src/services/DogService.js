@@ -149,6 +149,17 @@ class DogService {
       return error.response.data;
     }
   }
+
+  // This method will be implemented later when the backend supports it
+  async getScratchesByDay(day) {
+    try {
+      // This endpoint doesn't exist yet, but prepare for future implementation
+      const response = await this.api.get(`/scratches/day/${day}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
 }
 
 export default new DogService();
