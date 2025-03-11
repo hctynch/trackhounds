@@ -1,66 +1,60 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Box from './Box';
 import ReportGenerator from './ReportGenerator';
+import reportGroups from './Reports/index.js';
+// Import the configuration components
+import { DaySelector } from './Reports/DogScoresByDayReport';
 
 function Reports() {
   const [selectedReport, setSelectedReport] = useState(null);
-
-  const reports = [
-    {
-      type: 'Dog Reports',
-      items: [
-        {
-          title: 'Dog Scratches Report',
-          columns: ['Dog Number', 'Time', 'Judge Number', 'Reason'],
-          data: [
-            ['123', '12:00 PM', '45', 'Injury'],
-            ['124', '12:30 PM', '46', 'Sickness'],
-            // Add more rows as needed
-          ],
-        },
-        // Add more dog reports as needed
-      ],
-    },
-    {
-      type: 'General Reports',
-      items: [
-        {
-          title: 'Another Report',
-          columns: ['Column 1', 'Column 2', 'Column 3'],
-          data: [
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 4', 'Data 5', 'Data 6'],
-            ['Data 1', 'Data 2', 'Data 3'],
-            ['Data 4', 'Data 5', 'Data 6'],
-          ],
-        },
-        // Add more general reports as needed
-      ],
-    },
-    // Add more report types as needed
-  ];
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [reportConfig, setReportConfig] = useState({});
+  
+  // Map of available config components
+  const configComponentMap = {
+    'DaySelector': DaySelector
+  };
+  
+  // Fetch report data when a report is selected or config changes
+  useEffect(() => {
+    if (selectedReport && selectedReport.fetchData) {
+      const fetchReportData = async () => {
+        setLoading(true);
+        try {
+          const result = await selectedReport.fetchData(reportConfig);
+          setReportData(result);
+        } catch (error) {
+          console.error("Error generating report:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchReportData();
+    }
+  }, [selectedReport, reportConfig]);
+  
+  const handleSelectReport = (report) => {
+    setSelectedReport(report);
+    setReportData(null); // Clear previous report data
+    
+    // Initialize with default config if available
+    if (report.defaultConfig) {
+      setReportConfig(report.defaultConfig);
+    } else {
+      setReportConfig({});  // Reset config
+    }
+  };
+  
+  const closeReport = () => {
+    setSelectedReport(null);
+    setReportData(null);
+  };
+  
+  const handleConfigChange = (newConfig) => {
+    setReportConfig(newConfig);
+  };
 
   return (
     <div className="reports-container ml-[276px] h-full text-black grid mr-4">
@@ -68,28 +62,64 @@ function Reports() {
         <div className='w-full flex items-center border-b-2 border-gray-300 pb-1 h-17.25'>
           <p className="text-4xl font-bold mb-3">Reports</p>
         </div>
-        {reports.map((reportGroup, groupIndex) => (
-          <div key={groupIndex} className="grid grid-cols-1 w-full my-6">
-            <h2 className="text-2xl font-semibold mb-2">{reportGroup.type}</h2>
-            <div className="report-buttons grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {reportGroup.items.map((report, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedReport(report)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-full"
-                >
-                  {report.title}
-                </button>
-              ))}
-            </div>
+        
+        {/* Conditionally show either report list or selected report */}
+        {!selectedReport ? (
+          <div className="w-full overflow-auto">
+            {reportGroups.map((group, groupIndex) => (
+              <div key={groupIndex} className="w-full my-6">
+                <p className="text-3xl font-semibold pb-1 mb-4 text-start border-b-2 border-gray-300">
+                  {group.type}
+                </p>
+                <div className="report-buttons grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {group.items.map((report, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSelectReport(report)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-full"
+                    >
+                      {report.title}
+                      {report.description && (
+                        <p className="text-xs text-blue-100 mt-1">{report.description}</p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-        {selectedReport && (
-          <ReportGenerator
-            title={selectedReport.title}
-            columns={selectedReport.columns}
-            data={selectedReport.data}
-          />
+        ) : (
+          <div className="w-full h-full p-4">
+            <button 
+              onClick={closeReport}
+              className="mb-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-full flex items-center"
+            >
+              <span>← Back to Reports</span>
+            </button>
+            
+            {/* Configuration component if available - Using the mapping approach */}
+            {selectedReport.configComponent && configComponentMap[selectedReport.configComponent] && (
+              React.createElement(configComponentMap[selectedReport.configComponent], { 
+                onChange: handleConfigChange 
+              })
+            )}
+            
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <p className="text-xl">Loading report data...</p>
+              </div>
+            ) : reportData ? (
+              <ReportGenerator
+                title={reportData.title || selectedReport.title}
+                columns={reportData.columns}
+                data={reportData.data}
+              />
+            ) : (
+              <div className="flex justify-center items-center h-64">
+                <p className="text-xl">Preparing report...</p>
+              </div>
+            )}
+          </div>
         )}
       </Box>
     </div>
