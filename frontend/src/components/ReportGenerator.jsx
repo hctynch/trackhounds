@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import Box from './Box';
 import StyledTable from './StyledTable';
@@ -13,9 +13,9 @@ const ReportGenerator = ({ title, columns, data }) => {
   });
   
   return (
-    <div className="report-generator w-full h-3/4">
+    <div className="report-generator w-full max-h-full h-full">
       <Box params="h-full bg-white w-full relative">
-        <div ref={contentRef} className="flex h-full report-content w-full p-3 overflow-auto max-h-[calc(100%-5rem)] print:m-0 print:p-0 print:overflow-visible print:max-h-none absolute top-0 left-0">
+        <div ref={contentRef} className="flex h-full report-content w-full p-3 overflow-auto print:m-0 print:p-0 print:overflow-visible print:max-h-none absolute top-0 left-0">
           {/* Using Tailwind table layout for printing */}
           <div className="w-full print:table print:w-full">
             {/* Header as table header group so it repeats on each page */}

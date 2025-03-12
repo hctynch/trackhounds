@@ -89,31 +89,34 @@ function Reports() {
             ))}
           </div>
         ) : (
-          <div className="w-full h-full p-4">
-            <button 
-              onClick={closeReport}
-              className="mb-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-full flex items-center"
-            >
-              <span>← Back to Reports</span>
-            </button>
-            
-            {/* Configuration component if available - Using the mapping approach */}
-            {selectedReport.configComponent && configComponentMap[selectedReport.configComponent] && (
-              React.createElement(configComponentMap[selectedReport.configComponent], { 
-                onChange: handleConfigChange 
-              })
-            )}
-            
+          <div className="w-full h-[calc(100%-4rem)] flex flex-col p-4">
+            <div>
+              <button 
+                onClick={closeReport}
+                className="mb-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-full flex items-center"
+              >
+                <span>← Back to Reports</span>
+              </button>
+              
+              {/* Configuration component if available - Using the mapping approach */}
+              {selectedReport.configComponent && configComponentMap[selectedReport.configComponent] && (
+                React.createElement(configComponentMap[selectedReport.configComponent], { 
+                  onChange: handleConfigChange 
+                })
+              )}
+            </div>
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <p className="text-xl">Loading report data...</p>
               </div>
             ) : reportData ? (
-              <ReportGenerator
+              <div className='h-full'>
+                <ReportGenerator
                 title={reportData.title || selectedReport.title}
                 columns={reportData.columns}
                 data={reportData.data}
-              />
+                />
+              </div>
             ) : (
               <div className="flex justify-center items-center h-64">
                 <p className="text-xl">Preparing report...</p>
