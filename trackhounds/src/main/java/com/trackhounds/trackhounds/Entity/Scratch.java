@@ -24,6 +24,8 @@ public class Scratch {
 
     private int dogNumber;
 
+    private String dogName;
+
     private LocalTime time;
 
     private int judgeNumber;

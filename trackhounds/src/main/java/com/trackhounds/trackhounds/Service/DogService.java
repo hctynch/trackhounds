@@ -351,6 +351,7 @@ public class DogService {
       throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields", errs);
     DogEntity dog = dogRetrieval.get();
     dog.setScratched(true);
+    scratch.setDogName(dog.getName());
     scratchRepository.save(scratch);
     dogRepository.save(dog);
   }

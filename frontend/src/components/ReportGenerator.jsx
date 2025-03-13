@@ -1,11 +1,29 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect} from 'react';
 import { useReactToPrint } from 'react-to-print';
 import Box from './Box';
 import StyledTable from './StyledTable';
+import DogService from '../services/DogService';
 
-const ReportGenerator = ({ title, columns, data }) => {
+const ReportGenerator = ({ hunt, day, title, columns, data }) => {
+  const huntTitle = hunt.title
+  const dates = hunt.dates
   const contentRef = useRef();
   const tableContainerRef = useRef();
+  const [startTime, setStartTime] = useState('')
+
+  useEffect(() => {
+    async function getStartTime() {
+      if (day) {
+        const data = await DogService.getStartTime(day)
+        if (data instanceof Error) {
+          setStartTime('None')
+          return
+        }
+        setStartTime(data)
+      }
+    } getStartTime()
+  }, [day])
+  
 
   const handlePrint = useReactToPrint({
     contentRef: contentRef,
@@ -23,10 +41,10 @@ const ReportGenerator = ({ title, columns, data }) => {
               <div className="report-header w-full border-b-2 border-blue-900 print:border-b-2 print:border-blue-900">
                 <p className="text-3xl font-bold text-start italic text-blue-900 print:text-blue-900">{title}</p>
                 <div className="text-start text-lg mt-2 italic font-medium text-blue-900 flex justify-between print:text-blue-900">
-                  <p>Hunt: {}</p>
-                  <p>Day: {}</p>
-                  <p>Date: {}</p>
-                  <p>Start Time: {}</p>
+                  <p>Hunt: <span className='text-black'>{huntTitle}</span></p>
+                  {day && <p>Day: <span className='text-black'>{day}</span></p>}
+                  <p>Dates: <span className='text-black'>{dates}</span></p>
+                  {day && <p>Start Time: <span className='text-black'>{startTime}</span></p>}
                 </div>
               </div>
             </div>
