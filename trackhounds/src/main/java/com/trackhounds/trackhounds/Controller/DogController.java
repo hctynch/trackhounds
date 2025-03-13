@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DogEntity;
 import com.trackhounds.trackhounds.Entity.Scratch;
+import com.trackhounds.trackhounds.Enums.StakeType;
+import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
 import com.trackhounds.trackhounds.Service.DogService;
 
 /**
@@ -201,5 +204,100 @@ public class DogController {
   @GetMapping("/scores/top10/overall")
   public List<Map<String, Object>> getTop10ScoringDogsOverall() {
     return dogService.getTop10ScoringDogsOverall();
+  }
+
+  /**
+   * Get the top scoring dogs overall (across all days) with a customizable limit
+   * 
+   * @param limit The maximum number of dogs to return
+   * @return List of top scoring dogs limited to the specified count
+   */
+  @GetMapping("/scores/top/{limit}/overall")
+  public List<Map<String, Object>> getTopScoringDogsOverall(@PathVariable("limit") int limit) {
+    return dogService.getTopScoringDogsOverall(limit);
+  }
+
+  /**
+   * Get the top scoring dogs of a specific stake type with a limit
+   * 
+   * @param stakeType The stake type (ALL_AGE or DERBY)
+   * @param limit     The maximum number of dogs to return
+   * @return List of top scoring dogs of the specified stake type
+   */
+  @GetMapping("/scores/stake/{stakeType}/top/{limit}")
+  public List<Map<String, Object>> getTopScoringDogsByStakeType(
+      @PathVariable("stakeType") String stakeType,
+      @PathVariable("limit") int limit) {
+    try {
+      StakeType stake = StakeType.valueOf(stakeType.toUpperCase());
+      return dogService.getTopScoringDogsByStakeType(stake, limit);
+    } catch (IllegalArgumentException e) {
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid stake type: " + stakeType,
+          Map.of("stake", stakeType));
+    }
+  }
+
+  /**
+   * Get the top 10 highest scoring dogs of a specific stake type
+   * 
+   * @param stakeType The stake type (ALL_AGE or DERBY)
+   * @return List of top 10 dogs with their scores of the specified stake type
+   */
+  @GetMapping("/scores/stake/{stakeType}/top10")
+  public List<Map<String, Object>> getTop10ScoringDogsByStakeType(
+      @PathVariable("stakeType") String stakeType) {
+    try {
+      StakeType stake = StakeType.valueOf(stakeType.toUpperCase());
+      return dogService.getTop10ScoringDogsByStakeType(stake);
+    } catch (IllegalArgumentException e) {
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid stake type: " + stakeType,
+          Map.of("stake", stakeType));
+    }
+  }
+
+  /**
+   * Get the top scoring dogs of a specific stake type for a specific day with a
+   * limit
+   * 
+   * @param day       The day number (1-4)
+   * @param stakeType The stake type (ALL_AGE or DERBY)
+   * @param limit     The maximum number of dogs to return
+   * @return List of top scoring dogs for the specified day and stake type
+   */
+  @GetMapping("/scores/day/{day}/stake/{stakeType}/top/{limit}")
+  public List<Map<String, Object>> getTopScoringDogsByDayAndStakeType(
+      @PathVariable("day") int day,
+      @PathVariable("stakeType") String stakeType,
+      @PathVariable("limit") int limit) {
+    try {
+      StakeType stake = StakeType.valueOf(stakeType.toUpperCase());
+      return dogService.getTopScoringDogsByDayAndStakeType(day, stake, limit);
+    } catch (IllegalArgumentException e) {
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid stake type: " + stakeType,
+          Map.of("stake", stakeType));
+    }
+
+  }
+
+  /**
+   * Get the top 10 highest scoring dogs of a specific stake type for a specific
+   * day
+   * 
+   * @param day       The day number (1-4)
+   * @param stakeType The stake type (ALL_AGE or DERBY)
+   * @return List of top 10 dogs with their scores for the specified day and stake
+   *         type
+   */
+  @GetMapping("/scores/day/{day}/stake/{stakeType}/top10")
+  public List<Map<String, Object>> getTop10ScoringDogsByDayAndStakeType(
+      @PathVariable("day") int day,
+      @PathVariable("stakeType") String stakeType) {
+    try {
+      StakeType stake = StakeType.valueOf(stakeType.toUpperCase());
+      return dogService.getTop10ScoringDogsByDayAndStakeType(day, stake);
+    } catch (IllegalArgumentException e) {
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid stake type: " + stakeType,
+          Map.of("stake", stakeType));
+    }
   }
 }

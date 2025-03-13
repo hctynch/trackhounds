@@ -160,6 +160,59 @@ class DogService {
       return error.response.data;
     }
   }
+
+  async getTopScoringDogsByStakeType(stakeType, limit) {
+    try {
+      const response = await this.api.get(`/scores/stake/${stakeType}/top/${limit}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  async getTop10ScoringDogsByStakeType(stakeType) {
+    try {
+      const response = await this.api.get(`/scores/stake/${stakeType}/top10`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  async getTopScoringDogsByDayAndStakeType(day, stakeType, limit) {
+    try {
+      const response = await this.api.get(`/scores/day/${day}/stake/${stakeType}/top/${limit}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  async getTop10ScoringDogsByDayAndStakeType(day, stakeType) {
+    try {
+      const response = await this.api.get(`/scores/day/${day}/stake/${stakeType}/top10`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  // Add a new method for getting top dogs overall with any limit
+  async getTopScoringDogsOverall(limit) {
+    try {
+      // Use the existing endpoint but with a custom limit
+      const response = await this.api.get(`/scores/top/${limit}/overall`);
+      return response.data;
+    } catch (error) {
+      // If endpoint doesn't exist yet, fall back to top10 and slice
+      try {
+        const response = await this.api.get(`/scores/top10/overall`);
+        return response.data.slice(0, limit);
+      } catch (innerError) {
+        return innerError.response.data;
+      }
+    }
+  }
 }
 
 export default new DogService();
