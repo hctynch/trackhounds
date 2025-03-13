@@ -213,6 +213,90 @@ class DogService {
       }
     }
   }
+
+  /**
+   * Get all scores for a specific dog
+   * @param {number} dogNumber - The dog number
+   * @returns {Promise<Array>} List of scores
+   */
+  async getScoresByDogNumber(dogNumber) {
+    try {
+      const response = await this.api.get(`/${dogNumber}/scores`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  /**
+   * Get all scores
+   * @returns {Promise<Array>} List of scores
+   */
+  async getScores() {
+    try {
+      const response = await this.api.get(`/scores`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  /**
+   * Get all scores
+   * @returns {Promise<Array>} List of scores
+   */
+  async getScoresByDay(day) {
+    try {
+      const response = await this.api.get(`/scores/${day}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  /**
+   * Get all scores for a specific judge
+   * @param {number} judgeNumber - The judge number
+   * @returns {Promise<Array>} List of scores
+   */
+  async getScoresByJudgeNumber(judgeNumber) {
+    try {
+      const response = await this.api.get(`/scores/judge/${judgeNumber}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  /**
+   * Get all scores for a specific dog on a specific day
+   * @param {number} dogNumber - The dog number
+   * @param {number} day - The day number (1-4)
+   * @returns {Promise<Array>} List of scores
+   */
+  async getScoresByDogNumberAndDay(dogNumber, day) {
+    try {
+      const response = await this.api.get(`/${dogNumber}/scores/day/${day}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
+  /**
+   * Get all scores for a specific judge on a specific day
+   * @param {number} judgeNumber - The judge number
+   * @param {number} day - The day number (1-4)
+   * @returns {Promise<Array>} List of scores
+   */
+  async getScoresByJudgeNumberAndDay(judgeNumber, day) {
+    try {
+      const response = await this.api.get(`/scores/judge/${judgeNumber}/day/${day}`);
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
 }
 
 export default new DogService();

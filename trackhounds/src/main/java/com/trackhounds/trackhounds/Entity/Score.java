@@ -46,16 +46,28 @@ public class Score {
   private int judgeNumber;
 
   /**
+   * The number of the dog that this score belongs to
+   */
+  private int dogNumber;
+
+  /**
+   * The day of the score
+   */
+  private int day;
+
+  /**
    * Default constructor for a score
    * 
    * @param points Points awarded
    * @param time   Time of the cross
    */
-  public Score(int points, LocalTime time, boolean counted, int judgeNumber) {
+  public Score(int points, LocalTime time, boolean counted, int judgeNumber, int dogNumber, int day) {
     setPoints(points);
     setTime(time);
     setCounted(counted);
     setJudgeNumber(judgeNumber);
+    setDogNumber(dogNumber);
+    setDay(day);
   }
 
   @Override

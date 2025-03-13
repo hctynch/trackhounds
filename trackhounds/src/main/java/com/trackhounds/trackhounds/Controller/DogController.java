@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DogEntity;
+import com.trackhounds.trackhounds.Entity.Score;
 import com.trackhounds.trackhounds.Entity.Scratch;
 import com.trackhounds.trackhounds.Enums.StakeType;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
@@ -299,5 +300,76 @@ public class DogController {
       throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid stake type: " + stakeType,
           Map.of("stake", stakeType));
     }
+  }
+
+  /**
+   * Get all scores for a specific dog
+   * 
+   * @param dogNumber Number of the dog
+   * @return List of scores for the specified dog
+   */
+  @GetMapping("/{dogNumber}/scores")
+  public List<Score> getScoresByDogNumber(@PathVariable("dogNumber") int dogNumber) {
+    return dogService.getScoresByDogNumber(dogNumber);
+  }
+
+  /**
+   * Get all scores for a specific judge
+   * 
+   * @param judgeNumber Number of the judge
+   * @return List of scores given by the specified judge
+   */
+  @GetMapping("/scores/judge/{judgeNumber}")
+  public List<Score> getScoresByJudgeNumber(@PathVariable("judgeNumber") int judgeNumber) {
+    return dogService.getScoresByJudgeNumber(judgeNumber);
+  }
+
+  /**
+   * Get all scores for a specific dog on a specific day
+   * 
+   * @param dogNumber Number of the dog
+   * @param day       Day of the hunt (1-4)
+   * @return List of scores for the specified dog on the specified day
+   */
+  @GetMapping("/{dogNumber}/scores/day/{day}")
+  public List<Score> getScoresByDogNumberAndDay(
+      @PathVariable("dogNumber") int dogNumber,
+      @PathVariable("day") int day) {
+    return dogService.getScoresByDogNumberAndDay(dogNumber, day);
+  }
+
+  /**
+   * Get all scores for a specific judge on a specific day
+   * 
+   * @param judgeNumber Number of the judge
+   * @param day         Day of the hunt (1-4)
+   * @return List of scores given by the specified judge on the specified day
+   */
+  @GetMapping("/scores/judge/{judgeNumber}/day/{day}")
+  public List<Score> getScoresByJudgeNumberAndDay(
+      @PathVariable("judgeNumber") int judgeNumber,
+      @PathVariable("day") int day) {
+    return dogService.getScoresByJudgeNumberAndDay(judgeNumber, day);
+  }
+
+  /**
+   * Get all scores
+   * 
+   * @return List of all scores
+   */
+  @GetMapping("/scores")
+  public List<Score> getAllScores() {
+    return dogService.getScores();
+  }
+
+  /**
+   * Get all scores for a specific day
+   * 
+   * @param day Day of the hunt (1-4)
+   * @return List of scores for the specified day
+   */
+  @GetMapping("/scores/{day}")
+  public List<Score> getScoresByDay(@PathVariable("day") int day) {
+    return dogService.getScoresByDay(day);
   }
 }

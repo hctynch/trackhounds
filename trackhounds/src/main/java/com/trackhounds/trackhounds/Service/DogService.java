@@ -278,7 +278,8 @@ public class DogService {
       }
       DailyScore dailyScore = dog.getScores().get(score.getDay() - 1);
       dailyScore.setDay(day);
-      Score s = new Score(score.getScores()[i], crossTime, false, score.getJudge());
+      Score s = new Score(score.getScores()[i], crossTime, false, score.getJudge(), dog.getNumber(), day.getDay());
+      s = scoreRepository.save(s);
       dailyScore.addScore(s, startTime, score.getInterval());
       scoreRepository.save(s);
       dailyScore = dailyScoreRepository.save(dailyScore);
@@ -599,5 +600,105 @@ public class DogService {
    */
   public List<Map<String, Object>> getTop10ScoringDogsByDayAndStakeType(int day, StakeType stakeType) {
     return getTopScoringDogsByDayAndStakeType(day, stakeType, 10);
+  }
+
+  /**
+   * Get all scores for a specific dog
+   * 
+   * @param dogNumber Number of the dog
+   * @return List of scores for the specified dog
+   */
+  public List<Score> getScoresByDogNumber(int dogNumber) {
+    // Verify the dog exists
+    if (!dogRepository.existsById(dogNumber)) {
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog does not exist.",
+          Map.of("dogNumber", "Dog does not exist with this number."));
+    }
+
+    return scoreRepository.findByDogNumber(dogNumber);
+  }
+
+  /**
+   * Get all scores for a specific judge
+   * 
+   * @param judgeNumber Number of the judge
+   * @return List of scores given by the specified judge
+   */
+  public List<Score> getScoresByJudgeNumber(int judgeNumber) {
+    // Verify the judge exists
+    if (!judgeRepository.existsById(judgeNumber)) {
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Judge does not exist.",
+          Map.of("judgeNumber", "Judge does not exist with this number."));
+    }
+
+    return scoreRepository.findByJudgeNumber(judgeNumber);
+  }
+
+  /**
+   * Get all scores for a specific dog on a specific day
+   * 
+   * @param dogNumber Number of the dog
+   * @param day       Day of the hunt (1-4)
+   * @return List of scores for the specified dog on the specified day
+   */
+  public List<Score> getScoresByDogNumberAndDay(int dogNumber, int day) {
+    // Verify the dog exists
+    if (!dogRepository.existsById(dogNumber)) {
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog does not exist.",
+          Map.of("dogNumber", "Dog does not exist with this number."));
+    }
+
+    // Verify the day exists
+    if (!daysRepository.existsById(day)) {
+      return List.of(); // Return empty list if day doesn't exist
+    }
+
+    return scoreRepository.findByDogNumberAndDay(dogNumber, day);
+  }
+
+  /**
+   * Get all scores for a specific judge on a specific day
+   * 
+   * @param judgeNumber Number of the judge
+   * @param day         Day of the hunt (1-4)
+   * @return List of scores given by the specified judge on the specified day
+   */
+  public List<Score> getScoresByJudgeNumberAndDay(int judgeNumber, int day) {
+    // Verify the judge exists
+    if (!judgeRepository.existsById(judgeNumber)) {
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Judge does not exist.",
+          Map.of("judgeNumber", "Judge does not exist with this number."));
+    }
+
+    // Verify the day exists
+    if (!daysRepository.existsById(day)) {
+      return List.of(); // Return empty list if day doesn't exist
+    }
+
+    return scoreRepository.findByJudgeNumberAndDay(judgeNumber, day);
+  }
+
+  /**
+   * Get all scores
+   * 
+   * @return List of all scores
+   */
+  public List<Score> getScores() {
+    return scoreRepository.findAll();
+  }
+
+  /**
+   * Get all scores for a specific day
+   * 
+   * @param day Day of the hunt (1-4)
+   * @return List of scores for the specified day
+   */
+  public List<Score> getScoresByDay(int day) {
+    // Verify the day exists
+    if (!daysRepository.existsById(day)) {
+      return List.of(); // Return empty list if day doesn't exist
+    }
+
+    return scoreRepository.findByDay(day);
   }
 }
