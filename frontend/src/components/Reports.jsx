@@ -3,6 +3,7 @@ import Box from './Box';
 import ReportGenerator from './ReportGenerator';
 import reportGroups from './Reports/index.js';
 // Import the configuration components
+import HuntService from '../services/HuntService.js'
 import { DaySelector } from './Reports/DogScoresByDayReport';
 
 function Reports() {
@@ -10,14 +11,24 @@ function Reports() {
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [reportConfig, setReportConfig] = useState({});
+  const [hunt,setHunt] = useState({
+    title: '',
+    dates: '',
+
+  })
+  
   
   // Map of available config components
   const configComponentMap = {
     'DaySelector': DaySelector
   };
-  
   // Fetch report data when a report is selected or config changes
   useEffect(() => {
+    const fetchHuntData = async () => {
+      const data = await HuntService.getHunt()
+      if(data)
+        setHunt(data)
+    }; fetchHuntData()
     if (selectedReport && selectedReport.fetchData) {
       const fetchReportData = async () => {
         setLoading(true);
@@ -112,6 +123,8 @@ function Reports() {
             ) : reportData ? (
               <div className='h-full'>
                 <ReportGenerator
+                hunt={hunt}
+                day={reportConfig.day ? reportConfig.day : null}
                 title={reportData.title || selectedReport.title}
                 columns={reportData.columns}
                 data={reportData.data}
