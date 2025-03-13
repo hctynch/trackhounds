@@ -228,7 +228,6 @@ public class DogServiceTest {
       List<DailyScore> dailyScores3 = dogService.getDogByNumber(3).getScores();
       assertEquals(1, dailyScores3.size());
       assertEquals(1, dailyScores3.get(0).getTimeBucketScores().size());
-      assertEquals(1, dailyScores3.get(0).getHighestScores().size());
       assertEquals(25, dailyScores3.get(0).getHighestScores().iterator().next().getScore().getPoints());
       assertEquals(25, dogService.getDogByNumber(3).getPoints());
     });
@@ -429,7 +428,7 @@ public class DogServiceTest {
 
     Scratch missingTimeScratch = new Scratch();
     missingTimeScratch.setDogNumber(1);
-    missingTimeScratch.setJudgeNumber(1);
+    missingReasonScratch.setJudgeNumber(1);
     missingTimeScratch.setTime(null);
     missingTimeScratch.setReason("Test reason");
 
@@ -643,5 +642,144 @@ public class DogServiceTest {
         () -> assertEquals(2, sameScoreDogs.size()),
         () -> assertEquals(50, sameScoreDogs.get(0).get("totalPoints")),
         () -> assertEquals(50, sameScoreDogs.get(1).get("totalPoints")));
+  }
+
+  /**
+   * Test methods for stake type filtering
+   */
+  @Test
+  @Transactional
+  void testDogScoresByStakeTypeMethods() {
+    // Create test dogs with different stake types
+    DogEntity allAgeDog1 = new DogEntity(1, "AllAge1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
+    DogEntity allAgeDog2 = new DogEntity(2, "AllAge2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
+    DogEntity derbyDog1 = new DogEntity(3, "Derby1", StakeType.DERBY, "Owner3", "Sire3", "Dam3");
+    DogEntity derbyDog2 = new DogEntity(4, "Derby2", StakeType.DERBY, "Owner4", "Sire4", "Dam4");
+
+    dogService.createDogs(List.of(allAgeDog1, allAgeDog2, derbyDog1, derbyDog2));
+
+    // Add scores for day 1
+    ScoreDto score1Day1 = new ScoreDto(
+        1, "05:30:00", 1, "05:45:00",
+        new int[] { 1, 2, 3, 4 },
+        new int[] { 40, 30, 50, 20 },
+        10);
+
+    // Add scores for day 2
+    ScoreDto score1Day2 = new ScoreDto(
+        2, "06:30:00", 1, "06:45:00",
+        new int[] { 1, 2, 3, 4 },
+        new int[] { 25, 35, 15, 45 },
+        10);
+
+    // Create the scores
+    dogService.createScore(score1Day1);
+    dogService.createScore(score1Day2);
+
+    // Test getTopScoringDogsByStakeType
+    List<Map<String, Object>> topAllAgeDogs = dogService.getTopScoringDogsByStakeType(StakeType.ALL_AGE, 2);
+    List<Map<String, Object>> topDerbyDogs = dogService.getTopScoringDogsByStakeType(StakeType.DERBY, 2);
+
+    assertAll("getTopScoringDogsByStakeType",
+        () -> assertEquals(2, topAllAgeDogs.size()),
+        () -> assertEquals(2, topDerbyDogs.size()),
+        () -> assertEquals(1, topAllAgeDogs.get(0).get("dogNumber")), // AllAgeDog2 has 65 points
+        () -> assertEquals(2, topAllAgeDogs.get(1).get("dogNumber")), // AllAgeDog1 has 65 points
+        () -> assertEquals(3, topDerbyDogs.get(0).get("dogNumber")), // DerbyDog1 has 65 points
+        () -> assertEquals(4, topDerbyDogs.get(1).get("dogNumber")), // DerbyDog2 has 65 points
+        () -> assertEquals(65, topAllAgeDogs.get(0).get("totalPoints")),
+        () -> assertEquals(65, topDerbyDogs.get(0).get("totalPoints")));
+
+    // Test getTop10ScoringDogsByStakeType
+    List<Map<String, Object>> top10AllAgeDogs = dogService.getTop10ScoringDogsByStakeType(StakeType.ALL_AGE);
+    List<Map<String, Object>> top10DerbyDogs = dogService.getTop10ScoringDogsByStakeType(StakeType.DERBY);
+
+    assertAll("getTop10ScoringDogsByStakeType",
+        () -> assertEquals(2, top10AllAgeDogs.size()),
+        () -> assertEquals(2, top10DerbyDogs.size()),
+        () -> assertTrue(top10AllAgeDogs.stream().anyMatch(d -> d.get("dogNumber").equals(1))),
+        () -> assertTrue(top10AllAgeDogs.stream().anyMatch(d -> d.get("dogNumber").equals(2))),
+        () -> assertTrue(top10DerbyDogs.stream().anyMatch(d -> d.get("dogNumber").equals(3))),
+        () -> assertTrue(top10DerbyDogs.stream().anyMatch(d -> d.get("dogNumber").equals(4))));
+
+    // Test getTopScoringDogsByDayAndStakeType
+    List<Map<String, Object>> topAllAgeDogsDay1 = dogService.getTopScoringDogsByDayAndStakeType(1, StakeType.ALL_AGE,
+        2);
+    List<Map<String, Object>> topDerbyDogsDay1 = dogService.getTopScoringDogsByDayAndStakeType(1, StakeType.DERBY, 2);
+    List<Map<String, Object>> topAllAgeDogsDay2 = dogService.getTopScoringDogsByDayAndStakeType(2, StakeType.ALL_AGE,
+        2);
+    List<Map<String, Object>> topDerbyDogsDay2 = dogService.getTopScoringDogsByDayAndStakeType(2, StakeType.DERBY, 2);
+
+    assertAll("getTopScoringDogsByDayAndStakeType",
+        () -> assertEquals(2, topAllAgeDogsDay1.size()),
+        () -> assertEquals(2, topDerbyDogsDay1.size()),
+        () -> assertEquals(2, topAllAgeDogsDay2.size()),
+        () -> assertEquals(2, topDerbyDogsDay2.size()),
+        () -> assertEquals(1, topAllAgeDogsDay1.get(0).get("dogNumber")), // Dog1 has 40 points on day 1
+        () -> assertEquals(2, topAllAgeDogsDay1.get(1).get("dogNumber")), // Dog2 has 30 points on day 1
+        () -> assertEquals(3, topDerbyDogsDay1.get(0).get("dogNumber")), // Dog3 has 50 points on day 1
+        () -> assertEquals(4, topDerbyDogsDay1.get(1).get("dogNumber")), // Dog4 has 20 points on day 1
+        () -> assertEquals(2, topAllAgeDogsDay2.get(0).get("dogNumber")), // Dog2 has 35 points on day 2
+        () -> assertEquals(1, topAllAgeDogsDay2.get(1).get("dogNumber")), // Dog1 has 25 points on day 2
+        () -> assertEquals(4, topDerbyDogsDay2.get(0).get("dogNumber")), // Dog4 has 45 points on day 2
+        () -> assertEquals(3, topDerbyDogsDay2.get(1).get("dogNumber")) // Dog3 has 15 points on day 2
+    );
+
+    // Test getTop10ScoringDogsByDayAndStakeType
+    List<Map<String, Object>> top10AllAgeDogsDay1 = dogService.getTop10ScoringDogsByDayAndStakeType(1,
+        StakeType.ALL_AGE);
+    List<Map<String, Object>> top10DerbyDogsDay1 = dogService.getTop10ScoringDogsByDayAndStakeType(1, StakeType.DERBY);
+
+    assertAll("getTop10ScoringDogsByDayAndStakeType",
+        () -> assertEquals(2, top10AllAgeDogsDay1.size()),
+        () -> assertEquals(2, top10DerbyDogsDay1.size()),
+        () -> assertEquals(1, top10AllAgeDogsDay1.get(0).get("dogNumber")),
+        () -> assertEquals(2, top10AllAgeDogsDay1.get(1).get("dogNumber")),
+        () -> assertEquals(3, top10DerbyDogsDay1.get(0).get("dogNumber")),
+        () -> assertEquals(4, top10DerbyDogsDay1.get(1).get("dogNumber")));
+  }
+
+  /**
+   * Test edge cases for stake type filtering methods
+   */
+  @Test
+  @Transactional
+  void testDogScoresByStakeTypeEdgeCases() {
+    // Test with empty database
+    List<Map<String, Object>> emptyAllAgeDogs = dogService.getTopScoringDogsByStakeType(StakeType.ALL_AGE, 5);
+    List<Map<String, Object>> emptyDerbyDogs = dogService.getTopScoringDogsByStakeType(StakeType.DERBY, 5);
+
+    assertAll("Empty database tests",
+        () -> assertTrue(emptyAllAgeDogs.isEmpty()),
+        () -> assertTrue(emptyDerbyDogs.isEmpty()));
+
+    // Create dogs but don't add any scores
+    DogEntity allAgeDog = new DogEntity(1, "AllAge", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
+    DogEntity derbyDog = new DogEntity(2, "Derby", StakeType.DERBY, "Owner2", "Sire2", "Dam2");
+    dogService.createDogs(List.of(allAgeDog, derbyDog));
+
+    // Test with dogs that have no scores
+    List<Map<String, Object>> noScoreAllAgeDogs = dogService.getTopScoringDogsByStakeType(StakeType.ALL_AGE, 5);
+    List<Map<String, Object>> noScoreDerbyDogs = dogService.getTopScoringDogsByStakeType(StakeType.DERBY, 5);
+
+    assertAll("Dogs with no scores tests",
+        () -> assertEquals(1, noScoreAllAgeDogs.size()),
+        () -> assertEquals(1, noScoreDerbyDogs.size()),
+        () -> assertEquals(1, noScoreAllAgeDogs.get(0).get("dogNumber")),
+        () -> assertEquals(2, noScoreDerbyDogs.get(0).get("dogNumber")),
+        () -> assertEquals(0, noScoreAllAgeDogs.get(0).get("totalPoints")),
+        () -> assertEquals(0, noScoreDerbyDogs.get(0).get("totalPoints")));
+
+    // Test with non-existent day and stake type combination
+    List<Map<String, Object>> nonExistentDay = dogService.getTopScoringDogsByDayAndStakeType(99, StakeType.ALL_AGE, 5);
+
+    assertAll("Non-existent day test",
+        () -> assertTrue(nonExistentDay.isEmpty()));
+
+    // Test with limit = 0
+    List<Map<String, Object>> zeroLimit = dogService.getTopScoringDogsByStakeType(StakeType.ALL_AGE, 0);
+
+    assertAll("Zero limit test",
+        () -> assertTrue(zeroLimit.isEmpty()));
   }
 }

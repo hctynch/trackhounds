@@ -8,23 +8,23 @@ const TopDogsReport = {
     try {
       const topDogs = await DogService.getTop10ScoringDogsOverall();
       
-      // Transform data into the expected format
-      const data = topDogs.map(dog => [
-        dog.dogNumber.toString(),
-        dog.dogName,
-        dog.owner,
-        dog.stake,
-        dog.totalPoints.toString()
-      ]);
-      
       return {
-        columns: ['Dog Number', 'Dog Name', 'Owner', 'Stake', 'Total Points'],
-        data: data
+        title: 'Top 10 Dogs Overall',
+        columns: ['Place', 'Score', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
+        data: topDogs.map((dog, index) => [
+          (index + 1).toString(),
+          dog.totalPoints.toString(),
+          dog.dogNumber.toString(),
+          dog.dogName || '',
+          dog.sire || '',
+          dog.dam || '',
+          dog.owner || ''
+        ])
       };
     } catch (error) {
       console.error("Error fetching top dogs report data:", error);
       return {
-        columns: ['Dog Number', 'Dog Name', 'Owner', 'Stake', 'Total Points'],
+        columns: ['Place', 'Score', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
         data: []
       };
     }
