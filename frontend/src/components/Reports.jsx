@@ -6,7 +6,9 @@ import reportGroups from './Reports/index.js';
 import HuntService from '../services/HuntService.js';
 import { CustomLimitSelector } from './Reports/CustomLimitSelector';
 import { DailyCustomLimitSelector } from './Reports/DailyCustomTopDogsReport';
+import { DogNumberSelector } from './Reports/DogDetailScoresReport';
 import { DaySelector } from './Reports/DogScoresByDayReport';
+import { JudgeNumberSelector } from './Reports/JudgeDetailScoresReport';
 import { DayAndStakeTypeSelector } from './Reports/TopDogsByDayAndStakeTypeReport';
 import { StakeTypeSelector } from './Reports/TopDogsByStakeTypeReport';
 
@@ -26,7 +28,9 @@ function Reports() {
     'StakeTypeSelector': StakeTypeSelector,
     'DayAndStakeTypeSelector': DayAndStakeTypeSelector,
     'CustomLimitSelector': CustomLimitSelector,
-    'DailyCustomLimitSelector': DailyCustomLimitSelector
+    'DailyCustomLimitSelector': DailyCustomLimitSelector,
+    'DogNumberSelector': DogNumberSelector,
+    'JudgeNumberSelector': JudgeNumberSelector
   };
   
   // Fetch report data when a report is selected or config changes
