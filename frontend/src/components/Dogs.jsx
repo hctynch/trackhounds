@@ -70,7 +70,7 @@ function Dogs() {
   ]);
 
   return (
-    <div className='grid text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative'>
+    <div className='grid text-black ml-[276px] mr-4 h-[calc(100vh-1rem)] my-2 relative'>
       <Box params='bg-white pt-5 overflow-y-auto'>
         <div className='w-full flex items-center border-b-2 border-gray-300 pb-1'>
           <p className='text-4xl font-bold'>Dogs</p>

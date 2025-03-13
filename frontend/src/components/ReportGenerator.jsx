@@ -1,8 +1,8 @@
-import { useRef, useState, useEffect} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
+import DogService from '../services/DogService';
 import Box from './Box';
 import StyledTable from './StyledTable';
-import DogService from '../services/DogService';
 
 const ReportGenerator = ({ hunt, day, title, columns, data }) => {
   const huntTitle = hunt.title
@@ -31,7 +31,7 @@ const ReportGenerator = ({ hunt, day, title, columns, data }) => {
   });
   
   return (
-    <div className="report-generator w-full max-h-full h-full">
+    <div className="report-generator w-full h-full">
       <Box params="h-full bg-white w-full relative">
         <div ref={contentRef} className="flex h-full report-content w-full p-3 overflow-auto print:m-0 print:p-0 print:overflow-visible print:max-h-none absolute top-0 left-0">
           {/* Using Tailwind table layout for printing */}
@@ -40,7 +40,7 @@ const ReportGenerator = ({ hunt, day, title, columns, data }) => {
             <div className="print:table-header-group">
               <div className="report-header w-full border-b-2 border-blue-900 print:border-b-2 print:border-blue-900">
                 <p className="text-3xl font-bold text-start italic text-blue-900 print:text-blue-900">{title}</p>
-                <div className="text-start text-lg mt-2 italic font-medium text-blue-900 flex justify-between print:text-blue-900">
+                <div className="text-start text-md mt-2 italic font-medium text-blue-900 flex justify-between print:text-blue-900">
                   <p>Hunt: <span className='text-black'>{huntTitle}</span></p>
                   {day && <p>Day: <span className='text-black'>{day}</span></p>}
                   <p>Dates: <span className='text-black'>{dates}</span></p>

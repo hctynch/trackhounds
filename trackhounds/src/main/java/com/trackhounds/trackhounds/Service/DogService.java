@@ -19,6 +19,7 @@ import com.trackhounds.trackhounds.Entity.DogEntity;
 import com.trackhounds.trackhounds.Entity.JudgeEntity;
 import com.trackhounds.trackhounds.Entity.Score;
 import com.trackhounds.trackhounds.Entity.Scratch;
+import com.trackhounds.trackhounds.Enums.StakeType;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
 import com.trackhounds.trackhounds.Repository.DailyScoreRepository;
 import com.trackhounds.trackhounds.Repository.DaysRepository;
@@ -397,6 +398,8 @@ public class DogService {
         dogScore.put("dogNumber", dog.getNumber());
         dogScore.put("dogName", dog.getName());
         dogScore.put("owner", dog.getOwner());
+        dogScore.put("sire", dog.getSire()); // Add sire
+        dogScore.put("dam", dog.getDam()); // Add dam
         dogScore.put("stake", dog.getStake());
         dogScore.put("totalPoints", totalPoints);
 
@@ -462,6 +465,8 @@ public class DogService {
       dogScore.put("dogNumber", dog.getNumber());
       dogScore.put("dogName", dog.getName());
       dogScore.put("owner", dog.getOwner());
+      dogScore.put("sire", dog.getSire()); // Add sire
+      dogScore.put("dam", dog.getDam()); // Add dam
       dogScore.put("stake", dog.getStake());
       dogScore.put("totalPoints", totalPoints);
 
@@ -474,5 +479,125 @@ public class DogService {
             (Integer) d1.get("totalPoints")))
         .limit(10)
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Get the top scoring dogs overall (across all days) with a customizable limit
+   * 
+   * @param limit The maximum number of dogs to return
+   * @return List of top scoring dogs limited to the specified count
+   */
+  public List<Map<String, Object>> getTopScoringDogsOverall(int limit) {
+    List<DogEntity> allDogs = dogRepository.findAll();
+    List<Map<String, Object>> dogScores = new ArrayList<>();
+
+    for (DogEntity dog : allDogs) {
+      int totalPoints = dog.getPoints(); // Using the existing points field
+
+      Map<String, Object> dogScore = new HashMap<>();
+      dogScore.put("dogNumber", dog.getNumber());
+      dogScore.put("dogName", dog.getName());
+      dogScore.put("sire", dog.getSire()); // Add sire
+      dogScore.put("dam", dog.getDam()); // Add dam
+      dogScore.put("owner", dog.getOwner());
+      dogScore.put("stake", dog.getStake());
+      dogScore.put("totalPoints", totalPoints);
+
+      dogScores.add(dogScore);
+    }
+
+    return dogScores.stream()
+        .sorted((d1, d2) -> Integer.compare(
+            (Integer) d2.get("totalPoints"),
+            (Integer) d1.get("totalPoints")))
+        .limit(limit)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Get the top scoring dogs of a specific stake type with a limit
+   * 
+   * @param stakeType The stake type to filter by (ALL_AGE or DERBY)
+   * @param limit     The maximum number of dogs to return
+   * @return List of top scoring dogs of the specified stake type
+   */
+  public List<Map<String, Object>> getTopScoringDogsByStakeType(StakeType stakeType, int limit) {
+    List<DogEntity> allDogs = dogRepository.findAll();
+    List<Map<String, Object>> dogScores = new ArrayList<>();
+
+    // Filter dogs by stake type and calculate total points
+    for (DogEntity dog : allDogs) {
+      if (dog.getStake() == stakeType) {
+        int totalPoints = dog.getPoints(); // Using the existing points field
+
+        Map<String, Object> dogScore = new HashMap<>();
+        dogScore.put("dogNumber", dog.getNumber());
+        dogScore.put("dogName", dog.getName());
+        dogScore.put("owner", dog.getOwner());
+        dogScore.put("sire", dog.getSire()); // Add sire
+        dogScore.put("dam", dog.getDam()); // Add dam
+        dogScore.put("stake", dog.getStake());
+        dogScore.put("totalPoints", totalPoints);
+
+        dogScores.add(dogScore);
+      }
+    }
+
+    // Sort by total points and limit the results
+    return dogScores.stream()
+        .sorted((d1, d2) -> Integer.compare(
+            (Integer) d2.get("totalPoints"),
+            (Integer) d1.get("totalPoints")))
+        .limit(limit)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Get the top 10 highest scoring dogs of a specific stake type
+   * 
+   * @param stakeType The stake type to filter by (ALL_AGE or DERBY)
+   * @return List of top 10 dogs with their scores of the specified stake type
+   */
+  public List<Map<String, Object>> getTop10ScoringDogsByStakeType(StakeType stakeType) {
+    return getTopScoringDogsByStakeType(stakeType, 10);
+  }
+
+  /**
+   * Get the top scoring dogs of a specific stake type for a specific day with a
+   * limit
+   * 
+   * @param day       The day number (1-4)
+   * @param stakeType The stake type to filter by (ALL_AGE or DERBY)
+   * @param limit     The maximum number of dogs to return
+   * @return List of top scoring dogs for the specified day and stake type
+   */
+  public List<Map<String, Object>> getTopScoringDogsByDayAndStakeType(int day, StakeType stakeType, int limit) {
+    List<Map<String, Object>> allDogScores = getDogScoresByDay(day);
+
+    // Filter by stake type
+    List<Map<String, Object>> filteredDogScores = allDogScores.stream()
+        .filter(dogScore -> stakeType.equals(dogScore.get("stake")))
+        .collect(Collectors.toList());
+
+    // Sort by total points and limit the results
+    return filteredDogScores.stream()
+        .sorted((d1, d2) -> Integer.compare(
+            (Integer) d2.get("totalPoints"),
+            (Integer) d1.get("totalPoints")))
+        .limit(limit)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Get the top 10 highest scoring dogs of a specific stake type for a specific
+   * day
+   * 
+   * @param day       The day number (1-4)
+   * @param stakeType The stake type to filter by (ALL_AGE or DERBY)
+   * @return List of top 10 dogs with their scores for the specified day and stake
+   *         type
+   */
+  public List<Map<String, Object>> getTop10ScoringDogsByDayAndStakeType(int day, StakeType stakeType) {
+    return getTopScoringDogsByDayAndStakeType(day, stakeType, 10);
   }
 }

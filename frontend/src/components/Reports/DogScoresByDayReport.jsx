@@ -47,17 +47,22 @@ const DogScoresByDayReport = {
   // Add default config
   defaultConfig: { day: 1 },
   
+  // Update the fetchData method
   fetchData: async (config = { day: 1 }) => {
     const { day } = config;
     const topDogs = await DogService.getTop10ScoringDogsByDay(day);
+    
     return {
       title: `Top 10 Dogs - Day ${day}`,
-      columns: ['Dog #', 'Name', 'Owner', 'Points'],
-      data: topDogs.map(dog => [
+      columns: ['Place', 'Score', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
+      data: topDogs.map((dog, index) => [
+        (index + 1).toString(),
+        dog.totalPoints.toString(),
         dog.dogNumber.toString(),
         dog.dogName || '',
-        dog.owner || '',
-        dog.totalPoints.toString()
+        dog.sire || '',
+        dog.dam || '',
+        dog.owner || ''
       ])
     };
   }
