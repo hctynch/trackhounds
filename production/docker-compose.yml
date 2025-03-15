@@ -1,6 +1,6 @@
 services:
   backend:
-    build: ./trackhounds
+    image: backend:latest
     container_name: backend
     ports:
       - "8080:8080"
@@ -13,22 +13,16 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
-    profiles:
-      - dev
-      - ""
     networks:
       - trackhounds_network
 
   frontend:
-    build: ./frontend
+    image: frontend:latest
     container_name: frontend
     ports:
       - "3000:3000"
     depends_on:
       - backend
-    profiles:
-      - frontend
-      - ""
     networks:
       - trackhounds_network
 
@@ -49,11 +43,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    profiles:
-      - dev
-      - frontend
-      - ""
-      - db
     networks:
       - trackhounds_network
 
