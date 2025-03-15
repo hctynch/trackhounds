@@ -72,7 +72,7 @@ const DogDetailScoresReport = {
     if (!dogNumber) {
       return {
         title: 'Dog Detail Scores',
-        columns: ['Dog #', 'Score', 'Time', 'Judge #', 'Day'],
+        columns: ['Day', 'Time', 'Judge #', 'Score', 'Counted'],
         data: [] // No dog number provided yet
       };
     }
@@ -90,11 +90,11 @@ const DogDetailScoresReport = {
       
       // Format the scores for display
       const formattedScores = scores.map(score => [
-        dogNumber.toString(),
-        score.points.toString(),
+        score.day.toString(),
         score.time,
         score.judgeNumber.toString(),
-        score.day.toString()
+        score.points.toString(),
+        score.counted ? <p>&#10003;</p> : ''
       ]);
       
       const dayTitle = day ? `Day ${day}` : 'All Days';
@@ -102,14 +102,14 @@ const DogDetailScoresReport = {
       
       return {
         title: title,
-        columns: ['Dog #', 'Score', 'Time', 'Judge #', 'Day'],
+        columns: ['Day', 'Time', 'Judge #', 'Score', 'Counted'],
         data: formattedScores
       };
     } catch (error) {
       console.error("Error fetching dog scores:", error);
       return {
         title: `Scores for Dog #${dogNumber}`,
-        columns: ['Dog #', 'Score', 'Time', 'Judge #', 'Day'],
+        columns: ['Day', 'Time', 'Judge #', 'Score', 'Counted'],
         data: []
       };
     }

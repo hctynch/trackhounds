@@ -615,7 +615,7 @@ public class DogService {
           Map.of("dogNumber", "Dog does not exist with this number."));
     }
 
-    return scoreRepository.findByDogNumber(dogNumber);
+    return scoreRepository.findByDogNumberOrderByDayAscTimeAsc(dogNumber);
   }
 
   /**
@@ -631,7 +631,7 @@ public class DogService {
           Map.of("judgeNumber", "Judge does not exist with this number."));
     }
 
-    return scoreRepository.findByJudgeNumber(judgeNumber);
+    return scoreRepository.findByJudgeNumberOrderByDayAscTimeAsc(judgeNumber);
   }
 
   /**
@@ -653,7 +653,7 @@ public class DogService {
       return List.of(); // Return empty list if day doesn't exist
     }
 
-    return scoreRepository.findByDogNumberAndDay(dogNumber, day);
+    return scoreRepository.findByDogNumberAndDayOrderByTimeAsc(dogNumber, day);
   }
 
   /**
@@ -675,7 +675,7 @@ public class DogService {
       return List.of(); // Return empty list if day doesn't exist
     }
 
-    return scoreRepository.findByJudgeNumberAndDay(judgeNumber, day);
+    return scoreRepository.findByJudgeNumberAndDayOrderByTimeAsc(judgeNumber, day);
   }
 
   /**
@@ -684,7 +684,7 @@ public class DogService {
    * @return List of all scores
    */
   public List<Score> getScores() {
-    return scoreRepository.findAll();
+    return scoreRepository.findAllByOrderByDayAscTimeAsc();
   }
 
   /**
@@ -699,6 +699,6 @@ public class DogService {
       return List.of(); // Return empty list if day doesn't exist
     }
 
-    return scoreRepository.findByDay(day);
+    return scoreRepository.findByDayOrderByTimeAsc(day);
   }
 }
