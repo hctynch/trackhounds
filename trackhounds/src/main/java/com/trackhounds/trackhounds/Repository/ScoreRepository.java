@@ -12,51 +12,51 @@ import com.trackhounds.trackhounds.Entity.Score;
 public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     /**
-     * Find all scores ordered by time descending
+     * Find all scores ordered by day ascending, then time ascending
      * 
      * @return List of scores
      */
-    List<Score> findAllByOrderByTimeDesc();
+    List<Score> findAllByOrderByDayAscTimeAsc();
 
     /**
-     * Find all scores for a given dog
+     * Find all scores for a given dog, ordered by day and time
      * 
      * @param dogNumber Number of the dog
-     * @return List of scores
+     * @return List of scores ordered chronologically
      */
-    List<Score> findByDogNumber(int dogNumber);
+    List<Score> findByDogNumberOrderByDayAscTimeAsc(int dogNumber);
 
     /**
-     * Find all scores for a given judge
+     * Find all scores for a given judge, ordered by day and time
      * 
      * @param judgeNumber Number of the judge
-     * @return List of scores
+     * @return List of scores ordered chronologically
      */
-    List<Score> findByJudgeNumber(int judgeNumber);
+    List<Score> findByJudgeNumberOrderByDayAscTimeAsc(int judgeNumber);
 
     /**
-     * Find all scores for a given dog on a specific day
+     * Find all scores for a given dog on a specific day, ordered by time
      * 
      * @param dogNumber Number of the dog
      * @param day       Day of the hunt (1-4)
-     * @return List of scores
+     * @return List of scores ordered by time
      */
-    List<Score> findByDogNumberAndDay(int dogNumber, int day);
+    List<Score> findByDogNumberAndDayOrderByTimeAsc(int dogNumber, int day);
 
     /**
-     * Find all scores for a given judge on a specific day
+     * Find all scores for a given judge on a specific day, ordered by time
      * 
      * @param judgeNumber Number of the judge
      * @param day         Day of the hunt (1-4)
-     * @return List of scores
+     * @return List of scores ordered by time
      */
-    List<Score> findByJudgeNumberAndDay(int judgeNumber, int day);
+    List<Score> findByJudgeNumberAndDayOrderByTimeAsc(int judgeNumber, int day);
 
     /**
-     * Find all scores for a given day
+     * Find all scores for a given day, ordered by time
      * 
      * @param day Day of the hunt (1-4)
-     * @return List of scores
+     * @return List of scores ordered by time
      */
-    List<Score> findByDay(int day);
+    List<Score> findByDayOrderByTimeAsc(int day);
 }

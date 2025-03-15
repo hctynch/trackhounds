@@ -129,14 +129,14 @@ function ViewScores() {
     ? scores.filter(score => score.dogNumber?.toString().includes(search))
     : scores;
 
-  const columns = ["Cross Time", "Judge #", "Dog #", "Points", "Day", ""];
+  const columns = ["Day", "Cross Time", "Judge #", "Dog #", "Points", ""];
 
   const data = filteredScores.map(score => [
+    score.day,
     score.time,
     score.judgeNumber,
     score.dogNumber,
     score.points,
-    score.day,
     <button
       className="text-sm ml-1 bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2"
       onClick={() => handleDelete(score.dogNumber, score.id)}
