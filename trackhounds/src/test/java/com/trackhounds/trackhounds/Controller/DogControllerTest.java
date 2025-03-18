@@ -192,11 +192,11 @@ public class DogControllerTest {
                                 .content(gson.toJson(score)))
                                 .andExpect(status().isOk());
                 DogEntity dog = dogRepository.findById(1).get();
-                assertEquals(35, dog.getPoints());
+                assertEquals(38, dog.getPoints());
                 DogEntity dog2 = dogRepository.findById(2).get();
-                assertEquals(30, dog2.getPoints());
+                assertEquals(33, dog2.getPoints());
                 DogEntity dog3 = dogRepository.findById(3).get();
-                assertEquals(25, dog3.getPoints());
+                assertEquals(27, dog3.getPoints());
         }
 
         /**
@@ -478,9 +478,9 @@ public class DogControllerTest {
                 DogEntity dog2 = dogRepository.findById(2).get();
                 DogEntity dog3 = dogRepository.findById(3).get();
 
-                assertEquals(65, dog1.getPoints()); // 40 + 25 = 65
-                assertEquals(65, dog2.getPoints()); // 30 + 35 = 65
-                assertEquals(35, dog3.getPoints()); // 20 + 15 = 35
+                assertEquals(74, dog1.getPoints()); // 44 + 30 = 74
+                assertEquals(75, dog2.getPoints()); // 33 + 42 = 75
+                assertEquals(40, dog3.getPoints()); // 22 + 18 = 40
 
                 // Test getting top 10 dogs overall
                 mvc.perform(get("/dogs/scores/top10/overall")
@@ -490,7 +490,7 @@ public class DogControllerTest {
                                 // Dogs 1 and 2 have the same total (65), so either could be first/second
                                 // Only check Dog3 is last since it has lowest score
                                 .andExpect(jsonPath("$[2].dogNumber").value(3)) // Dog3 should be third (35 points)
-                                .andExpect(jsonPath("$[2].totalPoints").value(35));
+                                .andExpect(jsonPath("$[2].totalPoints").value(40));
         }
 
         /**
