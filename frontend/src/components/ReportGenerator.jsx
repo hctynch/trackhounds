@@ -4,7 +4,7 @@ import DogService from '../services/DogService';
 import Box from './Box';
 import StyledTable from './StyledTable';
 
-const ReportGenerator = ({ hunt, day, title, columns, data }) => {
+const ReportGenerator = ({ hunt, day, title, columns, columnGroups, data }) => {
   const huntTitle = hunt.title
   const dates = hunt.dates
   const contentRef = useRef();
@@ -24,7 +24,6 @@ const ReportGenerator = ({ hunt, day, title, columns, data }) => {
     } getStartTime()
   }, [day])
   
-
   const handlePrint = useReactToPrint({
     contentRef: contentRef,
     documentTitle: title,
@@ -52,7 +51,41 @@ const ReportGenerator = ({ hunt, day, title, columns, data }) => {
             {/* Table content as table row group */}
             <div className="print:table-row-group">
               <div className="w-full" ref={tableContainerRef}>
-                <StyledTable columns={columns} data={data} />
+                {columnGroups ? (
+                  <table className="min-w-full border-collapse table-auto text-sm">
+                    <thead>
+                      <tr>
+                        <th className="border px-4 py-2 bg-gray-100">{columns[0]}</th>
+                        {columnGroups.map((group, index) => (
+                          <th key={index} colSpan={group.span} className="border px-4 py-2 bg-gray-100 text-center">
+                            {group.title}
+                          </th>
+                        ))}
+                        <th className="border px-4 py-2 bg-gray-100">{columns[columns.length - 1]}</th>
+                      </tr>
+                      <tr>
+                        <th className="border px-4 py-2 bg-gray-100"></th>
+                        {columns.slice(1, columns.length - 1).map((col, idx) => (
+                          <th key={idx} className="border px-4 py-2 bg-gray-100">{col}</th>
+                        ))}
+                        <th className="border px-4 py-2 bg-gray-100"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.map((row, rowIndex) => (
+                        <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {row.map((cell, cellIndex) => (
+                            <td key={cellIndex} className="border px-4 py-2 text-center">
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <StyledTable columns={columns} data={data} />
+                )}
               </div>
             </div>
           </div>

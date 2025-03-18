@@ -581,22 +581,22 @@ public class DogServiceTest {
                                 () -> assertEquals(3, day2Scores.size()),
                                 () -> assertTrue(day1Scores.stream()
                                                 .anyMatch(score -> score.get("dogNumber").equals(1)
-                                                                && score.get("totalPoints").equals(77))),
+                                                                && score.get("totalPoints").equals(70))),
                                 () -> assertTrue(day1Scores.stream()
                                                 .anyMatch(score -> score.get("dogNumber").equals(2)
-                                                                && score.get("totalPoints").equals(49))),
+                                                                && score.get("totalPoints").equals(45))),
                                 () -> assertTrue(day1Scores.stream()
                                                 .anyMatch(score -> score.get("dogNumber").equals(3)
-                                                                && score.get("totalPoints").equals(71))),
+                                                                && score.get("totalPoints").equals(65))),
                                 () -> assertTrue(day2Scores.stream()
                                                 .anyMatch(score -> score.get("dogNumber").equals(1)
-                                                                && score.get("totalPoints").equals(30))),
+                                                                && score.get("totalPoints").equals(25))),
                                 () -> assertTrue(day2Scores.stream()
                                                 .anyMatch(score -> score.get("dogNumber").equals(2)
-                                                                && score.get("totalPoints").equals(42))),
+                                                                && score.get("totalPoints").equals(35))),
                                 () -> assertTrue(day2Scores.stream()
                                                 .anyMatch(score -> score.get("dogNumber").equals(3)
-                                                                && score.get("totalPoints").equals(18))));
+                                                                && score.get("totalPoints").equals(15))));
 
                 // Test getTopScoringDogsByDay
                 List<Map<String, Object>> top2DogsDay1 = dogService.getTopScoringDogsByDay(1, 2);
@@ -693,8 +693,8 @@ public class DogServiceTest {
 
                 assertAll("Same score test",
                                 () -> assertEquals(2, sameScoreDogs.size()),
-                                () -> assertEquals(55, sameScoreDogs.get(0).get("totalPoints")),
-                                () -> assertEquals(55, sameScoreDogs.get(1).get("totalPoints")));
+                                () -> assertEquals(50, sameScoreDogs.get(0).get("totalPoints")),
+                                () -> assertEquals(50, sameScoreDogs.get(1).get("totalPoints")));
         }
 
         /**

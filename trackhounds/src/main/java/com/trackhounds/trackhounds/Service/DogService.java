@@ -421,11 +421,10 @@ public class DogService {
    * @return Total points from highest scores
    */
   private int calculateDailyPoints(DailyScore dailyScore) {
-    double totalPoints = dailyScore.getHighestScores().stream()
+
+    return dailyScore.getHighestScores().stream()
         .mapToInt(highestScore -> highestScore.getScore().getPoints())
         .sum();
-    totalPoints += totalPoints * (dailyScore.getDay().getDay() * .1);
-    return (int) totalPoints;
   }
 
   /**

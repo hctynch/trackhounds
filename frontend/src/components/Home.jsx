@@ -82,12 +82,13 @@ function Home() {
   ]);
   
   // Format data for daily top dogs table
-  const dailyColumns = ['#', 'Name', 'Owner', 'Points'];
+  const dailyColumns = ['#', 'Name', 'S&D', 'Endurance', 'Total'];
   const dailyData = topDogsDaily.map(dog => [
     dog.dogNumber,
     dog.dogName,
-    dog.owner,
-    dog.totalPoints
+    dog.totalPoints,
+    Number.parseInt(dog.totalPoints * .1 * selectedDay),
+    dog.totalPoints + Number.parseInt(dog.totalPoints * .1 * selectedDay)
   ]);
 
   return (
