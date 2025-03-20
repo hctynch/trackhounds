@@ -13,37 +13,36 @@ Software designed to provide a potential alternative to dated scoring software c
 ## Needed Resources
 
 - [**Docker**](https://www.docker.com/get-started/)
-- Latest Release of [**trackhounds**](https://github.com/hctynch/trackhounds/releases) (Downlaod ```Source Code (zip)``` under ```Assets```)
+- Latest Release of [**trackhounds**](https://github.com/hctynch/trackhounds/releases) (Downlaod `trackhounds-X.X.X.zip` under `Assets`)
+
 ## Usage & Help
 
 1. Download Docker Desktop
 2. Download the latest release of trackhounds
 3. Follow the [instructions](https://github.com/hctynch/trackhounds/releases)
-4. Email ```tynchhunt@gmail.com``` with issues, or use your GitHub account to create an issue under ```Issues```
+4. Email `tynchhunt@gmail.com` with issues, or use your GitHub account to create an issue under `Issues`
 
 ## User's Guide
+
 ### Install
-After clicking the ```Source Code (zip)``` under ```Assets``` in the [latest release](https://github.com/hctynch/trackhounds/releases),
+
+After clicking the `trackhounds-X.X.X.zip` under `Assets` in the [latest release](https://github.com/hctynch/trackhounds/releases),
 you should now see this zipped foler in your downloads:
 
 ![image](https://github.com/user-attachments/assets/96dfd539-ae3f-4053-a742-59fe63e9babe)
 
-Right click this zipped folder and select ```Extract All```,
+Right click this zipped folder and select `Extract All`,
 you should then see this screen:
 
 ![image](https://github.com/user-attachments/assets/3b6da88b-2cad-4a56-95ce-17596bbcc669)
 
 Select a location to install the application too, suggested to install to Desktop or a easily accesible location.
 
-Next, navigate to where you extract the zipped folder to. Open the ```trackhounds-X.X.X``` folder (X.X.X will be the current version, e.g. 1.0.0).
+Next, navigate to where you extract the zipped folder to. Open the `trackhounds-X.X.X` folder (X.X.X will be the current version, e.g. 1.0.0).
 
 ![image](https://github.com/user-attachments/assets/afdffd77-2c06-41ee-a49d-2d1c3353a1dd)
 
-Inside of this folder select the ```production``` folder:
-
-![image](https://github.com/user-attachments/assets/9326ea14-0600-4a3b-9673-601a8583a86d)
-
-Then all that is left is selecting the ```windows_docker_setup.bat``` file (If you have a Mac follow the instructions in the release for Mac specific instructions):
+Then all that is left is selecting the `windows_docker_setup.bat` file (If you have a Mac follow the instructions in the release for Mac specific instructions):
 
 ![image](https://github.com/user-attachments/assets/e4e3c8a2-048b-4cd3-bd7a-94fdde846099)
 
@@ -51,14 +50,12 @@ This will open a terminal which should start Docker, load the containers from th
 
 ![image](https://github.com/user-attachments/assets/990d691c-5914-4ba2-a196-8c34d5254def)
 
-
 ![image](https://github.com/user-attachments/assets/c38d1540-4bf6-469f-b25b-09f83922d6d2)
 
 **Notice**: The terminal says press any key to stop Docker and exit...
 This is for a smooth shutdown of both docker and the application, **after using the application** I would **highly** recommend clicking the terminal window and pressing a button. If not the application will be running in the background until Docker Desktop is shutdown.
 
 ![image](https://github.com/user-attachments/assets/79b1184a-8e1e-48a8-aa71-ef6747da0b47)
-
 
 ### trackhounds
 
@@ -76,7 +73,7 @@ Provides access to major pages in the application such as Home, Add Dogs, View D
 
 ![image](https://github.com/user-attachments/assets/7f46494e-1901-4505-882e-3ee7c32c446f)
 
-Provides overview information for the current Hunt, serves as a landing page. In the ***Upper Right*** there is a three dots icon this can be used for ```Creating a New Hunt``` and ```Editing the Current Hunt```
+Provides overview information for the current Hunt, serves as a landing page. In the **_Upper Right_** there is a three dots icon this can be used for `Creating a New Hunt` and `Editing the Current Hunt`
 
 #### Dogs
 
@@ -119,5 +116,3 @@ Selecting Scratch Sheet will take you to a screen where you can view all entered
 ![image](https://github.com/user-attachments/assets/8129092b-05b8-4e36-8fea-cfba20262376)
 
 Clicking reports will allow you see all the current possible options for printable reports. I can alter or add new reports upon request, as a niceity I would request an example of how you want the report structured and any parameters you may want to filter for. The printing functionality relies on the browsers built in printing, that does mean using different browsers will alter capabilities. I suggest Google Chrome as it has options for printing on a large number of paper styles.
-
-
