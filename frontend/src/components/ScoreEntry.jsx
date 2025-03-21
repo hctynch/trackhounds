@@ -159,7 +159,7 @@ function ScoreEntry() {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-wrap w-1/2 mx-auto h-full justify-evenly py-1">
+              <div className="flex flex-col w-full mx-auto h-full justify-evenly items-center">
                 {Array(7).fill().map((_, index) => (
                   <div key={index} className="flex items-center gap-x-2 mx-8">
                     <div className="w-24">

@@ -1,3 +1,4 @@
+import ComprehensiveDogScoresReport from './ComprehensiveDogScoresReport';
 import CustomTopDogsReport from './CustomTopDogsReport';
 import DailyCustomTopDogsReport from './DailyCustomTopDogsReport';
 import DogDetailScoresReport from './DogDetailScoresReport';
@@ -16,7 +17,7 @@ const reportGroups = [
   },
   {
     type: 'Total Reports',
-    items: [TopDogsReport, TopDogsByStakeTypeReport, CustomTopDogsReport, ScratchReport]
+    items: [TopDogsReport, TopDogsByStakeTypeReport, CustomTopDogsReport, ScratchReport, ComprehensiveDogScoresReport]
   },
   {
     type: 'Detail Reports',

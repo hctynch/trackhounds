@@ -57,7 +57,7 @@ const DogScoresByDayReport = {
       columns: ['Place', 'Score', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
       data: topDogs.map((dog, index) => [
         (index + 1).toString(),
-        dog.totalPoints.toString(),
+        (dog.totalPoints + Number.parseInt(dog.totalPoints * day * .1)).toString(),
         dog.dogNumber.toString(),
         dog.dogName || '',
         dog.sire || '',

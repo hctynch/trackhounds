@@ -76,13 +76,15 @@ const TopDogsByDayAndStakeTypeReport = {
     
     return {
       title: `Top 10 ${stakeType === 'ALL_AGE' ? 'All Age' : 'Derby'} Dogs - Day ${day}`,
-      columns: ['Dog #', 'Name', 'Owner', 'Stake', 'Points'],
-      data: topDogs.map(dog => [
+      columns: ['Place', 'Score', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
+      data: topDogs.map((dog, index) => [
+        index + 1,
+        (dog.totalPoints + Number.parseInt(dog.totalPoints * day * .1)).toString(),
         dog.dogNumber.toString(),
         dog.dogName || '',
+        dog.sire,
+        dog.dam,
         dog.owner || '',
-        dog.stake === 'ALL_AGE' ? 'All Age' : 'Derby',
-        dog.totalPoints.toString()
       ])
     };
   }

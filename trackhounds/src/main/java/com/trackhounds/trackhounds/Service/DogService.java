@@ -162,6 +162,7 @@ public class DogService {
       int totalPoints = calculateTotalPoints(dog);
       dog.setPoints(totalPoints);
     }
+    dogRepository.saveAll(dogs);
     return dogs;
   }
 
@@ -175,7 +176,9 @@ public class DogService {
     int totalPoints = 0;
     List<DailyScore> scores = dog.getScores();
     for (DailyScore dailyScore : scores) {
-      totalPoints += dailyScore.getHighestScores().stream().mapToInt(hs -> hs.getScore().getPoints()).sum();
+      double toAdd = dailyScore.getHighestScores().stream().mapToInt(hs -> hs.getScore().getPoints()).sum();
+      toAdd += toAdd * (dailyScore.getDay().getDay() * .1);
+      totalPoints += toAdd;
     }
     return totalPoints;
   }
@@ -418,6 +421,7 @@ public class DogService {
    * @return Total points from highest scores
    */
   private int calculateDailyPoints(DailyScore dailyScore) {
+
     return dailyScore.getHighestScores().stream()
         .mapToInt(highestScore -> highestScore.getScore().getPoints())
         .sum();
