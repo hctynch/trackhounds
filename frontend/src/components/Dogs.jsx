@@ -16,7 +16,6 @@ function Dogs() {
     async function fetchData() {
       const res = await DogService.getDogs();
       if (res) {
-        console.log(res)
         setDogs(res);
         setFilteredDogs(res);
       } else {

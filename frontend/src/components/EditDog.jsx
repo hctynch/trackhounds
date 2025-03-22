@@ -52,7 +52,6 @@ function EditDog() {
 
     const data = await DogService.editDog(editedDog);
     if (data instanceof Error) {
-      console.log(data.response.data);
       setErrs(data.response.data.fields);
     } else {
       navigate('/dogs/all');

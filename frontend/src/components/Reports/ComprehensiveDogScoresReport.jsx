@@ -34,7 +34,6 @@ const ComprehensiveDogScoresReport = {
         const scores = await DogService.getDogScoresByDay(day);
         
         scores.forEach(score => {
-          console.log(score)
           if (dogScoresMap[score.dogNumber]) {
             // Add S&D score for this day
             dogScoresMap[score.dogNumber].scores[day].sd = score.totalPoints || 0;
@@ -88,8 +87,7 @@ const ComprehensiveDogScoresReport = {
         ],
         data: formattedData
       };
-    } catch (error) {
-      console.error("Error fetching comprehensive dog scores:", error);
+    } catch {
       return {
         title: 'Comprehensive Dog Scores Report',
         columns: [
