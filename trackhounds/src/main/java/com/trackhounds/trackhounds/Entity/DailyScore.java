@@ -64,6 +64,16 @@ public class DailyScore {
   private DogEntity dog;
 
   /**
+   * Time of the last cross
+   */
+  private LocalTime lastCross = LocalTime.of(0, 0);
+
+  /**
+   * Flag for 0 interval hunts
+   */
+  private boolean zeroInterval = false;
+
+  /**
    * Default constructor for DailyScore
    * 
    * @param day Day of Scores
@@ -81,24 +91,41 @@ public class DailyScore {
    * @param interval  Interval duration in minutes
    */
   public void addScore(Score score, LocalTime startTime, int interval) {
+    if (interval == 0) {
+      zeroInterval = true;
+    }
+
     int bucket = interval == 0 ? 0
         : (int) java.time.Duration.between(startTime, score.getTime()).toMinutes() / interval;
     TimeBucketScore timeBucketScore = new TimeBucketScore(null, bucket, score, this);
     timeBucketScores.add(timeBucketScore);
 
-    HighestScore highestScore = highestScores.stream()
-        .filter(hs -> hs.getTimeBucket() == bucket)
-        .findFirst()
-        .orElse(null);
-    if (highestScore == null || score.getPoints() > highestScore.getScore().getPoints()) {
-      if (highestScore != null) {
-        highestScore.getScore().setCounted(false);
-        highestScores.remove(highestScore);
-      }
+    // For 0 interval hunts, all scores are counted
+    if (interval == 0) {
       score.setCounted(true);
-      highestScores.add(new HighestScore(null, bucket, score, this));
+      highestScores.add(new HighestScore(null, 0, score, this));
+      if (score.getTime().isAfter(lastCross)) {
+        lastCross = score.getTime();
+      }
     } else {
-      score.setCounted(false);
+      // Normal behavior for non-zero interval hunts
+      HighestScore highestScore = highestScores.stream()
+          .filter(hs -> hs.getTimeBucket() == bucket)
+          .findFirst()
+          .orElse(null);
+      if (highestScore == null || score.getPoints() > highestScore.getScore().getPoints()) {
+        if (highestScore != null) {
+          highestScore.getScore().setCounted(false);
+          highestScores.remove(highestScore);
+        }
+        score.setCounted(true);
+        highestScores.add(new HighestScore(null, bucket, score, this));
+        if (score.getTime().isAfter(lastCross)) {
+          lastCross = score.getTime();
+        }
+      } else {
+        score.setCounted(false);
+      }
     }
   }
 
@@ -116,10 +143,9 @@ public class DailyScore {
     if (timeBucketScore == null) {
       return null;
     }
-    if (timeBucketScore != null) {
-      timeBucketScores.remove(timeBucketScore);
-      score.setCounted(false);
-    }
+
+    timeBucketScores.remove(timeBucketScore);
+    score.setCounted(false);
 
     HighestScore highestScore = highestScores.stream()
         .filter(hs -> hs.getScore().equals(score))
@@ -127,18 +153,27 @@ public class DailyScore {
         .orElse(null);
     if (highestScore != null) {
       highestScores.remove(highestScore);
+      if (highestScore.getScore().getTime().equals(lastCross)) {
+        lastCross = highestScores.stream()
+            .map(hs -> hs.getScore().getTime())
+            .max(LocalTime::compareTo)
+            .orElse(LocalTime.of(0, 0));
+      }
     }
 
-    // Find the highest score in the same time bucket
-    int bucket = timeBucketScore.getTimeBucket();
-    TimeBucketScore newHighestScore = timeBucketScores.stream()
-        .filter(tbs -> tbs.getTimeBucket() == bucket)
-        .max((tbs1, tbs2) -> Integer.compare(tbs1.getScore().getPoints(), tbs2.getScore().getPoints()))
-        .orElse(null);
+    // Only find new highest score if not a 0 interval hunt
+    if (!zeroInterval) {
+      // Find the highest score in the same time bucket
+      int bucket = timeBucketScore.getTimeBucket();
+      TimeBucketScore newHighestScore = timeBucketScores.stream()
+          .filter(tbs -> tbs.getTimeBucket() == bucket)
+          .max((tbs1, tbs2) -> Integer.compare(tbs1.getScore().getPoints(), tbs2.getScore().getPoints()))
+          .orElse(null);
 
-    if (newHighestScore != null) {
-      newHighestScore.getScore().setCounted(true);
-      highestScores.add(new HighestScore(null, bucket, newHighestScore.getScore(), this));
+      if (newHighestScore != null) {
+        newHighestScore.getScore().setCounted(true);
+        highestScores.add(new HighestScore(null, bucket, newHighestScore.getScore(), this));
+      }
     }
 
     return score;

@@ -986,4 +986,106 @@ public class DogServiceTest {
                 assertEquals(HttpStatus.BAD_REQUEST, judgeDayException.getStatus());
                 assertTrue(judgeDayException.getFields().containsKey("judgeNumber"));
         }
+
+        /**
+         * Test the tie-breaking logic in ranking methods
+         */
+        @Test
+        @Transactional
+        void testTieBreakingInRankings() {
+                // Create test dogs
+                DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
+                DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
+                DogEntity dog3 = new DogEntity(3, "Dog3", StakeType.DERBY, "Owner3", "Sire3", "Dam3");
+                DogEntity dog4 = new DogEntity(4, "Dog4", StakeType.DERBY, "Owner4", "Sire4", "Dam4");
+
+                dogService.createDogs(List.of(dog1, dog2, dog3, dog4));
+
+                // Create scores with identical point values but different times
+                ScoreDto earlyScore = new ScoreDto(
+                                1, "05:30:00", 1, "05:45:00",
+                                new int[] { 1, 3 },
+                                new int[] { 40, 40 },
+                                10);
+
+                // Wait a bit to ensure scores have different timestamps
+                ScoreDto laterScore = new ScoreDto(
+                                1, "05:30:00", 1, "05:55:00",
+                                new int[] { 2, 4 },
+                                new int[] { 40, 40 },
+                                10);
+
+                // Add scores for day 2 to test day-based tie breaking
+                ScoreDto day2Score = new ScoreDto(
+                                2, "05:30:00", 1, "05:45:00",
+                                new int[] { 2, 3 },
+                                new int[] { 30, 30 },
+                                10);
+
+                // Create the scores in a specific order
+                dogService.createScore(earlyScore);
+                dogService.createScore(laterScore);
+                dogService.createScore(day2Score);
+
+                // Test tie-breaking for getTopScoringDogsByDay
+                List<Map<String, Object>> topDogsDay1 = dogService.getTopScoringDogsByDay(1, 4);
+
+                assertAll("Tie-breaking in getTopScoringDogsByDay",
+                                () -> assertEquals(4, topDogsDay1.size()),
+                                () -> assertEquals(40, topDogsDay1.get(0).get("totalPoints")),
+                                () -> assertEquals(40, topDogsDay1.get(1).get("totalPoints")),
+                                () -> assertEquals(40, topDogsDay1.get(2).get("totalPoints")),
+                                () -> assertEquals(40, topDogsDay1.get(3).get("totalPoints")),
+                                // Dogs with later score times should come first
+                                () -> assertEquals(2, topDogsDay1.get(0).get("dogNumber")), // Later score time
+                                () -> assertEquals(4, topDogsDay1.get(1).get("dogNumber")), // Later score time
+                                () -> assertEquals(1, topDogsDay1.get(2).get("dogNumber")), // Earlier score time
+                                () -> assertEquals(3, topDogsDay1.get(3).get("dogNumber")) // Earlier score time
+                );
+
+                // Test tie-breaking for getTopScoringDogsOverall
+                List<Map<String, Object>> topDogsOverall = dogService.getTopScoringDogsOverall(4);
+
+                assertAll("Tie-breaking in getTopScoringDogsOverall",
+                                () -> assertEquals(4, topDogsOverall.size()),
+                                // Dogs with scores on day 2 should be ranked higher in case of tie
+                                () -> assertEquals(2, topDogsOverall.get(0).get("dogNumber")), // Has score on day 2
+                                () -> assertEquals(3, topDogsOverall.get(1).get("dogNumber")), // Has score on day 2
+                                // Then the later time on day 1 should break the tie
+                                () -> assertEquals(4, topDogsOverall.get(2).get("dogNumber")), // Later score time on
+                                                                                               // day 1
+                                () -> assertEquals(1, topDogsOverall.get(3).get("dogNumber")) // Earlier score time on
+                                                                                              // day 1
+                );
+
+                // Test tie-breaking for getTopScoringDogsByStakeType
+                List<Map<String, Object>> topAllAgeDogs = dogService.getTopScoringDogsByStakeType(StakeType.ALL_AGE, 2);
+                List<Map<String, Object>> topDerbyDogs = dogService.getTopScoringDogsByStakeType(StakeType.DERBY, 2);
+
+                assertAll("Tie-breaking in getTopScoringDogsByStakeType",
+                                () -> assertEquals(2, topAllAgeDogs.size()),
+                                () -> assertEquals(2, topDerbyDogs.size()),
+                                // Dog2 has score on day 2 (later than Dog1)
+                                () -> assertEquals(2, topAllAgeDogs.get(0).get("dogNumber")),
+                                () -> assertEquals(1, topAllAgeDogs.get(1).get("dogNumber")),
+                                // Dog3 has score on day 2 (later than Dog4)
+                                () -> assertEquals(3, topDerbyDogs.get(0).get("dogNumber")),
+                                () -> assertEquals(4, topDerbyDogs.get(1).get("dogNumber")));
+
+                // Test tie-breaking for getTopScoringDogsByDayAndStakeType
+                List<Map<String, Object>> topAllAgeDogsDay1 = dogService.getTopScoringDogsByDayAndStakeType(1,
+                                StakeType.ALL_AGE, 2);
+                List<Map<String, Object>> topDerbyDogsDay1 = dogService.getTopScoringDogsByDayAndStakeType(1,
+                                StakeType.DERBY, 2);
+
+                assertAll("Tie-breaking in getTopScoringDogsByDayAndStakeType",
+                                () -> assertEquals(2, topAllAgeDogsDay1.size()),
+                                () -> assertEquals(2, topDerbyDogsDay1.size()),
+                                // Within a single day, later score time should win
+                                () -> assertEquals(2, topAllAgeDogsDay1.get(0).get("dogNumber")), // Later score
+                                () -> assertEquals(1, topAllAgeDogsDay1.get(1).get("dogNumber")), // Earlier score
+                                () -> assertEquals(4, topDerbyDogsDay1.get(0).get("dogNumber")), // Later score
+                                () -> assertEquals(3, topDerbyDogsDay1.get(1).get("dogNumber")) // Earlier score
+                );
+        }
 }
