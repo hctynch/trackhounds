@@ -24,19 +24,53 @@ function AddDogs() {
   const [owner, setOwner] = useState('');
   const [errors, setErrors] = useState({});
   const [submitErrors, setSubmitErrors] = useState(false);
-
+  const [sireSuggestions, setSireSuggestions] = useState([]);
+  const [damSuggestions, setDamSuggestions] = useState([]);
   const handleInputChange = (index, event) => {
     setSubmitErrors(false); // Reset the flag on input change
     const values = [...dogs];
     values[index][event.target.name] = event.target.value;
 
-    if (event.target.name === 'number' && hunt.stakeRange && hunt.stakeTypeRange) {
+    if (
+      event.target.name === 'number' &&
+      hunt.stakeRange &&
+      hunt.stakeTypeRange
+    ) {
       const number = parseInt(event.target.value, 10);
       for (let i = 0; i < hunt.stakeRange.length; i++) {
-        if (number >= hunt.stakeRange[i] && (i === hunt.stakeRange.length - 1 || number < hunt.stakeRange[i + 1])) {
+        if (
+          number >= hunt.stakeRange[i] &&
+          (i === hunt.stakeRange.length - 1 || number < hunt.stakeRange[i + 1])
+        ) {
           values[index].stake = hunt.stakeTypeRange[i];
           break;
         }
+      }
+    } else if (event.target.name === 'sire') {
+      if (event.target.value.length > 0) {
+        const filteredSuggestions = values
+          .filter((suggestion) =>
+            suggestion.sire
+              .toLowerCase()
+              .includes(event.target.value.toLowerCase())
+          )
+          .map((suggestion) => suggestion.sire);
+        setSireSuggestions(filteredSuggestions);
+      } else {
+        setSireSuggestions([]);
+      }
+    } else if (event.target.name === 'dam') {
+      if (event.target.value.length > 0) {
+        const filteredSuggestions = values
+          .filter((suggestion) =>
+            suggestion.dam
+              .toLowerCase()
+              .includes(event.target.value.toLowerCase())
+          )
+          .map((suggestion) => suggestion.dam);
+        setDamSuggestions(filteredSuggestions);
+      } else {
+        setDamSuggestions([]);
       }
     }
 
@@ -65,7 +99,7 @@ function AddDogs() {
       }
     });
     if (submitErrors) {
-      setErrors({...errors, ...newErrors});
+      setErrors({ ...errors, ...newErrors });
     } else {
       setErrors(newErrors);
     }
@@ -98,13 +132,15 @@ function AddDogs() {
       setStatus('error');
       setErrors(call.fields);
       setSubmitErrors(true); // Set the flag to indicate errors from submit
-      console.log(call)
+      console.log(call);
       return;
     }
     setStatus('success');
     setSubmitErrors(false); // Reset the flag on successful submit
     navigate('/dogs/all');
   };
+
+  const handleSelectSuggestion = (i, event) => {};
 
   const columns = ['#', 'Name', 'Stake', 'Sire', 'Dam'];
   const data = dogs.map((dog, index) => [
@@ -136,23 +172,37 @@ function AddDogs() {
       }`}
       name='stake'
       value={dog.stake}
-      onChange={(event) => handleInputChange(index, event)}
-    >
+      onChange={(event) => handleInputChange(index, event)}>
       {hunt.stakeTypeRange &&
         ['ALL_AGE', 'DERBY'].map((stake, i) => (
-          <option key={i} value={stake}>
+          <option
+            key={i}
+            value={stake}>
             {stake === 'ALL_AGE' ? 'All Age' : 'Derby'}
           </option>
         ))}
     </select>,
-    <input
-      className={`pl-1 w-full h-full bg-gray-100 ${
-        errors[`row${index}`] ? 'text-red-500' : 'text-black'
-      }`}
-      name='sire'
-      value={dog.sire}
-      onChange={(event) => handleInputChange(index, event)}
-    />,
+    <div>
+      <input
+        className={`pl-1 w-full h-full bg-gray-100 ${
+          errors[`row${index}`] ? 'text-red-500' : 'text-black'
+        }`}
+        name='sire'
+        value={dog.sire}
+        onChange={(event) => handleInputChange(index, event)}
+      />
+      {sireSuggestions.length > 0 && (
+        <ul>
+          {sireSuggestions.map((suggestion, i) => (
+            <li
+              key={i}
+              onClick={(event) => handleSelectSuggestion(i, event)}>
+              {suggestion}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>,
     <input
       className={`pl-1 w-full h-full bg-gray-100 ${
         errors[`row${index}`] ? 'text-red-500' : 'text-black'
@@ -195,7 +245,10 @@ function AddDogs() {
           </Box>
         </div>
         <Box params='overflow-y-auto w-full p-4 mt-8 mb-5 bg-slate-100 h-full'>
-          <StyledTable columns={columns} data={data} />
+          <StyledTable
+            columns={columns}
+            data={data}
+          />
           <div
             className='mx-auto flex items-center justify-center mt-1 hover:text-green-600 text-green-500/90 cursor-pointer'
             onClick={handleAddRow}>
