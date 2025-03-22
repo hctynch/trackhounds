@@ -390,25 +390,23 @@ public class DogService {
     List<Map<String, Object>> dogScores = new ArrayList<>();
 
     for (DogEntity dog : allDogs) {
-      Optional<DailyScore> dailyScoreOpt = dog.getScores().stream()
-          .filter(score -> score.getDay().getDay() == day)
-          .findFirst();
-
-      if (dailyScoreOpt.isPresent()) {
-        DailyScore dailyScore = dailyScoreOpt.get();
-        int totalPoints = calculateDailyPoints(dailyScore);
-
-        Map<String, Object> dogScore = new HashMap<>();
-        dogScore.put("dogNumber", dog.getNumber());
-        dogScore.put("dogName", dog.getName());
-        dogScore.put("owner", dog.getOwner());
-        dogScore.put("sire", dog.getSire()); // Add sire
-        dogScore.put("dam", dog.getDam()); // Add dam
-        dogScore.put("stake", dog.getStake());
-        dogScore.put("totalPoints", totalPoints);
-
-        dogScores.add(dogScore);
+      if (dog.getScores().size() < day) {
+        continue;
       }
+      DailyScore dailyScore = dog.getScores().get(day - 1);
+
+      int totalPoints = calculateDailyPoints(dailyScore);
+
+      Map<String, Object> dogScore = new HashMap<>();
+      dogScore.put("dogNumber", dog.getNumber());
+      dogScore.put("dogName", dog.getName());
+      dogScore.put("owner", dog.getOwner());
+      dogScore.put("sire", dog.getSire()); // Add sire
+      dogScore.put("dam", dog.getDam()); // Add dam
+      dogScore.put("stake", dog.getStake());
+      dogScore.put("totalPoints", totalPoints);
+      dogScore.put("lastScore", dailyScore.getLastCross());
+      dogScores.add(dogScore);
     }
 
     return dogScores;
@@ -428,18 +426,36 @@ public class DogService {
   }
 
   /**
-   * Get the top 10 highest scoring dogs for a specific day
+   * Get the top highest scoring dogs for a specific day
    * 
-   * @param day The day number (1-4)
-   * @return List of top 10 dogs with their scores
+   * @param day   The day number (1-4)
+   * @param limit The maximum number of dogs to return
+   * @return List of top dogs with their scores
    */
   public List<Map<String, Object>> getTopScoringDogsByDay(int day, int limit) {
     List<Map<String, Object>> dogScores = getDogScoresByDay(day);
 
     return dogScores.stream()
-        .sorted((d1, d2) -> Integer.compare(
-            (Integer) d2.get("totalPoints"),
-            (Integer) d1.get("totalPoints")))
+        .sorted((d1, d2) -> {
+          // First, compare by total points (descending)
+          int pointsComparison = Integer.compare(
+              (Integer) d2.get("totalPoints"),
+              (Integer) d1.get("totalPoints"));
+
+          // If points are equal, sort by dog name (ascending)
+          if (pointsComparison == 0) {
+            LocalTime tifd1 = (LocalTime) d1.get("lastScore");
+            LocalTime tifd2 = (LocalTime) d2.get("lastScore");
+            if (tifd1 != null && tifd2 != null) {
+              return tifd1.isAfter(tifd2) ? -1 : 1;
+            } else if (tifd1 == null && tifd2 != null) {
+              return 1;
+            } else if (tifd1 != null && tifd2 == null) {
+              return -1;
+            }
+          }
+          return pointsComparison;
+        })
         .limit(limit)
         .collect(Collectors.toList());
   }
@@ -460,30 +476,7 @@ public class DogService {
    * @return List of top 10 dogs with their total scores
    */
   public List<Map<String, Object>> getTop10ScoringDogsOverall() {
-    List<DogEntity> allDogs = dogRepository.findAll();
-    List<Map<String, Object>> dogScores = new ArrayList<>();
-
-    for (DogEntity dog : allDogs) {
-      int totalPoints = dog.getPoints(); // Using the existing points field
-
-      Map<String, Object> dogScore = new HashMap<>();
-      dogScore.put("dogNumber", dog.getNumber());
-      dogScore.put("dogName", dog.getName());
-      dogScore.put("owner", dog.getOwner());
-      dogScore.put("sire", dog.getSire()); // Add sire
-      dogScore.put("dam", dog.getDam()); // Add dam
-      dogScore.put("stake", dog.getStake());
-      dogScore.put("totalPoints", totalPoints);
-
-      dogScores.add(dogScore);
-    }
-
-    return dogScores.stream()
-        .sorted((d1, d2) -> Integer.compare(
-            (Integer) d2.get("totalPoints"),
-            (Integer) d1.get("totalPoints")))
-        .limit(10)
-        .collect(Collectors.toList());
+    return getTopScoringDogsOverall(10);
   }
 
   /**
@@ -502,19 +495,61 @@ public class DogService {
       Map<String, Object> dogScore = new HashMap<>();
       dogScore.put("dogNumber", dog.getNumber());
       dogScore.put("dogName", dog.getName());
-      dogScore.put("sire", dog.getSire()); // Add sire
-      dogScore.put("dam", dog.getDam()); // Add dam
+      dogScore.put("sire", dog.getSire());
+      dogScore.put("dam", dog.getDam());
       dogScore.put("owner", dog.getOwner());
       dogScore.put("stake", dog.getStake());
       dogScore.put("totalPoints", totalPoints);
+
+      // Add last score time for tie-breaking
+      LocalTime lastScoreTime = null;
+      int day = 0;
+      if (dog.getScores() != null && !dog.getScores().isEmpty()) {
+        for (DailyScore dailyScore : dog.getScores()) {
+          if (dailyScore.getLastCross().isAfter(LocalTime.of(0, 0))) {
+            lastScoreTime = dailyScore.getLastCross();
+            day = dailyScore.getDay().getDay();
+          }
+        }
+      }
+      dogScore.put("lastScore", lastScoreTime);
+      dogScore.put("lastScoreDay", day);
 
       dogScores.add(dogScore);
     }
 
     return dogScores.stream()
-        .sorted((d1, d2) -> Integer.compare(
-            (Integer) d2.get("totalPoints"),
-            (Integer) d1.get("totalPoints")))
+        .sorted((d1, d2) -> {
+          // First, compare by total points (descending)
+          int pointsComparison = Integer.compare(
+              (Integer) d2.get("totalPoints"),
+              (Integer) d1.get("totalPoints"));
+
+          // If points are equal, sort by last score time (latest first)
+          if (pointsComparison == 0) {
+            int day1 = (int) d1.get("lastScoreDay");
+            if (day1 == 0) {
+              return 1;
+            }
+            int day2 = (int) d2.get("lastScoreDay");
+            if (day2 == 0) {
+              return -1;
+            }
+            if (day1 != day2) {
+              return day1 > day2 ? -1 : 1;
+            }
+            LocalTime tifd1 = (LocalTime) d1.get("lastScore");
+            LocalTime tifd2 = (LocalTime) d2.get("lastScore");
+            if (tifd1 != null && tifd2 != null) {
+              return tifd1.isAfter(tifd2) ? -1 : 1;
+            } else if (tifd1 == null && tifd2 != null) {
+              return 1;
+            } else if (tifd1 != null && tifd2 == null) {
+              return -1;
+            }
+          }
+          return pointsComparison;
+        })
         .limit(limit)
         .collect(Collectors.toList());
   }
@@ -539,10 +574,24 @@ public class DogService {
         dogScore.put("dogNumber", dog.getNumber());
         dogScore.put("dogName", dog.getName());
         dogScore.put("owner", dog.getOwner());
-        dogScore.put("sire", dog.getSire()); // Add sire
-        dogScore.put("dam", dog.getDam()); // Add dam
+        dogScore.put("sire", dog.getSire());
+        dogScore.put("dam", dog.getDam());
         dogScore.put("stake", dog.getStake());
         dogScore.put("totalPoints", totalPoints);
+
+        // Add last score time for tie-breaking
+        LocalTime lastScoreTime = null;
+        int day = 0;
+        if (dog.getScores() != null && !dog.getScores().isEmpty()) {
+          for (DailyScore dailyScore : dog.getScores()) {
+            if (dailyScore.getLastCross().isAfter(LocalTime.of(0, 0))) {
+              lastScoreTime = dailyScore.getLastCross();
+              day = dailyScore.getDay().getDay();
+            }
+          }
+        }
+        dogScore.put("lastScore", lastScoreTime);
+        dogScore.put("lastScoreDay", day);
 
         dogScores.add(dogScore);
       }
@@ -550,9 +599,38 @@ public class DogService {
 
     // Sort by total points and limit the results
     return dogScores.stream()
-        .sorted((d1, d2) -> Integer.compare(
-            (Integer) d2.get("totalPoints"),
-            (Integer) d1.get("totalPoints")))
+        .sorted((d1, d2) -> {
+          // First, compare by total points (descending)
+          int pointsComparison = Integer.compare(
+              (Integer) d2.get("totalPoints"),
+              (Integer) d1.get("totalPoints"));
+
+          // If points are equal, sort by last score day (latest first)
+          if (pointsComparison == 0) {
+            int day1 = (int) d1.get("lastScoreDay");
+            if (day1 == 0) {
+              return 1;
+            }
+            int day2 = (int) d2.get("lastScoreDay");
+            if (day2 == 0) {
+              return -1;
+            }
+            if (day1 != day2) {
+              return day1 > day2 ? -1 : 1;
+            }
+            // If days are the same, sort by last score time (latest first)
+            LocalTime tifd1 = (LocalTime) d1.get("lastScore");
+            LocalTime tifd2 = (LocalTime) d2.get("lastScore");
+            if (tifd1 != null && tifd2 != null) {
+              return tifd1.isAfter(tifd2) ? -1 : 1;
+            } else if (tifd1 == null && tifd2 != null) {
+              return 1;
+            } else if (tifd1 != null && tifd2 == null) {
+              return -1;
+            }
+          }
+          return pointsComparison;
+        })
         .limit(limit)
         .collect(Collectors.toList());
   }
@@ -586,9 +664,26 @@ public class DogService {
 
     // Sort by total points and limit the results
     return filteredDogScores.stream()
-        .sorted((d1, d2) -> Integer.compare(
-            (Integer) d2.get("totalPoints"),
-            (Integer) d1.get("totalPoints")))
+        .sorted((d1, d2) -> {
+          // First, compare by total points (descending)
+          int pointsComparison = Integer.compare(
+              (Integer) d2.get("totalPoints"),
+              (Integer) d1.get("totalPoints"));
+
+          // If points are equal, sort by last score time (latest first)
+          if (pointsComparison == 0) {
+            LocalTime tifd1 = (LocalTime) d1.get("lastScore");
+            LocalTime tifd2 = (LocalTime) d2.get("lastScore");
+            if (tifd1 != null && tifd2 != null) {
+              return tifd1.isAfter(tifd2) ? -1 : 1;
+            } else if (tifd1 == null && tifd2 != null) {
+              return 1;
+            } else if (tifd1 != null && tifd2 == null) {
+              return -1;
+            }
+          }
+          return pointsComparison;
+        })
         .limit(limit)
         .collect(Collectors.toList());
   }
