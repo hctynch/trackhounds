@@ -19,7 +19,7 @@ Software designed to provide a potential alternative to dated scoring software c
 
 1. Download Docker Desktop
 2. Download the latest release of trackhounds
-3. Follow the [instructions](https://github.com/hctynch/trackhounds/releases)
+3. Follow the [instructions](#users-guide)
 ### Issues, Bugs, and Feature Request
 Instead of managing emails or text messages it is much easier for me to track requests and bugs using Issues. If possible I would request you make a GitHub account and do the following:
 - Go to the [Issues](https://github.com/hctynch/trackhounds/issues) tab
