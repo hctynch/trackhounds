@@ -2,6 +2,7 @@ package com.trackhounds.trackhounds.Entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -34,7 +35,7 @@ public class TimeBucketScore {
     /**
      * Score of the highest score
      */
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     private Score score;
     /**
      * Reference to the DailyScore
