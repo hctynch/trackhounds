@@ -502,11 +502,13 @@ public class DogService {
       dogScore.put("totalPoints", totalPoints);
 
       // Add last score time for tie-breaking
-      LocalTime lastScoreTime = null;
+      LocalTime lastScoreTime = LocalTime.of(0, 0);
       int day = 0;
       if (dog.getScores() != null && !dog.getScores().isEmpty()) {
         for (DailyScore dailyScore : dog.getScores()) {
-          if (dailyScore.getLastCross().isAfter(LocalTime.of(0, 0))) {
+          if (dailyScore.getLastCross() != null &&
+              (dailyScore.getDay().getDay() > day ||
+                  (dailyScore.getDay().getDay() == day && dailyScore.getLastCross().isAfter(lastScoreTime)))) {
             lastScoreTime = dailyScore.getLastCross();
             day = dailyScore.getDay().getDay();
           }
@@ -518,37 +520,43 @@ public class DogService {
       dogScores.add(dogScore);
     }
 
+    // Fix the comparison method to make it consistent
     return dogScores.stream()
         .sorted((d1, d2) -> {
           // First, compare by total points (descending)
-          int pointsComparison = Integer.compare(
-              (Integer) d2.get("totalPoints"),
-              (Integer) d1.get("totalPoints"));
+          Integer points1 = (Integer) d1.get("totalPoints");
+          Integer points2 = (Integer) d2.get("totalPoints");
 
-          // If points are equal, sort by last score time (latest first)
-          if (pointsComparison == 0) {
-            int day1 = (int) d1.get("lastScoreDay");
-            if (day1 == 0) {
-              return 1;
-            }
-            int day2 = (int) d2.get("lastScoreDay");
-            if (day2 == 0) {
-              return -1;
-            }
-            if (day1 != day2) {
-              return day1 > day2 ? -1 : 1;
-            }
-            LocalTime tifd1 = (LocalTime) d1.get("lastScore");
-            LocalTime tifd2 = (LocalTime) d2.get("lastScore");
-            if (tifd1 != null && tifd2 != null) {
-              return tifd1.isAfter(tifd2) ? -1 : 1;
-            } else if (tifd1 == null && tifd2 != null) {
-              return 1;
-            } else if (tifd1 != null && tifd2 == null) {
-              return -1;
-            }
+          if (!points1.equals(points2)) {
+            return points2.compareTo(points1);
           }
-          return pointsComparison;
+
+          // If points are equal, sort by day (descending)
+          Integer day1 = (Integer) d1.get("lastScoreDay");
+          Integer day2 = (Integer) d2.get("lastScoreDay");
+
+          if (!day1.equals(day2)) {
+            return day2.compareTo(day1);
+          }
+
+          // If days are equal, compare by time (descending)
+          LocalTime time1 = (LocalTime) d1.get("lastScore");
+          LocalTime time2 = (LocalTime) d2.get("lastScore");
+
+          // Handle null cases
+          if (time1 == null && time2 == null) {
+            // If both times are null, fall back to dog number for a stable sort
+            Integer dogNumber1 = (Integer) d1.get("dogNumber");
+            Integer dogNumber2 = (Integer) d2.get("dogNumber");
+            return dogNumber1.compareTo(dogNumber2);
+          } else if (time1 == null) {
+            return 1; // Null times come after non-null times
+          } else if (time2 == null) {
+            return -1; // Null times come after non-null times
+          }
+
+          // Compare non-null times
+          return time2.compareTo(time1);
         })
         .limit(limit)
         .collect(Collectors.toList());

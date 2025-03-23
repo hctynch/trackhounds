@@ -108,10 +108,11 @@ const DailyCustomTopDogsReport = {
       
       return {
         title: `Day ${day}: Top ${limit} Dogs - ${stakeLabel}`,
-        columns: ['Place', 'Score', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
+        columns: ['Place', 'Total', 'S&D', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
         data: topDogs.map((dog, index) => [
           (index + 1).toString(),
           (dog.totalPoints + Number.parseInt(dog.totalPoints * day * .1)).toString(),
+          dog.totalPoints.toString(),
           dog.dogNumber.toString(),
           dog.dogName || '',
           dog.sire || '',
@@ -123,7 +124,7 @@ const DailyCustomTopDogsReport = {
       console.error("Error fetching daily custom top dogs report data:", error);
       return {
         title: `Day ${day}: Top ${limit} Dogs${stakeType !== 'ALL' ? ` - ${stakeType}` : ''}`,
-        columns: ['Place', 'Score', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
+        columns: ['Place', 'Total', 'S&D', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
         data: []
       };
     }
