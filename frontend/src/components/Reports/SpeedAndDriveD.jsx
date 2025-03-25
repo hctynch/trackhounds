@@ -96,52 +96,18 @@ const SpeedAndDriveD = {
     const { limit, stakeType, day } = config;
     
     try {
-      // Get scores for the specified day
-      const dailyScores = await DogService.getDogScoresByDay(day);
+      let dogScores;
       
-      // If stake type is not ALL, we need to filter by stake type
-      // First, get all dogs to have stake information
-      const allDogs = await DogService.getDogs();
-      const dogMap = {};
+      // Use the appropriate backend method based on stake type
+      if (stakeType === 'ALL') {
+        // For all dogs, get top scoring dogs for the day
+        dogScores = await DogService.getTopScoringDogsByDay(day, limit);
+      } else {
+        // For specific stake type, get filtered results
+        dogScores = await DogService.getTopScoringDogsByDayAndStakeType(day, stakeType, limit);
+      }
       
-      // Create a map of dogs with their stake types
-      allDogs.forEach(dog => {
-        dogMap[dog.number] = {
-          dogNumber: dog.number,
-          dogName: dog.name || '',
-          sire: dog.sire || '',
-          dam: dog.dam || '',
-          owner: dog.owner || '',
-          stake: dog.stake
-        };
-      });
-      
-      // Filter and map the scores
-      const filteredScores = dailyScores
-        .filter(score => {
-          // If stakeType is ALL, include all dogs
-          // Otherwise, only include dogs of the specified stake type
-          const dog = dogMap[score.dogNumber];
-          return dog && (stakeType === 'ALL' || dog.stake === stakeType);
-        })
-        .map(score => {
-          const dog = dogMap[score.dogNumber] || {};
-          return {
-            dogNumber: score.dogNumber,
-            dogName: dog.dogName || '',
-            sire: dog.sire || '',
-            dam: dog.dam || '',
-            owner: dog.owner || '',
-            totalPoints: score.totalPoints || 0,
-            time: score.lastScore || ''
-          };
-        });
-      
-      // Sort by total points (highest first)
-      const sortedScores = filteredScores
-        .sort((a, b) => b.totalPoints - a.totalPoints)
-        .slice(0, limit);
-      
+      // The backend already sorts the dogs correctly, so we can just map the results
       const stakeLabel = stakeType === 'ALL' ? 'All Dogs' : 
                          stakeType === 'ALL_AGE' ? 'All Age' : 'Derby';
       
@@ -156,14 +122,14 @@ const SpeedAndDriveD = {
           'Dam', 
           'Owner'
         ],
-        data: sortedScores.map((dog, index) => [
+        data: dogScores.map((dog, index) => [
           (index + 1).toString(),
           dog.totalPoints.toString(),
           dog.dogNumber.toString(),
-          dog.dogName,
-          dog.sire,
-          dog.dam,
-          dog.owner
+          dog.dogName || '',
+          dog.sire || '',
+          dog.dam || '',
+          dog.owner || ''
         ])
       };
     } catch (error) {

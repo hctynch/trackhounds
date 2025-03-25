@@ -78,6 +78,9 @@ public class DailyScore {
    */
   private boolean zeroInterval = false;
 
+  /** Daily S&D Score */
+  private int dailyScore = 0;
+
   /**
    * Default constructor for DailyScore
    * 
