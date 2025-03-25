@@ -24,6 +24,7 @@ import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
 import com.trackhounds.trackhounds.Repository.DailyScoreRepository;
 import com.trackhounds.trackhounds.Repository.DaysRepository;
 import com.trackhounds.trackhounds.Repository.DogRepository;
+import com.trackhounds.trackhounds.Repository.HuntRepository;
 import com.trackhounds.trackhounds.Repository.JudgeRepository;
 import com.trackhounds.trackhounds.Repository.ScoreRepository;
 import com.trackhounds.trackhounds.Repository.ScratchRepository;
@@ -72,6 +73,12 @@ public class DogService {
    */
   @Autowired
   private ScratchRepository scratchRepository;
+
+  /**
+   * Hunt Repository
+   */
+  @Autowired
+  private HuntRepository huntRepository;
 
   /**
    * Create a group of dogs
@@ -406,6 +413,7 @@ public class DogService {
       dogScore.put("stake", dog.getStake());
       dogScore.put("totalPoints", totalPoints);
       dogScore.put("lastScore", dailyScore.getLastCross());
+      dogScore.put("lastScorePoints", dailyScore.getAssociatedPoints());
       dogScores.add(dogScore);
     }
 
@@ -434,7 +442,14 @@ public class DogService {
    */
   public List<Map<String, Object>> getTopScoringDogsByDay(int day, int limit) {
     List<Map<String, Object>> dogScores = getDogScoresByDay(day);
-
+    LocalTime startTime;
+    final int interval;
+    try {
+      startTime = getStartTime(day);
+      interval = huntRepository.findAll().get(0).getHuntInterval();
+    } catch (Exception e) {
+      return List.of();
+    }
     return dogScores.stream()
         .sorted((d1, d2) -> {
           // First, compare by total points (descending)
@@ -446,12 +461,23 @@ public class DogService {
           if (pointsComparison == 0) {
             LocalTime tifd1 = (LocalTime) d1.get("lastScore");
             LocalTime tifd2 = (LocalTime) d2.get("lastScore");
-            if (tifd1 != null && tifd2 != null) {
-              return tifd1.isAfter(tifd2) ? -1 : 1;
-            } else if (tifd1 == null && tifd2 != null) {
-              return 1;
-            } else if (tifd1 != null && tifd2 == null) {
-              return -1;
+            if (interval == 0) {
+              if (tifd1.isAfter(tifd2)) {
+                return -1;
+              } else if (tifd1.isBefore(tifd2)) {
+                return 1;
+              } else {
+                return -1
+                    * Integer.compare((((Integer) d1.get("lastScorePoints"))), (((Integer) d2.get("lastScorePoints"))));
+              }
+            }
+            int bucket1 = (int) java.time.Duration.between(startTime, tifd1).toMinutes() / interval;
+            int bucket2 = (int) java.time.Duration.between(startTime, tifd2).toMinutes() / interval;
+            if (bucket1 != bucket2) {
+              return bucket1 > bucket2 ? -1 : 1;
+            } else {
+              return -1
+                  * Integer.compare((((Integer) d1.get("lastScorePoints"))), (((Integer) d2.get("lastScorePoints"))));
             }
           }
           return pointsComparison;
@@ -488,6 +514,13 @@ public class DogService {
   public List<Map<String, Object>> getTopScoringDogsOverall(int limit) {
     List<DogEntity> allDogs = dogRepository.findAll();
     List<Map<String, Object>> dogScores = new ArrayList<>();
+    final int interval;
+
+    try {
+      interval = huntRepository.findAll().get(0).getHuntInterval();
+    } catch (Exception e) {
+      return List.of();
+    }
 
     for (DogEntity dog : allDogs) {
       int totalPoints = dog.getPoints(); // Using the existing points field
@@ -502,61 +535,99 @@ public class DogService {
       dogScore.put("totalPoints", totalPoints);
 
       // Add last score time for tie-breaking
-      LocalTime lastScoreTime = LocalTime.of(0, 0);
-      int day = 0;
+      LocalTime lastScoreTime = null;
+      int lastDay = 0;
+      int lastScorePoints = 0;
+      LocalTime startTime = null;
+
       if (dog.getScores() != null && !dog.getScores().isEmpty()) {
         for (DailyScore dailyScore : dog.getScores()) {
           if (dailyScore.getLastCross() != null &&
-              (dailyScore.getDay().getDay() > day ||
-                  (dailyScore.getDay().getDay() == day && dailyScore.getLastCross().isAfter(lastScoreTime)))) {
+              (dailyScore.getDay().getDay() > lastDay ||
+                  (dailyScore.getDay().getDay() == lastDay &&
+                      dailyScore.getLastCross().isAfter(lastScoreTime)))) {
             lastScoreTime = dailyScore.getLastCross();
-            day = dailyScore.getDay().getDay();
+            lastDay = dailyScore.getDay().getDay();
+            lastScorePoints = dailyScore.getAssociatedPoints();
+            startTime = dailyScore.getDay().getStartTime();
           }
         }
       }
+
       dogScore.put("lastScore", lastScoreTime);
-      dogScore.put("lastScoreDay", day);
+      dogScore.put("lastScoreDay", lastDay);
+      dogScore.put("lastScorePoints", lastScorePoints);
+      dogScore.put("startTime", startTime);
 
       dogScores.add(dogScore);
     }
 
-    // Fix the comparison method to make it consistent
+    // Sort using the improved tie-breaking logic
     return dogScores.stream()
         .sorted((d1, d2) -> {
           // First, compare by total points (descending)
-          Integer points1 = (Integer) d1.get("totalPoints");
-          Integer points2 = (Integer) d2.get("totalPoints");
+          int pointsComparison = Integer.compare(
+              (Integer) d2.get("totalPoints"),
+              (Integer) d1.get("totalPoints"));
 
-          if (!points1.equals(points2)) {
-            return points2.compareTo(points1);
+          // If points are equal, sort by last score day (latest first)
+          if (pointsComparison == 0) {
+            Integer day1 = (Integer) d1.get("lastScoreDay");
+            Integer day2 = (Integer) d2.get("lastScoreDay");
+
+            if (!day1.equals(day2)) {
+              return day2.compareTo(day1); // Later day wins
+            }
+
+            // If days are equal, use the same time-bucket logic as daily methods
+            LocalTime tifd1 = (LocalTime) d1.get("lastScore");
+            LocalTime tifd2 = (LocalTime) d2.get("lastScore");
+
+            // Handle null cases
+            if (tifd1 == null && tifd2 == null) {
+              Integer dogNumber1 = (Integer) d1.get("dogNumber");
+              Integer dogNumber2 = (Integer) d2.get("dogNumber");
+              return dogNumber1.compareTo(dogNumber2);
+            } else if (tifd1 == null) {
+              return 1; // Null times come after non-null times
+            } else if (tifd2 == null) {
+              return -1; // Null times come after non-null times
+            }
+
+            if (interval == 0) {
+              if (tifd1.isAfter(tifd2)) {
+                return -1;
+              } else if (tifd1.isBefore(tifd2)) {
+                return 1;
+              } else {
+                return -1 * Integer.compare(
+                    (Integer) d1.get("lastScorePoints"),
+                    (Integer) d2.get("lastScorePoints"));
+              }
+            }
+
+            // Use time buckets for comparison
+            LocalTime startTime1 = (LocalTime) d1.get("startTime");
+            LocalTime startTime2 = (LocalTime) d2.get("startTime");
+
+            if (startTime1 != null && startTime2 != null) {
+              int bucket1 = (int) java.time.Duration.between(startTime1, tifd1).toMinutes() / interval;
+              int bucket2 = (int) java.time.Duration.between(startTime2, tifd2).toMinutes() / interval;
+
+              if (bucket1 != bucket2) {
+                return bucket1 > bucket2 ? -1 : 1;
+              } else {
+                return -1 * Integer.compare(
+                    (Integer) d1.get("lastScorePoints"),
+                    (Integer) d2.get("lastScorePoints"));
+              }
+            }
+
+            // Fall back to time comparison if startTime is null
+            return tifd2.compareTo(tifd1);
           }
 
-          // If points are equal, sort by day (descending)
-          Integer day1 = (Integer) d1.get("lastScoreDay");
-          Integer day2 = (Integer) d2.get("lastScoreDay");
-
-          if (!day1.equals(day2)) {
-            return day2.compareTo(day1);
-          }
-
-          // If days are equal, compare by time (descending)
-          LocalTime time1 = (LocalTime) d1.get("lastScore");
-          LocalTime time2 = (LocalTime) d2.get("lastScore");
-
-          // Handle null cases
-          if (time1 == null && time2 == null) {
-            // If both times are null, fall back to dog number for a stable sort
-            Integer dogNumber1 = (Integer) d1.get("dogNumber");
-            Integer dogNumber2 = (Integer) d2.get("dogNumber");
-            return dogNumber1.compareTo(dogNumber2);
-          } else if (time1 == null) {
-            return 1; // Null times come after non-null times
-          } else if (time2 == null) {
-            return -1; // Null times come after non-null times
-          }
-
-          // Compare non-null times
-          return time2.compareTo(time1);
+          return pointsComparison;
         })
         .limit(limit)
         .collect(Collectors.toList());
@@ -572,6 +643,13 @@ public class DogService {
   public List<Map<String, Object>> getTopScoringDogsByStakeType(StakeType stakeType, int limit) {
     List<DogEntity> allDogs = dogRepository.findAll();
     List<Map<String, Object>> dogScores = new ArrayList<>();
+    final int interval;
+
+    try {
+      interval = huntRepository.findAll().get(0).getHuntInterval();
+    } catch (Exception e) {
+      return List.of();
+    }
 
     // Filter dogs by stake type and calculate total points
     for (DogEntity dog : allDogs) {
@@ -589,23 +667,34 @@ public class DogService {
 
         // Add last score time for tie-breaking
         LocalTime lastScoreTime = null;
-        int day = 0;
+        int lastDay = 0;
+        int lastScorePoints = 0;
+        LocalTime startTime = null;
+
         if (dog.getScores() != null && !dog.getScores().isEmpty()) {
           for (DailyScore dailyScore : dog.getScores()) {
-            if (dailyScore.getLastCross().isAfter(LocalTime.of(0, 0))) {
+            if (dailyScore.getLastCross() != null &&
+                (dailyScore.getDay().getDay() > lastDay ||
+                    (dailyScore.getDay().getDay() == lastDay &&
+                        dailyScore.getLastCross().isAfter(lastScoreTime)))) {
               lastScoreTime = dailyScore.getLastCross();
-              day = dailyScore.getDay().getDay();
+              lastDay = dailyScore.getDay().getDay();
+              lastScorePoints = dailyScore.getAssociatedPoints();
+              startTime = dailyScore.getDay().getStartTime();
             }
           }
         }
+
         dogScore.put("lastScore", lastScoreTime);
-        dogScore.put("lastScoreDay", day);
+        dogScore.put("lastScoreDay", lastDay);
+        dogScore.put("lastScorePoints", lastScorePoints);
+        dogScore.put("startTime", startTime);
 
         dogScores.add(dogScore);
       }
     }
 
-    // Sort by total points and limit the results
+    // Sort using the same tie-breaking logic as getTopScoringDogsOverall
     return dogScores.stream()
         .sorted((d1, d2) -> {
           // First, compare by total points (descending)
@@ -615,28 +704,61 @@ public class DogService {
 
           // If points are equal, sort by last score day (latest first)
           if (pointsComparison == 0) {
-            int day1 = (int) d1.get("lastScoreDay");
-            if (day1 == 0) {
-              return 1;
+            Integer day1 = (Integer) d1.get("lastScoreDay");
+            Integer day2 = (Integer) d2.get("lastScoreDay");
+
+            if (!day1.equals(day2)) {
+              return day2.compareTo(day1); // Later day wins
             }
-            int day2 = (int) d2.get("lastScoreDay");
-            if (day2 == 0) {
-              return -1;
-            }
-            if (day1 != day2) {
-              return day1 > day2 ? -1 : 1;
-            }
-            // If days are the same, sort by last score time (latest first)
+
+            // If days are equal, use the same time-bucket logic as daily methods
             LocalTime tifd1 = (LocalTime) d1.get("lastScore");
             LocalTime tifd2 = (LocalTime) d2.get("lastScore");
-            if (tifd1 != null && tifd2 != null) {
-              return tifd1.isAfter(tifd2) ? -1 : 1;
-            } else if (tifd1 == null && tifd2 != null) {
-              return 1;
-            } else if (tifd1 != null && tifd2 == null) {
-              return -1;
+
+            // Handle null cases
+            if (tifd1 == null && tifd2 == null) {
+              Integer dogNumber1 = (Integer) d1.get("dogNumber");
+              Integer dogNumber2 = (Integer) d2.get("dogNumber");
+              return dogNumber1.compareTo(dogNumber2);
+            } else if (tifd1 == null) {
+              return 1; // Null times come after non-null times
+            } else if (tifd2 == null) {
+              return -1; // Null times come after non-null times
             }
+
+            if (interval == 0) {
+              if (tifd1.isAfter(tifd2)) {
+                return -1;
+              } else if (tifd1.isBefore(tifd2)) {
+                return 1;
+              } else {
+                return -1 * Integer.compare(
+                    (Integer) d1.get("lastScorePoints"),
+                    (Integer) d2.get("lastScorePoints"));
+              }
+            }
+
+            // Use time buckets for comparison
+            LocalTime startTime1 = (LocalTime) d1.get("startTime");
+            LocalTime startTime2 = (LocalTime) d2.get("startTime");
+
+            if (startTime1 != null && startTime2 != null) {
+              int bucket1 = (int) java.time.Duration.between(startTime1, tifd1).toMinutes() / interval;
+              int bucket2 = (int) java.time.Duration.between(startTime2, tifd2).toMinutes() / interval;
+
+              if (bucket1 != bucket2) {
+                return bucket1 > bucket2 ? -1 : 1;
+              } else {
+                return -1 * Integer.compare(
+                    (Integer) d1.get("lastScorePoints"),
+                    (Integer) d2.get("lastScorePoints"));
+              }
+            }
+
+            // Fall back to time comparison if startTime is null
+            return tifd2.compareTo(tifd1);
           }
+
           return pointsComparison;
         })
         .limit(limit)
@@ -664,6 +786,15 @@ public class DogService {
    */
   public List<Map<String, Object>> getTopScoringDogsByDayAndStakeType(int day, StakeType stakeType, int limit) {
     List<Map<String, Object>> allDogScores = getDogScoresByDay(day);
+    LocalTime startTime;
+    int interval;
+
+    try {
+      startTime = getStartTime(day);
+      interval = huntRepository.findAll().get(0).getHuntInterval();
+    } catch (Exception e) {
+      return List.of();
+    }
 
     // Filter by stake type
     List<Map<String, Object>> filteredDogScores = allDogScores.stream()
@@ -678,16 +809,30 @@ public class DogService {
               (Integer) d2.get("totalPoints"),
               (Integer) d1.get("totalPoints"));
 
-          // If points are equal, sort by last score time (latest first)
+          // If points are equal, apply the same tie-breaking logic as
+          // getTopScoringDogsByDay
           if (pointsComparison == 0) {
             LocalTime tifd1 = (LocalTime) d1.get("lastScore");
             LocalTime tifd2 = (LocalTime) d2.get("lastScore");
-            if (tifd1 != null && tifd2 != null) {
-              return tifd1.isAfter(tifd2) ? -1 : 1;
-            } else if (tifd1 == null && tifd2 != null) {
-              return 1;
-            } else if (tifd1 != null && tifd2 == null) {
-              return -1;
+            if (interval == 0) {
+              if (tifd1.isAfter(tifd2)) {
+                return -1;
+              } else if (tifd1.isBefore(tifd2)) {
+                return 1;
+              } else {
+                return -1
+                    * Integer.compare((((Integer) d1.get("lastScorePoints"))),
+                        (((Integer) d2.get("lastScorePoints"))));
+              }
+            }
+            int bucket1 = (int) java.time.Duration.between(startTime, tifd1).toMinutes() / interval;
+            int bucket2 = (int) java.time.Duration.between(startTime, tifd2).toMinutes() / interval;
+            if (bucket1 != bucket2) {
+              return bucket1 > bucket2 ? -1 : 1;
+            } else {
+              return -1
+                  * Integer.compare((((Integer) d1.get("lastScorePoints"))),
+                      (((Integer) d2.get("lastScorePoints"))));
             }
           }
           return pointsComparison;
