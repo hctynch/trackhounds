@@ -1,10 +1,26 @@
 # trackhounds
-
-![Coverage](https://codecov.io/gh/hctynch/trackhounds/branch/main/graph/badge.svg)
-
 _By: Hunt Tynch_
 
-_Started: Feb 2025_
+![Started](https://img.shields.io/github/created-at/hctynch/trackhounds?label=Started%20in&color=0080ff)
+![Release](https://img.shields.io/github/release-date/hctynch/trackhounds?display_date=published_at&style=flat&color=0080ff)
+![Coverage](https://codecov.io/gh/hctynch/trackhounds/branch/main/graph/badge.svg)
+![Commit](https://img.shields.io/github/last-commit/hctynch/trackhounds?style=flat&logo=git&logoColor=white&color=0080ff)
+![Language](https://img.shields.io/github/languages/top/hctynch/trackhounds?style=flat&color=0080ff)
+![Languages](https://img.shields.io/github/languages/count/hctynch/trackhounds?style=flat&color=0080ff)
+![Downloads](https://img.shields.io/github/downloads/hctynch/trackhounds/total?color=0080ff)
+## ***Tools and Technologies***
+
+![JSON](https://img.shields.io/badge/JSON-000000.svg?style=flat&logo=JSON&logoColor=white)
+![NPM](https://img.shields.io/badge/npm-CB3837.svg?style=flat&logo=npm&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E.svg?style=flat&logo=JavaScript&logoColor=black)
+![React](https://img.shields.io/badge/React-61DAFB.svg?style=flat&logo=React&logoColor=black)
+![MariaDB](https://img.shields.io/badge/MariaDB-003545.svg?style=flat&logo=MariaDB&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED.svg?style=flat&logo=Docker&logoColor=white)
+![GitHubActions](https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=flat&logo=GitHub-Actions&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF.svg?style=flat&logo=Vite&logoColor=white)
+![ESLint](https://img.shields.io/badge/ESLint-4B32C3.svg?style=flat&logo=ESLint&logoColor=white)
+![Axios](https://img.shields.io/badge/Axios-5A29E4.svg?style=flat&logo=Axios&logoColor=white)
+![CSS](https://img.shields.io/badge/CSS-663399.svg?style=flat&logo=CSS&logoColor=white)
 
 ## Score Tracking Software
 
