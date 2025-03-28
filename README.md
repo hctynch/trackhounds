@@ -1,4 +1,5 @@
 # trackhounds
+
 _By: Hunt Tynch_
 
 ![Started](https://img.shields.io/github/created-at/hctynch/trackhounds?label=Started%20in&color=0080ff)
@@ -8,136 +9,151 @@ _By: Hunt Tynch_
 ![Language](https://img.shields.io/github/languages/top/hctynch/trackhounds?style=flat&color=0080ff)
 ![Languages](https://img.shields.io/github/languages/count/hctynch/trackhounds?style=flat&color=0080ff)
 ![Downloads](https://img.shields.io/github/downloads/hctynch/trackhounds/total?color=0080ff)
-## ***Tools and Technologies***
 
+---
+
+## **_Tools and Technologies_**
+
+![Docker](https://img.shields.io/badge/Docker-2496ED.svg?style=flat&logo=Docker&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB.svg?style=flat&logo=React&logoColor=black)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-6DB33F.svg?style=flat&logo=Spring-Boot&logoColor=white)
+![MariaDB](https://img.shields.io/badge/MariaDB-003545.svg?style=flat&logo=MariaDB&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=flat&logo=GitHub-Actions&logoColor=white)
 ![JSON](https://img.shields.io/badge/JSON-000000.svg?style=flat&logo=JSON&logoColor=white)
 ![NPM](https://img.shields.io/badge/npm-CB3837.svg?style=flat&logo=npm&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E.svg?style=flat&logo=JavaScript&logoColor=black)
-![React](https://img.shields.io/badge/React-61DAFB.svg?style=flat&logo=React&logoColor=black)
-![MariaDB](https://img.shields.io/badge/MariaDB-003545.svg?style=flat&logo=MariaDB&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED.svg?style=flat&logo=Docker&logoColor=white)
-![GitHubActions](https://img.shields.io/badge/GitHub%20Actions-2088FF.svg?style=flat&logo=GitHub-Actions&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF.svg?style=flat&logo=Vite&logoColor=white)
 ![ESLint](https://img.shields.io/badge/ESLint-4B32C3.svg?style=flat&logo=ESLint&logoColor=white)
 ![Axios](https://img.shields.io/badge/Axios-5A29E4.svg?style=flat&logo=Axios&logoColor=white)
 ![CSS](https://img.shields.io/badge/CSS-663399.svg?style=flat&logo=CSS&logoColor=white)
 
+---
+
 ## Score Tracking Software
 
-Software designed to provide a potential alternative to dated scoring software currently used in the Master's Foxhunts.
+TrackHounds is a modern scoring application designed to provide an alternative to outdated scoring software currently used in Master's Foxhunts. It allows users to efficiently manage hunts, track scores, and generate reports.
+
+---
 
 ## Needed Resources
 
-- [**Docker**](https://www.docker.com/get-started/)
-- Latest Release of [**trackhounds**](https://github.com/hctynch/trackhounds/releases) (Downlaod `trackhounds-X.X.X.zip` under `Assets`)
+- [**Docker**](https://www.docker.com/get-started/) (Required to run the application)
+- Latest Release of [**trackhounds**](https://github.com/hctynch/trackhounds/releases) (Download `trackhounds-X.X.X.zip` under `Assets`)
+
+---
 
 ## Usage & Help
 
-1. Download Docker Desktop
-2. Download the latest release of trackhounds
-3. Follow the [instructions](#users-guide)
-### Issues, Bugs, and Feature Request
-Instead of managing emails or text messages it is much easier for me to track requests and bugs using Issues. If possible I would request you make a GitHub account and do the following:
-- Go to the [Issues](https://github.com/hctynch/trackhounds/issues) tab
-- Click ```New Issue``` in the top right
-  - You may have to make a GitHub account, it is **FREE**
-- Select the correct template (e.g. Feature Request, Bug Report, Blank Issue)
-- Fill in the template
-- Hit ```Create```
+### Issues, Bugs, and Feature Requests
+
+To report issues or request features:
+
+1. Go to the [Issues](https://github.com/hctynch/trackhounds/issues) tab.
+2. Click `New Issue` in the top right.
+3. Select the appropriate template (e.g., Feature Request, Bug Report).
+4. Fill in the template and click `Create`.
+
+---
 
 ## User's Guide
 
 ### Install
 
-After clicking the `trackhounds-X.X.X.zip` under `Assets` in the [latest release](https://github.com/hctynch/trackhounds/releases),
-you should now see this zipped foler in your downloads:
+1. **Download the Release**
 
-![image](https://github.com/user-attachments/assets/96dfd539-ae3f-4053-a742-59fe63e9babe)
+   - Go to the [latest release](https://github.com/hctynch/trackhounds/releases).
+   - Under `Assets`, download the `trackhounds-X.X.X.zip` file.
 
-Right click this zipped folder and select `Extract All`,
-you should then see this screen:
+2. **Extract the Files**
 
-![image](https://github.com/user-attachments/assets/3b6da88b-2cad-4a56-95ce-17596bbcc669)
+   - Locate the downloaded `.zip` file in your `Downloads` folder.
+   - Right-click the file and select `Extract All`.
+   - Choose a location to extract the files (e.g., Desktop).
 
-Select a location to install the application too, suggested to install to Desktop or a easily accesible location.
+3. **Run the Setup Script**
 
-Next, navigate to where you extract the zipped folder to. Open the `trackhounds-X.X.X` folder (X.X.X will be the current version, e.g. 1.0.0).
+   - Navigate to the extracted folder (e.g., `trackhounds-X.X.X`).
+   - Double-click the `windows_docker_setup.bat` file to start the setup process.  
+     **Note for Mac Users**: Follow the Mac-specific instructions in the release notes.
 
-![image](https://github.com/user-attachments/assets/afdffd77-2c06-41ee-a49d-2d1c3353a1dd)
+4. **Start the Application**
+   - The setup script will:
+     - Start Docker Desktop.
+     - Load the necessary containers.
+     - Launch TrackHounds in your default web browser.
+   - If the browser shows an error, refresh the page.
 
-Then all that is left is selecting the `windows_docker_setup.bat` file (If you have a Mac follow the instructions in the release for Mac specific instructions):
+---
 
-![image](https://github.com/user-attachments/assets/e4e3c8a2-048b-4cd3-bd7a-94fdde846099)
+### Troubleshooting
 
-This will open a terminal which should start Docker, load the containers from the .tar files, and start up trackhounds in a web browser (**Note**: if the browser is showing an error just refresh)
+#### Docker Desktop Service Not Starting
 
-![image](https://github.com/user-attachments/assets/990d691c-5914-4ba2-a196-8c34d5254def)
+1. Press <kbd>Win</kbd> + <kbd>R</kbd> to open the Run dialog.
+2. Type `services.msc` and click `OK`.
+3. Scroll down to `Docker Desktop Service`.
+4. Right-click and select `Start`.  
+   **Optional**: Set the service to start automatically:
+   - Right-click `Docker Desktop Service` > `Properties`.
+   - Set `Startup Type` to `Automatic`.
 
-**NOTICE**: If Docker Desktop is not starting then the Docker Desktop Service is probably not running. To fix this press the Windows Button <kbd>&#8862; Win</kbd> + R. This will open a little window in the bottom left. Type ```services.msc```, click ```OK```. Scroll down the services and click ```Docker Desktop Service```, after selecting it click ```Start``` to start the service. **OPTIONAL**: You can force this service to start automatically when starting your computer and run in the background, but it is not required. If you want to do so right click ```Docker Desktop Service```, then click ```Properties```. You'll see an option called ```Startup Type``` set this to ```Automatic```. Now this service will start whenever you start your computer and run in the background.
+#### Application Running in Background
 
-![image](https://github.com/user-attachments/assets/c38d1540-4bf6-469f-b25b-09f83922d6d2)
+- After using the application, click the terminal window and press any key to stop Docker and shut down the application.
 
-**Notice**: The terminal says press any key to stop Docker and exit...
-This is for a smooth shutdown of both docker and the application, **after using the application** I would **highly** recommend clicking the terminal window and pressing a button. If not the application will be running in the background until Docker Desktop is shutdown.
+---
 
-![image](https://github.com/user-attachments/assets/79b1184a-8e1e-48a8-aa71-ef6747da0b47)
-
-### trackhounds
-
-![image](https://github.com/user-attachments/assets/20a8e7ff-5483-423b-bec4-19e191960529)
-
-If you have made it to this screen congratulations trackhounds is now running on your computer. After the initial install of Docker and trackhounds you no longer will need an internet connection to operate this application.
+### Application Overview
 
 #### Navbar
 
-![image](https://github.com/user-attachments/assets/359acdbe-dc67-4f59-bdca-8d629f007116)
+Provides access to major pages:
 
-Provides access to major pages in the application such as Home, Add Dogs, View Dogs, Judges, Add Score, View Scores, Scratch Sheet, and Reports.
+- Home
+- Add Dogs
+- View Dogs
+- Judges
+- Add Score
+- View Scores
+- Scratch Sheet
+- Reports
 
 #### Home
 
-![image](https://github.com/user-attachments/assets/7f46494e-1901-4505-882e-3ee7c32c446f)
+Displays an overview of the current hunt. Use the three-dot menu in the upper-right corner to:
 
-Provides overview information for the current Hunt, serves as a landing page. In the **_Upper Right_** there is a three dots icon this can be used for `Creating a New Hunt` and `Editing the Current Hunt`
+- Create a new hunt.
+- Edit the current hunt.
 
 #### Dogs
 
-![image](https://github.com/user-attachments/assets/8ce4f3d5-abcb-45fd-baa1-f2cdb7ca7787)
-
-Selecting All Dogs will take you to this screen where all dogs can be seen:
-
-![image](https://github.com/user-attachments/assets/0ffebf9d-d3dd-48bf-a8e3-7853ab4ce283)
-
-Selecting Add Dogs will take you to this screen where new dogs can be added:
-
-![image](https://github.com/user-attachments/assets/1d26a19b-308c-4287-8f1c-c28c7aa0d6a0)
+- **All Dogs**: View all registered dogs.
+- **Add Dogs**: Add new dogs to the hunt.
 
 #### Judges
 
-![image](https://github.com/user-attachments/assets/1e119844-1ce8-45c0-814f-3b3953f89fe7)
+Manage judges for the hunt:
 
-Selecting Judges will take you to a screen where you can view current judges, add judges, or edit. **Note** Currently, I am not clearing out judges when starting a new hunt. However, this can be changed if requested but I was not sure if a large number of judges might be the same for each hunt.
+- View current judges.
+- Add or edit judges.
 
 #### Score Entry
 
-![image](https://github.com/user-attachments/assets/abdb0589-7a70-4a5b-8ce1-b3d84b4543a5)
-
-Selecting Enter Score will take you to a screen where you can enter a "Score"/"Cross":
-
-![image](https://github.com/user-attachments/assets/02b83871-a9bf-4748-bef7-eb32583dd1bd)
-
-Selecting View Scores will take you to a screen where you can view all entered scores and delete them:
-
-![image](https://github.com/user-attachments/assets/8dc36e99-dbf3-43db-9845-c9c90942d48c)
+- **Enter Score**: Add scores for dogs.
+- **View Scores**: View and delete entered scores.
 
 #### Scratch Sheet
 
-![image](https://github.com/user-attachments/assets/6c0cb09d-a0e0-4f65-bc56-b51c82e25ddd)
+View and manage scratches:
 
-Selecting Scratch Sheet will take you to a screen where you can view all entered scratches and add new ones.
+- Add new scratches.
+- View all entered scratches.
 
 #### Reports
 
-![image](https://github.com/user-attachments/assets/8129092b-05b8-4e36-8fea-cfba20262376)
+Generate printable reports:
 
-Clicking reports will allow you see all the current possible options for printable reports. I can alter or add new reports upon request, as a niceity I would request an example of how you want the report structured and any parameters you may want to filter for. The printing functionality relies on the browsers built in printing, that does mean using different browsers will alter capabilities. I suggest Google Chrome as it has options for printing on a large number of paper styles.
+- Overall Speed & Drive Report
+- Daily Speed & Drive Report
+- Comprehensive Dog Scores Report  
+  **Note**: Use Google Chrome for the best printing experience.
