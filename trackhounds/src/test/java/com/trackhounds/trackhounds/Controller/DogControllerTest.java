@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.google.gson.Gson;
 import com.trackhounds.trackhounds.GsonUtil;
+import com.trackhounds.trackhounds.Dto.CrossInfoRequest;
 import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DogEntity;
 import com.trackhounds.trackhounds.Entity.HuntEntity;
@@ -840,5 +841,115 @@ public class DogControllerTest {
                 mvc.perform(get("/dogs/scores/judge/999/day/1")
                                 .accept(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isBadRequest());
+        }
+
+        /**
+         * Tests the cross info endpoint which calculates points for dogs in a cross
+         */
+        @Test
+        @Transactional
+        void testGetCrossInfo() throws Exception {
+                // Create test dogs with different stake types
+                DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
+                DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
+                DogEntity dog3 = new DogEntity(3, "Dog3", StakeType.DERBY, "Owner3", "Sire3", "Dam3");
+                DogEntity dog4 = new DogEntity(4, "Dog4", StakeType.DERBY, "Owner4", "Sire4", "Dam4");
+                dogService.createDogs(List.of(dog1, dog2, dog3, dog4));
+
+                // 1. Test Single-stake hunt (ALL_AGE)
+                CrossInfoRequest allAgeRequest = new CrossInfoRequest(
+                                new int[] { 1, 2 },
+                                35,
+                                5,
+                                StakeType.ALL_AGE);
+
+                mvc.perform(post("/dogs/cross-info")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(gson.toJson(allAgeRequest)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.length()").value(2))
+                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].points").value(35))
+                                .andExpect(jsonPath("$[1].dogNumber").value(2))
+                                .andExpect(jsonPath("$[1].points").value(30));
+
+                // 2. Test Dual-stake hunt
+                CrossInfoRequest dualRequest = new CrossInfoRequest(
+                                new int[] { 1, 3, 2, 4 },
+                                35,
+                                5,
+                                StakeType.DUAL);
+
+                mvc.perform(post("/dogs/cross-info")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(gson.toJson(dualRequest)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.length()").value(4))
+                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].points").value(35)) // ALL_AGE starting points
+                                .andExpect(jsonPath("$[1].dogNumber").value(3))
+                                .andExpect(jsonPath("$[1].points").value(35)) // DERBY starting points
+                                .andExpect(jsonPath("$[2].dogNumber").value(2))
+                                .andExpect(jsonPath("$[2].points").value(30)) // ALL_AGE interval applied
+                                .andExpect(jsonPath("$[3].dogNumber").value(4))
+                                .andExpect(jsonPath("$[3].points").value(30)); // DERBY interval applied
+
+                // 3. Test with invalid dog numbers
+                CrossInfoRequest invalidDogRequest = new CrossInfoRequest(
+                                new int[] { 1, 999, 3 },
+                                35,
+                                5,
+                                StakeType.ALL_AGE);
+
+                mvc.perform(post("/dogs/cross-info")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(gson.toJson(invalidDogRequest)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.length()").value(3))
+                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].points").value(35))
+                                .andExpect(jsonPath("$[1].dogNumber").value(999))
+                                .andExpect(jsonPath("$[1].error").exists())
+                                .andExpect(jsonPath("$[2].dogNumber").value(3))
+                                .andExpect(jsonPath("$[2].points").value(25));
+
+                // 4. Test with empty array
+                CrossInfoRequest emptyRequest = new CrossInfoRequest(
+                                new int[] {},
+                                35,
+                                5,
+                                StakeType.ALL_AGE);
+
+                mvc.perform(post("/dogs/cross-info")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(gson.toJson(emptyRequest)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.length()").value(0));
+
+                // 5. Test with only one stake type in a dual hunt
+                CrossInfoRequest singleStakeInDualRequest = new CrossInfoRequest(
+                                new int[] { 1, 2 },
+                                35,
+                                5,
+                                StakeType.DUAL);
+
+                mvc.perform(post("/dogs/cross-info")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(gson.toJson(singleStakeInDualRequest)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.length()").value(2))
+                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].points").value(35))
+                                .andExpect(jsonPath("$[1].dogNumber").value(2))
+                                .andExpect(jsonPath("$[1].points").value(30));
+
+                // 6. Test edge case with null values (should return a 400 error)
+                String badRequestJson = "{\"dogNumbers\":null,\"startingPoints\":35,\"interval\":5,\"stakeType\":\"ALL_AGE\"}";
+
+                mvc.perform(post("/dogs/cross-info")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(badRequestJson))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.length()").value(0));
         }
 }

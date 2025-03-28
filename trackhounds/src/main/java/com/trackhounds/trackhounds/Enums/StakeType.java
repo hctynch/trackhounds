@@ -5,5 +5,6 @@ package com.trackhounds.trackhounds.Enums;
  */
 public enum StakeType {
     ALL_AGE,
-    DERBY
+    DERBY,
+    DUAL,
 }
