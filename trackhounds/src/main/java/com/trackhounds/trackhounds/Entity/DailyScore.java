@@ -69,9 +69,17 @@ public class DailyScore {
   private LocalTime lastCross = LocalTime.of(0, 0);
 
   /**
+   * Associated points for last cross
+   */
+  private int associatedPoints = 0;
+
+  /**
    * Flag for 0 interval hunts
    */
   private boolean zeroInterval = false;
+
+  /** Daily S&D Score */
+  private int dailyScore = 0;
 
   /**
    * Default constructor for DailyScore
@@ -106,6 +114,7 @@ public class DailyScore {
       highestScores.add(new HighestScore(null, 0, score, this));
       if (score.getTime().isAfter(lastCross)) {
         lastCross = score.getTime();
+        associatedPoints = score.getPoints();
       }
     } else {
       // Normal behavior for non-zero interval hunts
@@ -122,6 +131,7 @@ public class DailyScore {
         highestScores.add(new HighestScore(null, bucket, score, this));
         if (score.getTime().isAfter(lastCross)) {
           lastCross = score.getTime();
+          associatedPoints = score.getPoints();
         }
       } else {
         score.setCounted(false);
@@ -154,10 +164,15 @@ public class DailyScore {
     if (highestScore != null) {
       highestScores.remove(highestScore);
       if (highestScore.getScore().getTime().equals(lastCross)) {
-        lastCross = highestScores.stream()
-            .map(hs -> hs.getScore().getTime())
-            .max(LocalTime::compareTo)
-            .orElse(LocalTime.of(0, 0));
+        lastCross = LocalTime.of(0, 0);
+        associatedPoints = 0;
+        for (HighestScore hs : highestScores) {
+          LocalTime scoreTime = hs.getScore().getTime();
+          if (scoreTime.isAfter(lastCross)) {
+            lastCross = scoreTime;
+            associatedPoints = hs.getScore().getPoints();
+          }
+        }
       }
     }
 

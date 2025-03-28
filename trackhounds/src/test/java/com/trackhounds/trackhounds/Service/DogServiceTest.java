@@ -23,6 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DailyScore;
 import com.trackhounds.trackhounds.Entity.DogEntity;
+import com.trackhounds.trackhounds.Entity.HuntEntity;
 import com.trackhounds.trackhounds.Entity.JudgeEntity;
 import com.trackhounds.trackhounds.Entity.Score;
 import com.trackhounds.trackhounds.Entity.Scratch;
@@ -30,6 +31,7 @@ import com.trackhounds.trackhounds.Enums.StakeType;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
 import com.trackhounds.trackhounds.Repository.DaysRepository;
 import com.trackhounds.trackhounds.Repository.DogRepository;
+import com.trackhounds.trackhounds.Repository.HuntRepository;
 import com.trackhounds.trackhounds.Repository.JudgeRepository;
 
 import jakarta.transaction.Transactional;
@@ -64,6 +66,9 @@ public class DogServiceTest {
          */
         @Autowired
         private DogService dogService;
+
+        @Autowired
+        private HuntRepository huntRepository;
 
         /**
          * Setup for the tests
@@ -539,6 +544,7 @@ public class DogServiceTest {
         @Test
         @Transactional
         void testDogScoresMethods() {
+                huntRepository.save(new HuntEntity("Title", null, StakeType.ALL_AGE, 10));
                 // Create test dogs
                 DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
                 DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
@@ -655,6 +661,8 @@ public class DogServiceTest {
         @Test
         @Transactional
         void testDogScoresMethodsEdgeCases() {
+                huntRepository.save(new HuntEntity("Title", null, StakeType.ALL_AGE, 10));
+
                 // Create a dog with no scores
                 DogEntity dogWithNoScores = new DogEntity(10, "NoScores", StakeType.ALL_AGE, "Owner", "Sire", "Dam");
                 dogService.createDogs(List.of(dogWithNoScores));
@@ -703,6 +711,7 @@ public class DogServiceTest {
         @Test
         @Transactional
         void testDogScoresByStakeTypeMethods() {
+                huntRepository.save(new HuntEntity("Title", null, StakeType.ALL_AGE, 10));
                 // Create test dogs with different stake types
                 DogEntity allAgeDog1 = new DogEntity(1, "AllAge1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
                 DogEntity allAgeDog2 = new DogEntity(2, "AllAge2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
@@ -817,6 +826,7 @@ public class DogServiceTest {
         @Transactional
         void testDogScoresByStakeTypeEdgeCases() {
                 // Test with empty database
+                huntRepository.save(new HuntEntity("Title", null, StakeType.ALL_AGE, 10));
                 List<Map<String, Object>> emptyAllAgeDogs = dogService.getTopScoringDogsByStakeType(StakeType.ALL_AGE,
                                 5);
                 List<Map<String, Object>> emptyDerbyDogs = dogService.getTopScoringDogsByStakeType(StakeType.DERBY, 5);
@@ -993,6 +1003,7 @@ public class DogServiceTest {
         @Test
         @Transactional
         void testTieBreakingInRankings() {
+                huntRepository.save(new HuntEntity("Title", null, StakeType.ALL_AGE, 10));
                 // Create test dogs
                 DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
                 DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
@@ -1086,6 +1097,259 @@ public class DogServiceTest {
                                 () -> assertEquals(1, topAllAgeDogsDay1.get(1).get("dogNumber")), // Earlier score
                                 () -> assertEquals(4, topDerbyDogsDay1.get(0).get("dogNumber")), // Later score
                                 () -> assertEquals(3, topDerbyDogsDay1.get(1).get("dogNumber")) // Earlier score
+                );
+        }
+
+        /**
+         * Comprehensive test for tie-breaking logic across all ranking methods
+         */
+        @Test
+        @Transactional
+        void testComprehensiveTieBreaking() {
+                // Setup a hunt with a specific interval for time bucket calculations
+                huntRepository.save(new HuntEntity("Tie-Breaking Test Hunt", null, StakeType.ALL_AGE, 10));
+
+                // Create test dogs - mix of ALL_AGE and DERBY
+                DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
+                DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
+                DogEntity dog3 = new DogEntity(3, "Dog3", StakeType.ALL_AGE, "Owner3", "Sire3", "Dam3");
+                DogEntity dog4 = new DogEntity(4, "Dog4", StakeType.ALL_AGE, "Owner4", "Sire4", "Dam4");
+                DogEntity dog5 = new DogEntity(5, "Dog5", StakeType.DERBY, "Owner5", "Sire5", "Dam5");
+                DogEntity dog6 = new DogEntity(6, "Dog6", StakeType.DERBY, "Owner6", "Sire6", "Dam6");
+                DogEntity dog7 = new DogEntity(7, "Dog7", StakeType.DERBY, "Owner7", "Sire7", "Dam7");
+                DogEntity dog8 = new DogEntity(8, "Dog8", StakeType.DERBY, "Owner8", "Sire8", "Dam8");
+
+                dogService.createDogs(List.of(dog1, dog2, dog3, dog4, dog5, dog6, dog7, dog8));
+
+                // SCENARIO 1: Same points, different days
+                // Dog1 and Dog2 both have 50 points total, but Dog2's last score is on Day 2
+                // (should win tie)
+
+                // Day 1 scores for Dog1 (50 points on day 1)
+                ScoreDto score1Day1 = new ScoreDto(
+                                1, "05:30:00", 1, "05:45:00",
+                                new int[] { 1 },
+                                new int[] { 50 },
+                                10);
+
+                // Day 1 and 2 scores for Dog2 (25 points on each day = 50 total)
+                ScoreDto score2Day1 = new ScoreDto(
+                                1, "05:30:00", 1, "05:45:00",
+                                new int[] { 2 },
+                                new int[] { 25 },
+                                10);
+
+                ScoreDto score2Day2 = new ScoreDto(
+                                2, "05:30:00", 1, "05:45:00",
+                                new int[] { 2 },
+                                new int[] { 24 },
+                                10);
+
+                // SCENARIO 2: Same points, same day, different time buckets
+                // Dog3 and Dog4 both have 40 points on day 1, but Dog3's last score is in a
+                // later time bucket
+
+                ScoreDto score3Day1 = new ScoreDto(
+                                1, "05:30:00", 1, "06:15:00", // Later time bucket (bucket 4)
+                                new int[] { 3 },
+                                new int[] { 40 },
+                                10);
+
+                ScoreDto score4Day1 = new ScoreDto(
+                                1, "05:30:00", 1, "05:45:00", // Earlier time bucket (bucket 1)
+                                new int[] { 4 },
+                                new int[] { 40 },
+                                10);
+
+                // SCENARIO 3: Same points, same day, same time bucket, different score points
+                // Dog5 and Dog6 both have 30 points on day 1, same time bucket, but Dog5 has
+                // higher individual score
+
+                ScoreDto score5Day1 = new ScoreDto(
+                                1, "05:30:00", 1, "05:35:00", // Same time bucket (bucket 0)
+                                new int[] { 5 },
+                                new int[] { 30 },
+                                10);
+
+                ScoreDto score6Day1 = new ScoreDto(
+                                1, "05:30:00", 1, "05:35:00", // Same time bucket (bucket 0)
+                                new int[] { 6 },
+                                new int[] { 25 },
+                                10);
+
+                // Additional score for Dog6 to make total also 30
+                ScoreDto score6Day1Additional = new ScoreDto(
+                                1, "05:30:00", 1, "05:40:00", // Same day, different bucket
+                                new int[] { 6 },
+                                new int[] { 5 },
+                                10);
+
+                // SCENARIO 4: Dogs with no scores
+                // Dog7 and Dog8 have no scores initially - should be sorted by dog number
+
+                // Create all the scores
+                dogService.createScore(score1Day1);
+                dogService.createScore(score2Day1);
+                dogService.createScore(score2Day2);
+                dogService.createScore(score3Day1);
+                dogService.createScore(score4Day1);
+                dogService.createScore(score5Day1);
+                dogService.createScore(score6Day1);
+                dogService.createScore(score6Day1Additional);
+
+                // TEST 1: getTopScoringDogsOverall
+                List<Map<String, Object>> allDogs = dogService.getTopScoringDogsOverall(8);
+
+                assertAll("Overall ranking tie-breaking tests",
+                                // First, check the expected order of dogs
+                                () -> assertEquals(8, allDogs.size()),
+
+                                // Scenario 1: Dog2 should win tie with Dog1 due to later day
+                                () -> assertEquals(2, allDogs.get(0).get("dogNumber")), // Dog2 has score on day 2
+                                () -> assertEquals(1, allDogs.get(1).get("dogNumber")), // Dog1 only has score on day 1
+
+                                // Scenario 2: Dog3 should win tie with Dog4 due to later time bucket
+                                () -> assertEquals(3, allDogs.get(2).get("dogNumber")), // Dog3 has score in later
+                                                                                        // bucket
+                                () -> assertEquals(4, allDogs.get(3).get("dogNumber")), // Dog4 has score in earlier
+                                                                                        // bucket
+
+                                // Scenario 3: Dog6 should win tie with Dog5 due to later bucket score
+                                () -> assertEquals(6, allDogs.get(4).get("dogNumber")),
+                                () -> assertEquals(5, allDogs.get(5).get("dogNumber")),
+
+                                // Scenario 4: Dog7 and Dog8 should be sorted by dog number (ascending)
+                                () -> assertEquals(7, allDogs.get(6).get("dogNumber")), // Lower dog number
+                                () -> assertEquals(8, allDogs.get(7).get("dogNumber")), // Higher dog number
+
+                                // Verify tie scores are actually equal
+                                () -> assertEquals(allDogs.get(0).get("totalPoints"),
+                                                allDogs.get(1).get("totalPoints")), // Dog1 and Dog2
+                                () -> assertEquals(allDogs.get(2).get("totalPoints"),
+                                                allDogs.get(3).get("totalPoints")), // Dog3 and Dog4
+                                () -> assertEquals(allDogs.get(4).get("totalPoints"),
+                                                allDogs.get(5).get("totalPoints")), // Dog5 and Dog6
+                                () -> assertEquals(allDogs.get(6).get("totalPoints"), allDogs.get(7).get("totalPoints")) // Dog7
+                                                                                                                         // and
+                                                                                                                         // Dog8
+                );
+
+                // TEST 2: getTopScoringDogsByDay (Day 1)
+                List<Map<String, Object>> day1Dogs = dogService.getTopScoringDogsByDay(1, 8);
+
+                assertAll("Day 1 ranking tie-breaking tests",
+                                () -> assertEquals(6, day1Dogs.size()), // Only 6 dogs have scores on day 1
+
+                                // Check expected order for dogs with same points on day 1
+                                // All dogs with day 1 scores should be in descending order by points
+                                () -> assertEquals(1, day1Dogs.get(0).get("dogNumber")), // Dog1 has 50 points on day 1
+
+                                // Scenario 2: Dog3 and Dog4 both have 40 points
+                                () -> assertEquals(3, day1Dogs.get(1).get("dogNumber")), // Dog3 has score in later
+                                                                                         // bucket
+                                () -> assertEquals(4, day1Dogs.get(2).get("dogNumber")), // Dog4 has score in earlier
+                                                                                         // bucket
+
+                                // Scenario 3: Dog5 and Dog6 both have 30 points
+                                () -> assertEquals(6, day1Dogs.get(3).get("dogNumber")), // Dog5 has higher individual
+                                                                                         // score
+                                () -> assertEquals(5, day1Dogs.get(4).get("dogNumber")), // Dog6 has lower individual
+                                                                                         // score
+
+                                // Dog2 has lowest points on day 1
+                                () -> assertEquals(2, day1Dogs.get(5).get("dogNumber")) // Dog2 has 25 points on day 1
+                );
+
+                // TEST 3: getTopScoringDogsByStakeType (ALL_AGE)
+                List<Map<String, Object>> allAgeDogs = dogService.getTopScoringDogsByStakeType(StakeType.ALL_AGE, 4);
+
+                assertAll("ALL_AGE ranking tie-breaking tests",
+                                () -> assertEquals(4, allAgeDogs.size()),
+
+                                // Scenario 1: Dog2 should win tie with Dog1 due to later day
+                                () -> assertEquals(2, allAgeDogs.get(0).get("dogNumber")), // Dog2 has score on day 2
+                                () -> assertEquals(1, allAgeDogs.get(1).get("dogNumber")), // Dog1 only has score on day
+                                                                                           // 1
+
+                                // Scenario 2: Dog3 should win tie with Dog4 due to later time bucket
+                                () -> assertEquals(3, allAgeDogs.get(2).get("dogNumber")), // Dog3 has score in later
+                                                                                           // bucket
+                                () -> assertEquals(4, allAgeDogs.get(3).get("dogNumber")) // Dog4 has score in earlier
+                                                                                          // bucket
+                );
+
+                // TEST 4: getTopScoringDogsByStakeType (DERBY)
+                List<Map<String, Object>> derbyDogs = dogService.getTopScoringDogsByStakeType(StakeType.DERBY, 4);
+
+                assertAll("DERBY ranking tie-breaking tests",
+                                () -> assertEquals(4, derbyDogs.size()),
+
+                                // Scenario 3: Dog5 should win tie with Dog6 due to higher individual score
+                                () -> assertEquals(6, derbyDogs.get(0).get("dogNumber")), // Dog5 has higher individual
+                                                                                          // score
+                                () -> assertEquals(5, derbyDogs.get(1).get("dogNumber")), // Dog6 has lower individual
+                                                                                          // score
+
+                                // Scenario 4: Dog7 and Dog8 should be sorted by dog number (ascending)
+                                () -> assertEquals(7, derbyDogs.get(2).get("dogNumber")), // Lower dog number
+                                () -> assertEquals(8, derbyDogs.get(3).get("dogNumber")) // Higher dog number
+                );
+
+                // TEST 5: getTopScoringDogsByDayAndStakeType (Day 1, ALL_AGE)
+                List<Map<String, Object>> day1AllAgeDogs = dogService.getTopScoringDogsByDayAndStakeType(1,
+                                StakeType.ALL_AGE, 4);
+
+                assertAll("Day 1 ALL_AGE ranking tie-breaking tests",
+                                () -> assertEquals(4, day1AllAgeDogs.size()),
+
+                                // Check expected order for ALL_AGE dogs on day 1
+                                () -> assertEquals(1, day1AllAgeDogs.get(0).get("dogNumber")), // Dog1 has 50 points
+                                () -> assertEquals(3, day1AllAgeDogs.get(1).get("dogNumber")), // Dog3 has 40 points,
+                                                                                               // later bucket
+                                () -> assertEquals(4, day1AllAgeDogs.get(2).get("dogNumber")), // Dog4 has 40 points,
+                                                                                               // earlier bucket
+                                () -> assertEquals(2, day1AllAgeDogs.get(3).get("dogNumber")) // Dog2 has 25 points
+                );
+
+                // Add an additional test with multiple scores on the same day
+
+                // SCENARIO 5: Multiple scores on the same day, same time bucket
+                // Give Dog1 and Dog2 more scores on day 3 with equal points, same time
+                // Dog1 has a higher scoring bucket
+
+                ScoreDto score1Day3a = new ScoreDto(
+                                3, "05:30:00", 1, "05:45:00", // First bucket
+                                new int[] { 1 },
+                                new int[] { 20 },
+                                10);
+
+                ScoreDto score1Day3b = new ScoreDto(
+                                3, "05:30:00", 1, "06:15:00", // Fourth bucket
+                                new int[] { 1 },
+                                new int[] { 30 },
+                                10);
+
+                ScoreDto score2Day3 = new ScoreDto(
+                                3, "05:30:00", 1, "05:45:00", // First bucket
+                                new int[] { 2 },
+                                new int[] { 50 },
+                                10);
+
+                // Create the additional scores
+                dogService.createScore(score1Day3a);
+                dogService.createScore(score1Day3b);
+                dogService.createScore(score2Day3);
+
+                // Test getTopScoringDogsByDay for day 3
+                List<Map<String, Object>> day3Dogs = dogService.getTopScoringDogsByDay(3, 8);
+
+                assertAll("Day 3 ranking with multiple scores",
+                                () -> assertEquals(2, day3Dogs.size()), // Only 2 dogs have scores on day 3
+
+                                // On day 3, Dog1 has higher total (50) than Dog2 (also 50) but Dog1 has a score
+                                // in a later bucket
+                                () -> assertEquals(1, day3Dogs.get(0).get("dogNumber")), // Dog1 has score in bucket 4
+                                () -> assertEquals(2, day3Dogs.get(1).get("dogNumber")) // Dog2 has score in bucket 1
                 );
         }
 }

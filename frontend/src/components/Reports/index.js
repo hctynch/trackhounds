@@ -2,22 +2,20 @@ import ComprehensiveDogScoresReport from './ComprehensiveDogScoresReport';
 import CustomTopDogsReport from './CustomTopDogsReport';
 import DailyCustomTopDogsReport from './DailyCustomTopDogsReport';
 import DogDetailScoresReport from './DogDetailScoresReport';
-import DogScoresByDayReport from './DogScoresByDayReport';
 import JudgeDetailScoresReport from './JudgeDetailScoresReport';
 import ScratchReport from './ScratchReport';
-import TopDogsByDayAndStakeTypeReport from './TopDogsByDayAndStakeTypeReport';
-import TopDogsByStakeTypeReport from './TopDogsByStakeTypeReport';
-import TopDogsReport from './TopDogsReport';
+import SpeedAndDriveD from './SpeedAndDriveD';
+import SpeedAndDriveO from './SpeedAndDriveO';
 
 // Group reports by category
 const reportGroups = [
   {
     type: 'Daily Reports',
-    items: [DogScoresByDayReport, TopDogsByDayAndStakeTypeReport, DailyCustomTopDogsReport]
+    items: [DailyCustomTopDogsReport, SpeedAndDriveD]
   },
   {
     type: 'Total Reports',
-    items: [TopDogsReport, TopDogsByStakeTypeReport, CustomTopDogsReport, ScratchReport, ComprehensiveDogScoresReport]
+    items: [CustomTopDogsReport, ScratchReport, ComprehensiveDogScoresReport, SpeedAndDriveO]
   },
   {
     type: 'Detail Reports',

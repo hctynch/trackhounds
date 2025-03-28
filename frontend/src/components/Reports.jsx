@@ -9,6 +9,8 @@ import { DailyCustomLimitSelector } from './Reports/DailyCustomTopDogsReport';
 import { DogNumberSelector } from './Reports/DogDetailScoresReport';
 import { DaySelector } from './Reports/DogScoresByDayReport';
 import { JudgeNumberSelector } from './Reports/JudgeDetailScoresReport';
+import { DailySpeedAndDriveLimitSelector } from './Reports/SpeedAndDriveD.jsx';
+import { OverallTopDogsLimitSelector } from './Reports/SpeedAndDriveO.jsx';
 import { DayAndStakeTypeSelector } from './Reports/TopDogsByDayAndStakeTypeReport';
 import { StakeTypeSelector } from './Reports/TopDogsByStakeTypeReport';
 
@@ -30,7 +32,9 @@ function Reports() {
     'CustomLimitSelector': CustomLimitSelector,
     'DailyCustomLimitSelector': DailyCustomLimitSelector,
     'DogNumberSelector': DogNumberSelector,
-    'JudgeNumberSelector': JudgeNumberSelector
+    'JudgeNumberSelector': JudgeNumberSelector,
+    'OverallTopDogsLimitSelector': OverallTopDogsLimitSelector,
+    'DailySpeedAndDriveLimitSelector': DailySpeedAndDriveLimitSelector,
   };
   
   // Fetch report data when a report is selected or config changes

@@ -1,32 +1,32 @@
 import React from 'react';
 import DogService from '../../services/DogService';
 
-export const DailyCustomLimitSelector = ({ onChange }) => {
-  const [day, setDay] = React.useState(1);
+export const DailySpeedAndDriveLimitSelector = ({ onChange }) => {
   const [limit, setLimit] = React.useState(10);
   const [stakeType, setStakeType] = React.useState('ALL');
+  const [day, setDay] = React.useState(1);
   
-  // Trigger onChange with initial values when component mounts
+  // Initialize with default values
   React.useEffect(() => {
-    onChange({ day, limit, stakeType });
+    onChange({ limit, stakeType, day });
   }, []);
-  
-  const handleDayChange = (e) => {
-    const newDay = parseInt(e.target.value);
-    setDay(newDay);
-    onChange({ day: newDay, limit, stakeType });
-  };
   
   const handleLimitChange = (e) => {
     const newLimit = parseInt(e.target.value);
     setLimit(newLimit);
-    onChange({ day, limit: newLimit, stakeType });
+    onChange({ limit: newLimit, stakeType, day });
   };
   
   const handleStakeTypeChange = (e) => {
     const newStakeType = e.target.value;
     setStakeType(newStakeType);
-    onChange({ day, limit, stakeType: newStakeType });
+    onChange({ limit, stakeType: newStakeType, day });
+  };
+  
+  const handleDayChange = (e) => {
+    const newDay = parseInt(e.target.value);
+    setDay(newDay);
+    onChange({ limit, stakeType, day: newDay });
   };
   
   return (
@@ -64,7 +64,7 @@ export const DailyCustomLimitSelector = ({ onChange }) => {
       
       <div>
         <label htmlFor="stakeTypeSelect" className="block text-sm font-medium text-gray-700 mb-2">
-          Stake Type (Optional):
+          Stake Type:
         </label>
         <select
           id="stakeTypeSelect"
@@ -81,36 +81,48 @@ export const DailyCustomLimitSelector = ({ onChange }) => {
   );
 };
 
-const DailyCustomTopDogsReport = {
-  title: 'Custom Daily Top Dogs Report',
-  description: 'View top dogs for a specific day with customizable limit and optional stake filtering',
+const SpeedAndDriveD = {
+  title: 'Daily Speed & Drive Report',
+  description: 'View top dogs ranked by Speed & Drive points for a specific day',
   
-  // Reference component by name
-  configComponent: 'DailyCustomLimitSelector',
+  // Match the pattern in Reports.jsx
+  configComponent: 'DailySpeedAndDriveLimitSelector',
   
   // Default configuration
-  defaultConfig: { day: 1, limit: 10, stakeType: 'ALL' },
+  defaultConfig: { limit: 10, stakeType: 'ALL', day: 1 },
   
-  fetchData: async (config = { day: 1, limit: 10, stakeType: 'ALL' }) => {
-    const { day, limit, stakeType } = config;
-    let topDogs;
+  fetchData: async (config = { limit: 10, stakeType: 'ALL', day: 1 }) => {
+    const { limit, stakeType, day } = config;
     
     try {
+      let dogScores;
+      
+      // Use the appropriate backend method based on stake type
       if (stakeType === 'ALL') {
-        topDogs = await DogService.getTopScoringDogsByDay(day, limit);
+        // For all dogs, get top scoring dogs for the day
+        dogScores = await DogService.getTopScoringDogsByDay(day, limit);
       } else {
-        topDogs = await DogService.getTopScoringDogsByDayAndStakeType(day, stakeType, limit);
+        // For specific stake type, get filtered results
+        dogScores = await DogService.getTopScoringDogsByDayAndStakeType(day, stakeType, limit);
       }
       
+      // The backend already sorts the dogs correctly, so we can just map the results
       const stakeLabel = stakeType === 'ALL' ? 'All Dogs' : 
-                        stakeType === 'ALL_AGE' ? 'All Age' : 'Derby';
+                         stakeType === 'ALL_AGE' ? 'All Age' : 'Derby';
       
       return {
-        title: `Day ${day}: Top ${limit} Dogs - ${stakeLabel}`,
-        columns: ['Place', 'Total', 'S&D', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
-        data: topDogs.map((dog, index) => [
+        title: `Day ${day} Speed & Drive Rankings - ${stakeLabel}`,
+        columns: [
+          'Place', 
+          'Score', 
+          'Dog #', 
+          'Name', 
+          'Sire', 
+          'Dam', 
+          'Owner'
+        ],
+        data: dogScores.map((dog, index) => [
           (index + 1).toString(),
-          (dog.totalPoints + Number.parseInt(dog.totalPoints * day * .1)).toString(),
           dog.totalPoints.toString(),
           dog.dogNumber.toString(),
           dog.dogName || '',
@@ -120,14 +132,22 @@ const DailyCustomTopDogsReport = {
         ])
       };
     } catch (error) {
-      console.error("Error fetching daily custom top dogs report data:", error);
+      // Handle errors gracefully
       return {
-        title: `Day ${day}: Top ${limit} Dogs${stakeType !== 'ALL' ? ` - ${stakeType}` : ''}`,
-        columns: ['Place', 'Total', 'S&D', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
+        title: `Day ${day} Speed & Drive Rankings${stakeType !== 'ALL' ? ` - ${stakeType === 'ALL_AGE' ? 'All Age' : 'Derby'}` : ''}`,
+        columns: [
+          'Place', 
+          'Score', 
+          'Dog #', 
+          'Name', 
+          'Sire', 
+          'Dam', 
+          'Owner'
+        ],
         data: []
       };
     }
   }
 };
 
-export default DailyCustomTopDogsReport;
+export default SpeedAndDriveD;
