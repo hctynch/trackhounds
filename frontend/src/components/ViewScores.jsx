@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { IoMdAlert } from "react-icons/io";
+import { FaFilter, FaInfoCircle, FaRegCalendarAlt, FaTrash } from "react-icons/fa";
+import { FiSearch } from "react-icons/fi";
 import { IoArrowBackCircleOutline } from "react-icons/io5";
-import { PiX } from "react-icons/pi";
 import DogService from "../services/DogService";
-import Box from "./Box";
+import Button from "./Button";
 import StyledTable from "./StyledTable";
 
 function ViewScores() {
@@ -132,16 +132,17 @@ function ViewScores() {
   const columns = ["Day", "Cross Time", "Judge #", "Dog #", "Points", ""];
 
   const data = filteredScores.map(score => [
-    score.day,
+    <div className="font-medium">{score.day}</div>,
     score.time,
     score.judgeNumber,
-    score.dogNumber,
-    score.points,
+    <div className="font-medium">{score.dogNumber}</div>,
+    <div className="font-medium text-blue-600">{score.points}</div>,
     <button
-      className="text-sm ml-1 bg-red-300 hover:bg-red-400 rounded-full cursor-pointer px-2 py-2"
       onClick={() => handleDelete(score.dogNumber, score.id)}
+      className="p-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
+      title="Delete Score"
     >
-      <PiX className="text-center" />
+      <FaTrash size={14} />
     </button>,
   ]);
 
@@ -151,47 +152,70 @@ function ViewScores() {
   };
 
   return (
-    <div className="grid text-black ml-[276px] mr-4 min-h-[calc(100vh-1rem)] my-2 relative">
-      <Box params="h-full bg-white pt-5 overflow-y-auto">
-        <div className="w-full flex items-center border-b-2 border-gray-300 pb-1">
-          <a className="mr-4 cursor-pointer" href="/score-entry/enter">
-            <IoArrowBackCircleOutline className="text-4xl text-gray-500" />
-          </a>
-          <p className="text-4xl font-bold">Scores</p>
-          <div className="flex ml-auto items-center h-16">
-            <input
-              type="text"
-              placeholder="Search by Dog Number"
-              className="border border-black/30 rounded-lg px-1"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+    <div className="ml-[276px] mr-4 flex flex-col h-[calc(100vh-1rem)] py-3 text-gray-800">
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button
+            type="secondary"
+            onClick={() => window.location.href = "/score-entry/enter"}
+            className="mr-4 p-1 rounded-full"
+          >
+            <IoArrowBackCircleOutline className="text-3xl text-gray-500" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">View Scores</h1>
+            <p className="text-gray-500 mt-1">
+              Browse, search and manage hunt scores
+            </p>
           </div>
         </div>
         
-        {/* Error display */}
-        {error && error.message && (
-          <div className="w-full bg-red-100 border-l-4 border-red-500 text-red-700 p-4 my-4 flex items-center">
-            <IoMdAlert className="text-2xl mr-2" />
-            <div>
-              <p className="font-semibold">{error.message}</p>
-              {error.fields && Object.keys(error.fields).length > 0 && (
-                <ul className="list-disc list-inside mt-2">
-                  {Object.entries(error.fields).map(([field, message]) => (
-                    <li key={field}>{field}: {message}</li>
-                  ))}
-                </ul>
-              )}
+        <div className="flex items-center">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiSearch className="text-gray-400" />
             </div>
+            <input
+              type="text"
+              placeholder="Search by Dog Number"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
-        )}
+        </div>
+      </div>
+      
+      {/* Error display */}
+      {error && error.message && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-lg flex items-start">
+          <FaInfoCircle className="text-red-500 text-lg mt-0.5 mr-3 flex-shrink-0" />
+          <div>
+            <p className="font-medium text-red-800">{error.message}</p>
+            {error.fields && Object.keys(error.fields).length > 0 && (
+              <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
+                {Object.entries(error.fields).map(([field, message]) => (
+                  <li key={field}>{field}: {message}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Filter Controls */}
+      <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+        <div className="flex items-center mb-1">
+          <FaFilter className="text-gray-500 mr-2" />
+          <h2 className="text-lg font-semibold text-gray-800">Filter Scores</h2>
+        </div>
         
-        {/* Filter Controls */}
-        <div className="w-full flex flex-wrap items-center gap-4 pt-4 pb-2">
+        <div className="flex flex-wrap items-center gap-4 mt-3">
           <div className="flex items-center">
-            <label className="mr-2">Filter by:</label>
+            <label className="mr-2 text-sm font-medium text-gray-700">Filter by:</label>
             <select
-              className="border border-black/30 rounded-lg px-3 py-1.5"
+              className="border border-gray-300 text-gray-800 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               value={filterType}
               onChange={handleFilterChange}
             >
@@ -204,13 +228,13 @@ function ViewScores() {
           {filterType !== "all" && (
             <div className="flex flex-col">
               <div className="flex items-center">
-                <label className="mr-2">
+                <label className="mr-2 text-sm font-medium text-gray-700">
                   {filterType === "dog" ? "Dog #:" : "Judge #:"}
                 </label>
                 <input
                   type="number"
                   placeholder={filterType === "dog" ? "Enter dog number" : "Enter judge number"}
-                  className={`border ${getErrorForField(filterType === "dog" ? "dogNumber" : "judgeNumber") ? 'border-red-500' : 'border-black/30'} rounded-lg px-3 py-1.5`}
+                  className={`border ${getErrorForField(filterType === "dog" ? "dogNumber" : "judgeNumber") ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} rounded-lg px-3 py-2`}
                   value={filterValue}
                   onChange={handleFilterValueChange}
                   min="1"
@@ -224,9 +248,11 @@ function ViewScores() {
           
           <div className="flex flex-col">
             <div className="flex items-center">
-              <label className="mr-2">Day:</label>
+              <label className="mr-2 text-sm font-medium text-gray-700">
+                <FaRegCalendarAlt className="inline mr-1" /> Day:
+              </label>
               <select
-                className={`border ${getErrorForField("day") ? 'border-red-500' : 'border-black/30'} rounded-lg px-3 py-1.5`}
+                className={`border ${getErrorForField("day") ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} rounded-lg px-3 py-2`}
                 value={day}
                 onChange={handleDayChange}
               >
@@ -242,23 +268,53 @@ function ViewScores() {
             )}
           </div>
         </div>
+      </div>
+      
+      {/* Scores Table */}
+      <div className="bg-white rounded-xl shadow-sm flex-1 overflow-hidden flex flex-col">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold">Score Results</h2>
+          <p className="text-sm text-gray-500">
+            {loading ? 'Loading scores...' : 
+             `Showing ${filteredScores.length} score${filteredScores.length !== 1 ? 's' : ''}`}
+             {filterType !== 'all' && ` • Filtered by ${filterType}`}
+             {day !== 'all' && ` • Day ${day}`}
+          </p>
+        </div>
         
-        <Box params="overflow-y-auto w-full mt-4 mb-4 bg-slate-50 h-full">
+        <div className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex justify-center items-center p-8">
-              <p className="text-lg text-gray-600">Loading scores...</p>
+              <div className="animate-pulse flex flex-col items-center">
+                <div className="h-8 w-8 bg-blue-200 rounded-full mb-2"></div>
+                <p className="text-gray-500">Loading scores...</p>
+              </div>
             </div>
           ) : data.length > 0 ? (
-            <StyledTable columns={columns} data={data} />
+            <div className="p-4">
+              <StyledTable 
+                columns={columns} 
+                data={data} 
+                className="w-full"
+              />
+            </div>
           ) : (
-            <div className="flex justify-center items-center p-8">
-              <p className="text-lg text-gray-600">
-                {error ? "No scores found due to an error" : "No scores found matching your criteria"}
+            <div className="h-full flex flex-col items-center justify-center p-8">
+              <div className="bg-gray-100 rounded-full p-4 mb-3">
+                <FaInfoCircle className="text-gray-400 text-3xl" />
+              </div>
+              <p className="text-lg text-gray-600 font-medium">
+                {error ? "No scores found due to an error" : "No scores matching your criteria"}
+              </p>
+              <p className="text-gray-500 mt-1 text-center max-w-md">
+                {filterType !== 'all' || day !== 'all' ? 
+                  "Try adjusting your filters to see more results" : 
+                  "No scores have been recorded yet. Start by entering scores in the Score Entry page."}
               </p>
             </div>
           )}
-        </Box>
-      </Box>
+        </div>
+      </div>
     </div>
   );
 }

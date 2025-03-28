@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { FaCheck, FaX } from 'react-icons/fa6';
-import { GoHorizontalRule } from 'react-icons/go';
 import { IoAddCircleOutline, IoArrowBackCircleOutline } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import DogService from '../services/DogService';
 import HuntService from '../services/HuntService';
-import Box from './Box';
+import Button from './Button';
 import StyledTable from './StyledTable';
 
 function AddDogs() {
@@ -324,121 +323,122 @@ function AddDogs() {
   };
 
   // Add this new function for general navigation between input fields
-const handleTableKeyDown = (event, index, fieldName) => {
-  // Only handle navigation keys if we're not in a suggestion list or if it's a field without suggestions
-  const isInSuggestionField = (fieldName === 'sire' || fieldName === 'dam') && 
-    ((fieldName === 'sire' && sireSuggestions.length > 0) || 
-     (fieldName === 'dam' && damSuggestions.length > 0)) &&
-    highlightedSuggestion >= 0;
-  
-  // Don't override the suggestion navigation
-  if (isInSuggestionField && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
-    return;
-  }
-  
-  // Handle arrow navigation between fields
-  switch (event.key) {
-    case 'ArrowRight':
-      // Move to the next field in the same row
-      const nextFieldMap = {
-        'number': 'name',
-        'name': 'stake',
-        'stake': 'sire',
-        'sire': 'dam',
-      };
-      
-      if (nextFieldMap[fieldName]) {
-        event.preventDefault();
-        const nextField = inputRefs.current[`${nextFieldMap[fieldName]}-${index}`];
-        if (nextField) {
-          nextField.focus();
-          // Clear suggestions when moving away from a suggestion field
-          if (fieldName === 'sire' || fieldName === 'dam') {
-            setSireSuggestions([]);
-            setDamSuggestions([]);
-            setHighlightedSuggestion(-1);
+  const handleTableKeyDown = (event, index, fieldName) => {
+    // Only handle navigation keys if we're not in a suggestion list or if it's a field without suggestions
+    const isInSuggestionField = (fieldName === 'sire' || fieldName === 'dam') && 
+      ((fieldName === 'sire' && sireSuggestions.length > 0) || 
+       (fieldName === 'dam' && damSuggestions.length > 0)) &&
+      highlightedSuggestion >= 0;
+    
+    // Don't override the suggestion navigation
+    if (isInSuggestionField && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      return;
+    }
+    
+    // Handle arrow navigation between fields
+    switch (event.key) {
+      case 'ArrowRight':
+        // Move to the next field in the same row
+        const nextFieldMap = {
+          'number': 'name',
+          'name': 'stake',
+          'stake': 'sire',
+          'sire': 'dam',
+        };
+        
+        if (nextFieldMap[fieldName]) {
+          event.preventDefault();
+          const nextField = inputRefs.current[`${nextFieldMap[fieldName]}-${index}`];
+          if (nextField) {
+            nextField.focus();
+            // Clear suggestions when moving away from a suggestion field
+            if (fieldName === 'sire' || fieldName === 'dam') {
+              setSireSuggestions([]);
+              setDamSuggestions([]);
+              setHighlightedSuggestion(-1);
+            }
           }
         }
-      }
-      break;
-      
-    case 'ArrowLeft':
-      // Move to the previous field in the same row
-      const prevFieldMap = {
-        'name': 'number',
-        'stake': 'name',
-        'sire': 'stake',
-        'dam': 'sire',
-      };
-      
-      if (prevFieldMap[fieldName]) {
-        event.preventDefault();
-        const prevField = inputRefs.current[`${prevFieldMap[fieldName]}-${index}`];
-        if (prevField) {
-          prevField.focus();
-          // Clear suggestions when moving away from a suggestion field
-          if (fieldName === 'sire' || fieldName === 'dam') {
-            setSireSuggestions([]);
-            setDamSuggestions([]);
-            setHighlightedSuggestion(-1);
+        break;
+        
+      case 'ArrowLeft':
+        // Move to the previous field in the same row
+        const prevFieldMap = {
+          'name': 'number',
+          'stake': 'name',
+          'sire': 'stake',
+          'dam': 'sire',
+        };
+        
+        if (prevFieldMap[fieldName]) {
+          event.preventDefault();
+          const prevField = inputRefs.current[`${prevFieldMap[fieldName]}-${index}`];
+          if (prevField) {
+            prevField.focus();
+            // Clear suggestions when moving away from a suggestion field
+            if (fieldName === 'sire' || fieldName === 'dam') {
+              setSireSuggestions([]);
+              setDamSuggestions([]);
+              setHighlightedSuggestion(-1);
+            }
           }
         }
-      }
-      break;
-      
-    case 'ArrowUp':
-      // Move to the same field in the row above
-      if (index > 0) {
-        event.preventDefault();
-        const upField = inputRefs.current[`${fieldName}-${index - 1}`];
-        if (upField) {
-          upField.focus();
-          // Clear suggestions when moving away from the current field
-          if (fieldName === 'sire' || fieldName === 'dam') {
-            setSireSuggestions([]);
-            setDamSuggestions([]);
-            setHighlightedSuggestion(-1);
-            // Set the active field for the new position
-            setActiveSuggestionField({ index: index - 1, field: fieldName });
+        break;
+        
+      case 'ArrowUp':
+        // Move to the same field in the row above
+        if (index > 0) {
+          event.preventDefault();
+          const upField = inputRefs.current[`${fieldName}-${index - 1}`];
+          if (upField) {
+            upField.focus();
+            // Clear suggestions when moving away from the current field
+            if (fieldName === 'sire' || fieldName === 'dam') {
+              setSireSuggestions([]);
+              setDamSuggestions([]);
+              setHighlightedSuggestion(-1);
+              // Set the active field for the new position
+              setActiveSuggestionField({ index: index - 1, field: fieldName });
+            }
           }
         }
-      }
-      break;
-      
-    case 'ArrowDown':
-      // Move to the same field in the row below
-      if (index < dogs.length - 1) {
-        event.preventDefault();
-        const downField = inputRefs.current[`${fieldName}-${index + 1}`];
-        if (downField) {
-          downField.focus();
-          // Clear suggestions when moving away from the current field
-          if (fieldName === 'sire' || fieldName === 'dam') {
-            setSireSuggestions([]);
-            setDamSuggestions([]);
-            setHighlightedSuggestion(-1);
-            // Set the active field for the new position
-            setActiveSuggestionField({ index: index + 1, field: fieldName });
+        break;
+        
+      case 'ArrowDown':
+        // Move to the same field in the row below
+        if (index < dogs.length - 1) {
+          event.preventDefault();
+          const downField = inputRefs.current[`${fieldName}-${index + 1}`];
+          if (downField) {
+            downField.focus();
+            // Clear suggestions when moving away from the current field
+            if (fieldName === 'sire' || fieldName === 'dam') {
+              setSireSuggestions([]);
+              setDamSuggestions([]);
+              setHighlightedSuggestion(-1);
+              // Set the active field for the new position
+              setActiveSuggestionField({ index: index + 1, field: fieldName });
+            }
           }
         }
-      }
-      break;
-      
-    default:
-      break;
-  }
-};
+        break;
+        
+      default:
+        break;
+    }
+  };
 
   const columns = ['#', 'Name', 'Stake', 'Sire', 'Dam'];
   const data = dogs.map((dog, index) => [
     <input
+      type='number'
       key={`number-${index}`}
       ref={el => inputRefs.current[`number-${index}`] = el}
-      className={`pl-1 w-full h-full bg-gray-100 ${
+      className={`pl-2 w-full h-full rounded border ${
         errors[`row${index}`] || errors[`number${index + 1}`]
-          ? 'text-red-500'
-          : 'text-black'
-      }`}
+          ? 'border-red-300 text-red-600 focus:border-red-500 focus:ring-red-200'
+          : 'border-gray-200 text-gray-900 focus:border-blue-500 focus:ring-blue-200'
+      } focus:ring-2 focus:outline-none transition-colors`}
       name='number'
       value={dog.number}
       onChange={(event) => handleInputChange(index, event)}
@@ -447,11 +447,11 @@ const handleTableKeyDown = (event, index, fieldName) => {
     <input
       key={`name-${index}`}
       ref={el => inputRefs.current[`name-${index}`] = el}
-      className={`pl-1 w-full h-full bg-gray-100 ${
+      className={`pl-2 w-full h-full rounded border ${
         errors[`row${index}`] || errors[`name${index + 1}`]
-          ? 'text-red-500'
-          : 'text-black'
-      }`}
+          ? 'border-red-300 text-red-600 focus:border-red-500 focus:ring-red-200'
+          : 'border-gray-200 text-gray-900 focus:border-blue-500 focus:ring-blue-200'
+      } focus:ring-2 focus:outline-none transition-colors`}
       name='name'
       value={dog.name}
       onChange={(event) => handleInputChange(index, event)}
@@ -460,11 +460,11 @@ const handleTableKeyDown = (event, index, fieldName) => {
     <select
       key={`stake-${index}`}
       ref={el => inputRefs.current[`stake-${index}`] = el}
-      className={`pr-2 h-full bg-gray-100 ${
+      className={`px-2 py-1 w-full h-full rounded border ${
         errors[`row${index}`] || errors[`stake${index + 1}`]
-          ? 'text-red-500'
-          : 'text-black'
-      }`}
+          ? 'border-red-300 text-red-600 focus:border-red-500 focus:ring-red-200'
+          : 'border-gray-200 text-gray-900 focus:border-blue-500 focus:ring-blue-200'
+      } focus:ring-2 focus:outline-none transition-colors`}
       name='stake'
       value={dog.stake}
       onChange={(event) => handleInputChange(index, event)}
@@ -481,9 +481,11 @@ const handleTableKeyDown = (event, index, fieldName) => {
     <div key={`sire-container-${index}`} className="relative w-full">
       <input
         ref={el => inputRefs.current[`sire-${index}`] = el}
-        className={`pl-1 w-full h-full bg-gray-100 ${
-          errors[`row${index}`] ? 'text-red-500' : 'text-black'
-        }`}
+        className={`pl-2 w-full h-full rounded border ${
+          errors[`row${index}`] 
+            ? 'border-red-300 text-red-600 focus:border-red-500 focus:ring-red-200'
+            : 'border-gray-200 text-gray-900 focus:border-blue-500 focus:ring-blue-200'
+        } focus:ring-2 focus:outline-none transition-colors`}
         name='sire'
         value={dog.sire}
         onClick={() => setActiveSuggestionField({ index, field: 'sire' })}
@@ -493,12 +495,12 @@ const handleTableKeyDown = (event, index, fieldName) => {
       {sireSuggestions.length > 0 && activeSuggestionField.index === index && activeSuggestionField.field === 'sire' && (
         <ul 
           ref={el => suggestionRefs.current[`sire-${index}`] = el}
-          className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-md w-full max-h-40 overflow-y-auto mt-1"
+          className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg w-full max-h-48 overflow-y-auto mt-1"
         >
           {sireSuggestions.map((suggestion, i) => (
             <li
               key={i}
-              className={`px-3 py-1 cursor-pointer ${highlightedSuggestion === i ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+              className={`px-3 py-1.5 cursor-pointer ${highlightedSuggestion === i ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'}`}
               onClick={() => handleSelectSuggestion(suggestion)}>
               {suggestion}
             </li>
@@ -509,9 +511,11 @@ const handleTableKeyDown = (event, index, fieldName) => {
     <div key={`dam-container-${index}`} className="relative w-full">
       <input
         ref={el => inputRefs.current[`dam-${index}`] = el}
-        className={`pl-1 w-full h-full bg-gray-100 ${
-          errors[`row${index}`] ? 'text-red-500' : 'text-black'
-        }`}
+        className={`pl-2 w-full h-full rounded border ${
+          errors[`row${index}`] 
+            ? 'border-red-300 text-red-600 focus:border-red-500 focus:ring-red-200'
+            : 'border-gray-200 text-gray-900 focus:border-blue-500 focus:ring-blue-200'
+        } focus:ring-2 focus:outline-none transition-colors`}
         name='dam'
         value={dog.dam}
         onClick={() => setActiveSuggestionField({ index, field: 'dam' })}
@@ -521,12 +525,12 @@ const handleTableKeyDown = (event, index, fieldName) => {
       {damSuggestions.length > 0 && activeSuggestionField.index === index && activeSuggestionField.field === 'dam' && (
         <ul 
           ref={el => suggestionRefs.current[`dam-${index}`] = el}
-          className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-md w-full max-h-40 overflow-y-auto mt-1"
+          className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg w-full max-h-48 overflow-y-auto mt-1"
         >
           {damSuggestions.map((suggestion, i) => (
             <li
               key={i}
-              className={`px-3 py-1 cursor-pointer ${highlightedSuggestion === i ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+              className={`px-3 py-1.5 cursor-pointer ${highlightedSuggestion === i ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'}`}
               onClick={() => handleSelectSuggestion(suggestion)}>
               {suggestion}
             </li>
@@ -537,57 +541,116 @@ const handleTableKeyDown = (event, index, fieldName) => {
   ]);
 
   return (
-    <div className='grid text-black ml-[276px] h-full relative'>
-      <Box params='bg-white pt-5 h-full max-h-[calc(100vh-1rem)] my-2 mr-4'>
-        <div className='w-full flex items-center border-b-2 border-gray-300 pb-1'>
-          <a
-            className='mr-4 cursor-pointer'
-            href='/dogs/all'>
-            <IoArrowBackCircleOutline className='text-4xl text-gray-500' />
-          </a>
-          <p className='text-4xl font-bold'>Add Dogs</p>
-          <div className='h-16 items-center flex ml-auto'>
-            <p className='italic opacity-70 mr-2'>Status:</p>
-            {status === 'success' && (
-              <FaCheck className='h-12 w-12 text-green-400' />
-            )}
-            {status === 'error' && <FaX className='h-12 w-12 text-red-400' />}
-          </div>
-        </div>
-        <div className='w-full flex items-center'>
-          <Box params='mt-4 bg-slate-100 w-1/2 pb-4 pt-2'>
-            <div className='w-full flex flex-col items-start'>
-              <p className='text-lg font-medium'>Owner</p>
-              <input
-                type='text'
-                className='bg-white border w-full border-black/30 rounded-lg px-2 py-1'
-                value={owner}
-                onChange={handleOwnerChange}
-              />
+    <div className="ml-[276px] mr-4 flex flex-col h-[calc(100vh-1rem)] py-3 text-gray-800">
+      {/* Header Section */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
+        <div className="px-6 py-5 flex items-center justify-between border-b border-gray-200">
+          <div className="flex items-center">
+            <button
+              onClick={() => navigate('/dogs/all')}
+              className="mr-4 p-1 rounded-full cursor-pointer"
+            >
+              <IoArrowBackCircleOutline className="text-3xl text-gray-500 h-9 w-9" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Register Dogs</h1>
+              <p className="text-gray-500 mt-1">
+                {hunt.title ? `For: ${hunt.title}` : 'No active hunt'}
+              </p>
             </div>
-          </Box>
-        </div>
-        <Box params='overflow-y-auto w-full p-4 mt-8 mb-5 bg-slate-100 h-full'>
-          <StyledTable
-            columns={columns}
-            data={data}
-          />
-          <div
-            className='mx-auto flex items-center justify-center mt-1 hover:text-green-600 text-green-500/90 cursor-pointer'
-            onClick={handleAddRow}>
-            <GoHorizontalRule className='text-4xl' />
-            <IoAddCircleOutline className='h-8 w-8' />
-            <GoHorizontalRule className='text-4xl' />
           </div>
-        </Box>
-        <div className='mx-auto mb-2'>
-          <button
-            className='bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-full cursor-pointer'
-            onClick={handleSubmit}>
-            Add
-          </button>
+          
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-gray-600 mr-2">Status:</span>
+              {status === 'success' ? (
+                <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center">
+                  <FaCheck className="mr-1" /> Ready
+                </span>
+              ) : (
+                <span className="bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center">
+                  <FaX className="mr-1" /> Errors
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-      </Box>
+      </div>
+      
+      {/* Owner Section */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
+        <div className="px-6 py-4 bg-blue-50 border-l-4 border-blue-500">
+          <h2 className="text-lg font-semibold text-gray-800">Owner Information</h2>
+          <p className="text-sm text-gray-500">Common owner for all dogs being registered</p>
+        </div>
+        
+        <div className="p-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Owner Name</label>
+          <input
+            type="text"
+            value={owner}
+            onChange={handleOwnerChange}
+            className="w-full lg:w-1/2 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:ring-2 focus:border-blue-500 focus:outline-none"
+            placeholder="Enter owner name (will apply to all dogs)"
+          />
+        </div>
+      </div>
+      
+      {/* Error Messages */}
+      {submitErrors && Object.keys(errors).length > 0 && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-lg">
+          <div className="flex items-center gap-2">
+            <div className="flex-shrink-0">
+              <FaX className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800 text-start">Please correct the following errors:</h3>
+              <ul className="mt-1 text-sm text-red-700 list-disc list-inside text-start">
+                {errors != null && Object.values(errors).map((error, index) => (<li key={index}>{error}</li>))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Dog Entry Table */}
+      <div className="bg-white rounded-xl shadow-sm flex-1 overflow-hidden flex flex-col">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-800">Dog Registry</h2>
+          <p className="text-sm text-gray-500">Enter dog information. Use arrow keys to navigate between fields.</p>
+        </div>
+        
+        <div className="flex-1 overflow-auto p-4">
+          <div className="bg-white rounded border border-gray-200">
+            <StyledTable
+              columns={columns}
+              data={data}
+              className="w-full"
+            />
+          </div>
+          
+          <div className="mt-4 flex justify-center">
+            <Button
+              type="secondary"
+              onClick={handleAddRow}
+              className="flex items-center rounded-xl px-4 py-2"
+            >
+              <IoAddCircleOutline className="mr-2" size={18} />
+              Add Row
+            </Button>
+          </div>
+        </div>
+        
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+          <Button
+            type="primary"
+            onClick={handleSubmit}
+            className="rounded-xl px-6 py-2.5 font-medium"
+          >
+            Submit Registration
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
