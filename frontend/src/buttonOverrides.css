@@ -1,0 +1,37 @@
+/* Force styling for all primary buttons and blue buttons */
+.bg-blue-400, 
+.bg-blue-500, 
+.hover\:bg-blue-500:hover,
+.hover\:bg-blue-600:hover,
+button.bg-blue-400,
+button.bg-blue-500,
+button[class*="bg-blue-4"],
+button[class*="bg-blue-5"],
+.btn-primary,
+button[type="submit"],
+button:has(span:contains("Submit")),
+button:has(span:contains("Create")) {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+/* Handle hover states for primary buttons */
+.bg-blue-400:hover, 
+.bg-blue-500:hover,
+.hover\:bg-blue-600:hover,
+button.bg-blue-400:hover,
+button.bg-blue-500:hover,
+.btn-primary:hover,
+button[type="submit"]:hover,
+button:has(span:contains("Submit")):hover,
+button:has(span:contains("Create")):hover {
+  background-color: #2563eb !important;
+}
+
+/* Additional catch-all backup for buttons */
+button[class*="blue"],
+a[class*="blue"],
+[role="button"][class*="blue"] {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}

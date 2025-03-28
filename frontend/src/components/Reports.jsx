@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import Box from './Box';
+import { FiClipboard, FiFileText } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import HuntService from '../services/HuntService.js';
+import Button from './Button';
 import ReportGenerator from './ReportGenerator';
 import reportGroups from './Reports/index.js';
 // Import the configuration components
-import HuntService from '../services/HuntService.js';
 import { CustomLimitSelector } from './Reports/CustomLimitSelector';
 import { DailyCustomLimitSelector } from './Reports/DailyCustomTopDogsReport';
 import { DogNumberSelector } from './Reports/DogDetailScoresReport';
@@ -23,6 +25,7 @@ function Reports() {
     title: '',
     dates: '',
   });
+  const navigate = useNavigate();
   
   // Map of available config components
   const configComponentMap = {
@@ -85,70 +88,112 @@ function Reports() {
   };
 
   return (
-    <div className="reports-container ml-[276px] h-full text-black grid mr-4">
-      <Box params="h-full bg-white my-2 max-h-[calc(100%-1rem)] min-h-[calc(100%-1rem)] pt-5">
-        <div className='w-full flex items-center border-b-2 border-gray-300 pb-1 h-18.5'>
-          <p className="text-4xl font-bold mb-3">Reports</p>
+    <div className="ml-[276px] mr-4 flex flex-col h-[calc(100vh-1rem)] py-3 text-gray-800">
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
+            <p className="text-gray-500 mt-1">
+              {selectedReport 
+                ? `Viewing: ${selectedReport.title}`
+                : 'Generate hunt reports and statistics'}
+            </p>
+          </div>
         </div>
-        
-        {!selectedReport ? (
-          <div className="w-full flex flex-col h-full overflow-auto justify-start">
+      </div>
+
+      {/* Main Content */}
+      {!selectedReport ? (
+        /* Report Selection View */
+        <div className="bg-white rounded-xl shadow-sm flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-auto p-6">
             {reportGroups.map((group, groupIndex) => (
-              <div key={groupIndex} className="w-full my-6">
-                <p className="text-3xl font-semibold pb-1 mb-4 text-start border-b-2 border-gray-300">{group.type}</p>
-                <div className="report-buttons grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div key={groupIndex} className="mb-10">
+                <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
+                  <FiClipboard className="text-blue-500 mr-2" size={20} />
+                  <h2 className="text-xl font-semibold text-gray-800">{group.type}</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {group.items.map((report, index) => (
-                    <button
+                    <div 
                       key={index}
                       onClick={() => handleSelectReport(report)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white font-semibold p-4 rounded-full flex flex-col items-center justify-center"
+                      className="bg-blue-50 hover:bg-blue-100 border border-blue-200 p-4 rounded-xl cursor-pointer transition-colors flex flex-col h-full"
                     >
-                      {report.title}
+                      <div className="flex items-center mb-2">
+                        <FiFileText className="text-blue-500 mr-2" />
+                        <h3 className="font-medium text-blue-800">{report.title}</h3>
+                      </div>
                       {report.description && (
-                        <p className="text-xs text-blue-100 mt-1">{report.description}</p>
+                        <p className="text-sm text-gray-600 mt-1">{report.description}</p>
                       )}
-                    </button>
+                      <div className="mt-auto pt-3">
+                        <span className="text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded-full inline-flex items-center">
+                          {report.configComponent ? 'Configurable' : 'Standard Report'}
+                        </span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
             ))}
           </div>
-        ) : (
-          <div className="w-full h-full flex flex-col p-4">
-            <button 
-              onClick={closeReport}
-              className="mb-4 bg-gray-200 mr-auto hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-full flex items-center"
-            >
-              <span>← Back to Reports</span>
-            </button>
-            
-            {/* Configuration component if available - Using the mapping approach */}
-            {selectedReport.configComponent && configComponentMap[selectedReport.configComponent] && (
-              React.createElement(configComponentMap[selectedReport.configComponent], { 
-                onChange: handleConfigChange 
-              })
-            )}
-            
+        </div>
+      ) : (
+        /* Report View */
+        <div className="flex-1 flex flex-col">
+          <div className="rounded-xl bg-white shadow-sm mb-4">
+            <div className="p-4 flex flex-col items-start gap-y-10">
+              <Button 
+                onClick={closeReport}
+                type="secondary"
+                className="mr-4 rounded-lg px-3 py-1.5 text-sm"
+              >
+                ← Back to Reports
+              </Button>
+              
+              {/* Show configuration component if available */}
+              <div className="flex items-center space-x-2">
+                {selectedReport.configComponent && configComponentMap[selectedReport.configComponent] && (
+                  <div className="flex items-center bg-white rounded-lg">
+                    {React.createElement(configComponentMap[selectedReport.configComponent], { 
+                      onChange: handleConfigChange,
+                      config: reportConfig
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex h-full">
             {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <p className="text-xl">Loading report data...</p>
+              <div className="bg-white rounded-xl shadow-sm flex-1 h-64 flex items-center justify-center">
+                <div className="animate-pulse flex flex-col items-center">
+                  <div className="w-16 h-16 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+                  <p className="text-gray-500">Loading report data...</p>
+                </div>
               </div>
             ) : reportData ? (
-              <ReportGenerator
-                hunt={hunt}
-                day={reportConfig.day}
-                title={reportData.title || selectedReport.title}
-                columns={reportData.columns}
-                data={reportData.data}
-              />
+              
+                <ReportGenerator
+                  hunt={hunt}
+                  day={reportConfig.day}
+                  title={reportData.title || selectedReport.title}
+                  columns={reportData.columns}
+                  columnGroups={reportData.columnGroups}
+                  data={reportData.data}
+                />
             ) : (
-              <div className="flex justify-center items-center h-64">
-                <p className="text-xl">Preparing report...</p>
+              <div className="bg-white rounded-xl shadow-sm flex-1 h-64 flex items-center justify-center">
+                <p className="text-gray-500">Preparing report...</p>
               </div>
             )}
           </div>
-        )}
-      </Box>
+        </div>
+      )}
     </div>
   );
 }

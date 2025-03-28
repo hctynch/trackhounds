@@ -3,6 +3,7 @@ import { IoArrowBackCircleOutline } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import HuntService from '../services/HuntService.js';
 import Box from './Box';
+import Button from './Button';
 import OptionBoxWithNumber from './OptionBoxWithNumber';
 import SelectableCards from './SelectableCards';
 
@@ -24,9 +25,7 @@ function CreateHunt() {
 
   // Update stake ranges based on the primary stake selection
   useEffect(() => {
-    // If DUAL is selected, make sure stake ranges are appropriately set
     if (selected === 'DUAL') {
-      // Default to setting first two ranges as ALL_AGE and DERBY
       if (selectedStake1 !== 'ALL_AGE') setSelectedStake1('ALL_AGE');
       if (selectedStake2 !== 'DERBY') setSelectedStake2('DERBY');
     }
@@ -60,9 +59,7 @@ function CreateHunt() {
       err = true;
     }
     
-    // For DUAL stake type, ensure proper configuration
     if (selected === 'DUAL') {
-      // Check that at least one range is configured for each stake type
       const hasAllAge = [selectedStake1, selectedStake2, selectedStake3, selectedStake4].includes('ALL_AGE');
       const hasDerby = [selectedStake1, selectedStake2, selectedStake3, selectedStake4].includes('DERBY');
       
@@ -107,170 +104,192 @@ function CreateHunt() {
   };
 
   return (
-    <div className='text-black flex flex-col ml-[276px] items-start py-2 mr-4 h-full'>
-      <Box params='h-full w-full bg-white pt-8 overflow-y-auto'>
-        <div className='w-full flex border-b-2 border-gray-300 pb-4'>
-          <a
-            className='mr-4 cursor-pointer'
-            href='/'>
-            <IoArrowBackCircleOutline className='text-4xl text-gray-500' />
-          </a>
-          <p className='text-4xl font-bold'>New Hunt</p>
-          <button
-            className='ml-auto bg-blue-400 hover:bg-blue-500 rounded-2xl px-4 cursor-pointer'
-            onClick={handleCreate}>
-            Create
-          </button>
+    <div className='text-black flex flex-wrap ml-[276px] items-start py-2 mr-4 h-full'>
+      <Box params='h-full w-full bg-white rounded-xl shadow-sm overflow-y-auto'>
+        {/* Header Section */}
+        <div className='w-full flex items-center justify-between px-6 py-4 border-b-2 border-gray-300'>
+          <div className='flex items-center'>
+            <button
+              onClick={() => navigate('/')}
+              className='mr-4 rounded-full cursor-pointer'
+            >
+              <IoArrowBackCircleOutline className='text-3xl text-gray-500 h-9 w-9' />
+            </button>
+            <h1 className='text-3xl font-bold text-gray-900'>Create New Hunt</h1>
+          </div>
+          
+          <Button
+            type="primary"
+            onClick={handleCreate}
+            className="rounded-xl px-6 py-2.5 font-medium"
+          >
+            Create Hunt
+          </Button>
         </div>
-        <Box params='w-full bg-slate-50 my-2'>
-          <div className='text-start py-2 grid grid-cols-2 w-full'>
-            <div className='w-full'>
-              <p className='text-lg font-semibold'>Title</p>
-              <p className='italic opacity-60 text-sm'>Title of the Hunt</p>
+
+        <div className='pt-6 space-y-6 flex flex-wrap gap-10 w-full items-start'>
+          {/* Title Section */}
+          <div className='flex flex-col gap-15 justify-evenly w-[45%]'>
+          <div className='bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden'>
+            <div className='px-6 py-4 bg-blue-50 border-l-4 border-blue-500'>
+              <h2 className='text-lg font-semibold text-gray-800'>Hunt Details</h2>
+              <p className='text-sm text-gray-500'>Basic information about the hunt</p>
             </div>
-            <div className='w-full flex flex-col justify-center items-center'>
-              <input
-                type='text'
-                className={`border w-full rounded ${
-                  errs && errs.title ? 'border-red-400' : ''
-                }`}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-              {errs && errs.title && (
-                <p className='text-sm w-full italic opacity-60 text-red-500'>
-                  {errs.title}
-                </p>
-              )}
+            
+            <div className='p-6 space-y-4'>
+              {/* Title Field */}
+              <div className='grid grid-cols-3 gap-6 items-center'>
+                <div className='col-span-1'>
+                  <label className='block text-sm font-medium text-gray-700'>Hunt Title</label>
+                  <p className='text-xs text-gray-500 mt-1'>Title of the hunt event</p>
+                </div>
+                <div className='col-span-2'>
+                  <input
+                    type='text'
+                    className={`w-full px-4 py-2 border ${errs.title ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} rounded-lg shadow-sm`}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter hunt title"
+                  />
+                  {errs.title && (
+                    <p className='mt-1 text-sm text-red-600'>
+                      {errs.title}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Dates Field */}
+              <div className='grid grid-cols-3 gap-6 items-center'>
+                <div className='col-span-1'>
+                  <label className='block text-sm font-medium text-gray-700'>Date Range</label>
+                  <p className='text-xs text-gray-500 mt-1'>When the hunt takes place.</p>
+                </div>
+                <div className='col-span-2'>
+                  <input
+                    type='text'
+                    className='w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500'
+                    value={dates}
+                    onChange={(e) => setDates(e.target.value)}
+                    placeholder="Anything will work"
+                  />
+                </div>
+              </div>
+              
+              {/* Interval Field */}
+              <div className='grid grid-cols-3 gap-6 items-center'>
+                <div className='col-span-1'>
+                  <label className='block text-sm font-medium text-gray-700'>Point Interval</label>
+                  <p className='text-xs text-gray-500 mt-1'>Scoring interval between dogs</p>
+                </div>
+                <div className='col-span-2'>
+                  <input
+                    type='number'
+                    className={`w-full px-4 py-2 border ${errs.interval ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} rounded-lg shadow-sm`}
+                    value={huntInterval}
+                    onChange={(e) => setHuntInterval(e.target.value)}
+                    min={0}
+                    placeholder="Enter interval"
+                  />
+                  {errs.interval && (
+                    <p className='mt-1 text-sm text-red-600'>
+                      {errs.interval}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </Box>
-        <Box params='w-full bg-slate-50 my-2'>
-          <div className='text-start py-2 grid grid-cols-2 w-full'>
-            <div className='w-full'>
-              <p className='text-lg font-semibold'>Dates</p>
-              <p className='italic opacity-60 text-sm'>
-                Date range of the Hunt
-              </p>
+
+          {/* Stake Type Section */}
+          <div className='bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden'>
+            <div className='px-6 py-4 bg-amber-50 border-l-4 border-amber-500'>
+              <h2 className='text-lg font-semibold text-gray-800'>Stake Type</h2>
+              <p className='text-sm text-gray-500'>Select the type of stake for this hunt</p>
             </div>
-            <div className='w-full flex items-center'>
-              <input
-                type='text'
-                className='border w-full rounded'
-                value={dates}
-                onChange={(e) => setDates(e.target.value)}
-              />
-            </div>
-          </div>
-        </Box>
-        <Box params='w-full bg-slate-50 my-2'>
-          <div className='text-start py-2 grid grid-cols-2 w-full'>
-            <div className='w-full'>
-              <p className='text-lg font-semibold'>Stake</p>
-              <p className='italic opacity-60 text-sm'>
-                Overall Stake of the Hunt
-              </p>
-            </div>
-            <div className='w-full flex items-center'>
+            
+            <div className='p-6'>
               <SelectableCards
                 selected={selected}
                 setSelected={setSelected}
               />
-            </div>
-            {errs && errs.stake && (
-              <p className='col-span-2 text-sm italic opacity-60 text-red-500 mt-1'>
-                {errs.stake}
-              </p>
-            )}
-            {selected === 'DUAL' && (
-              <p className='col-span-2 text-sm italic text-blue-600 mt-1'>
-                When using Dual Stake, configure stake ranges below for All Age and Derby dogs.
-              </p>
-            )}
-          </div>
-        </Box>
-        <Box params='w-full bg-slate-50 my-2'>
-          <div className='text-start py-2 grid grid-cols-2 w-full'>
-            <div className='w-full'>
-              <p className='text-lg font-semibold'>Interval</p>
-              <p className='italic opacity-60 text-sm'>
-                Time interval of the Hunt
-              </p>
-            </div>
-            <div className='w-full flex flex-col justify-center items-center'>
-              <input
-                type='number'
-                className={`border w-full rounded ${
-                  errs && errs.interval ? 'border-red-400' : ''
-                }`}
-                value={huntInterval}
-                onChange={(e) => setHuntInterval(e.target.value)}
-                min={0}
-              />
-              {errs && errs.interval && (
-                <p className='w-full text-red-500 opacity-60 text-sm italic'>
-                  {errs.interval}
+              
+              {errs.stake && (
+                <p className='mt-3 text-sm text-red-600 bg-red-50 p-2 rounded'>
+                  {errs.stake}
                 </p>
               )}
+              
+              {selected === 'DUAL' && (
+                <div className='mt-3 bg-blue-50 p-3 rounded-lg flex items-start'>
+                  <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <p className='text-sm text-blue-700'>
+                    When using Dual Stake, configure stake ranges below for All Age and Derby dogs.
+                  </p>
+                </div>
+              )}
+            </div>
             </div>
           </div>
-        </Box>
-        <Box params='w-full bg-slate-50 my-2 h-102'>
-          <div className='text-start py-2 grid grid-cols-2 grid-rows-7 w-full h-full'>
-            <p className='col-span-2 row-span-1 pt-2 text-lg font-semibold flex flex-col'>
-              Stake Ranges
-              <span className='text-sm opacity-60 italic font-normal'>
+
+          {/* Stake Ranges Section */}
+          <div className='bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-1/2'>
+            <div className='px-6 py-4 bg-green-50 border-l-4 border-green-500'>
+              <h2 className='text-lg font-semibold text-gray-800'>Stake Ranges</h2>
+              <p className='text-sm text-gray-500'>
                 {selected === 'DUAL' 
                   ? 'Set up starting numbers for All Age and Derby dogs'
-                  : 'If applicable'}
-              </span>
-            </p>
-            <Box params='col-span-1 mr-2 my-2 row-span-3 bg-white'>
-              <OptionBoxWithNumber
-                selectedOption={selectedStake1}
-                setSelectedOption={setSelectedStake1}
-                startingNumber={startingNumber1}
-                setStartingNumber={setStartingNumber1}
-                error={
-                  errs && errs.startingNumber1 ? errs.startingNumber1 : null
-                }
-              />
-            </Box>
-            <Box params='col-span-1 ml-2 my-2 row-span-3 bg-white'>
-              <OptionBoxWithNumber
-                selectedOption={selectedStake2}
-                setSelectedOption={setSelectedStake2}
-                startingNumber={startingNumber2}
-                setStartingNumber={setStartingNumber2}
-                error={
-                  errs && errs.startingNumber2 ? errs.startingNumber2 : null
-                }
-              />
-            </Box>
-            <Box params='cols-span-1 mr-2 my-2 row-span-3 bg-white'>
-              <OptionBoxWithNumber
-                selectedOption={selectedStake3}
-                setSelectedOption={setSelectedStake3}
-                startingNumber={startingNumber3}
-                setStartingNumber={setStartingNumber3}
-                error={
-                  errs && errs.startingNumber3 ? errs.startingNumber3 : null
-                }
-              />
-            </Box>
-            <Box params='col-span-1 ml-2 my-2 row-span-3 bg-white'>
-              <OptionBoxWithNumber
-                selectedOption={selectedStake4}
-                setSelectedOption={setSelectedStake4}
-                startingNumber={startingNumber4}
-                setStartingNumber={setStartingNumber4}
-                error={
-                  errs && errs.startingNumber4 ? errs.startingNumber4 : null
-                }
-              />
-            </Box>
+                  : 'Configure dog number ranges (if applicable)'}
+              </p>
+            </div>
+            
+            <div className='p-6'>
+              <div className='grid grid-cols-2 gap-6'>
+                <div className='bg-gray-50 rounded-lg p-4'>
+                  <OptionBoxWithNumber
+                    selectedOption={selectedStake1}
+                    setSelectedOption={setSelectedStake1}
+                    startingNumber={startingNumber1}
+                    setStartingNumber={setStartingNumber1}
+                    error={errs.startingNumber1}
+                  />
+                </div>
+                
+                <div className='bg-gray-50 rounded-lg p-4'>
+                  <OptionBoxWithNumber
+                    selectedOption={selectedStake2}
+                    setSelectedOption={setSelectedStake2}
+                    startingNumber={startingNumber2}
+                    setStartingNumber={setStartingNumber2}
+                    error={errs.startingNumber2}
+                  />
+                </div>
+                
+                <div className='bg-gray-50 rounded-lg p-4'>
+                  <OptionBoxWithNumber
+                    selectedOption={selectedStake3}
+                    setSelectedOption={setSelectedStake3}
+                    startingNumber={startingNumber3}
+                    setStartingNumber={setStartingNumber3}
+                    error={errs.startingNumber3}
+                  />
+                </div>
+                
+                <div className='bg-gray-50 rounded-lg p-4'>
+                  <OptionBoxWithNumber
+                    selectedOption={selectedStake4}
+                    setSelectedOption={setSelectedStake4}
+                    startingNumber={startingNumber4}
+                    setStartingNumber={setStartingNumber4}
+                    error={errs.startingNumber4}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </Box>
+        </div>
       </Box>
     </div>
   );
