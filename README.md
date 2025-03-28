@@ -38,7 +38,7 @@ TrackHounds is a modern scoring application designed to provide an alternative t
 ## Needed Resources
 
 - [**Docker**](https://www.docker.com/get-started/) (Required to run the application)
-- Latest Release of [**trackhounds**](https://github.com/hctynch/trackhounds/releases) (Download `trackhounds-X.X.X.zip` under `Assets`)
+- Latest Release of [**trackhounds**](https://github.com/hctynch/trackhounds/releases/latest) (Download `trackhounds-X.X.X.zip` under `Assets`)
 
 ---
 
