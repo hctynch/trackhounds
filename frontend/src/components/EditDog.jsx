@@ -3,6 +3,7 @@ import { IoArrowBackCircleOutline } from 'react-icons/io5';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DogService from '../services/DogService';
 import Box from './Box';
+import Button from './Button';
 import SelectableCards from './SelectableCards';
 
 function EditDog() {
@@ -66,12 +67,13 @@ function EditDog() {
             <IoArrowBackCircleOutline className='text-4xl text-gray-500' />
           </a>
           <p className='text-4xl font-bold'>Edit Dog</p>
-          <button
-            className='ml-auto bg-gray-400 hover:bg-gray-500 rounded-2xl px-4 cursor-pointer'
+          <Button
+            type='secondary'
+            className='ml-auto rounded-2xl px-4 cursor-pointer'
             onClick={handleEdit}
           >
             Edit
-          </button>
+          </Button>
         </div>
         <div className='flex flex-col w-full h-full gap-y-4'>
         <Box params='w-full bg-slate-50 my-2'>

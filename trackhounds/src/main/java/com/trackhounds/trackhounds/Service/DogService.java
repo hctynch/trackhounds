@@ -100,6 +100,10 @@ public class DogService {
         continue;
       if (dogRepository.existsById(d.getNumber())) {
         errs.put(String.format("number%d", i + 1), "Existing dog with matching number.");
+      } else if (d.getNumber() == 0) {
+        errs.put(String.format("number%d", i + 1), "Dog number not specified.");
+      } else if (d.getNumber() < 0) {
+        errs.put(String.format("number%d", i + 1), "Dog number cannot be negative.");
       }
       if (d.getName() == null || d.getName().isEmpty())
         errs.put(String.format("name%d", i + 1), "Name cannot be empty.");
