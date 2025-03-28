@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IoArrowBackCircleOutline } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import HuntService from '../services/HuntService.js';
 import Box from './Box';
 import OptionBoxWithNumber from './OptionBoxWithNumber';
 import SelectableCards from './SelectableCards';
+
 function CreateHunt() {
   const [title, setTitle] = useState('');
   const [dates, setDates] = useState('');
@@ -20,6 +21,16 @@ function CreateHunt() {
   const [startingNumber4, setStartingNumber4] = useState(0);
   const [errs, setErrs] = useState({});
   const navigate = useNavigate();
+
+  // Update stake ranges based on the primary stake selection
+  useEffect(() => {
+    // If DUAL is selected, make sure stake ranges are appropriately set
+    if (selected === 'DUAL') {
+      // Default to setting first two ranges as ALL_AGE and DERBY
+      if (selectedStake1 !== 'ALL_AGE') setSelectedStake1('ALL_AGE');
+      if (selectedStake2 !== 'DERBY') setSelectedStake2('DERBY');
+    }
+  }, [selected]);
 
   const handleCreate = () => {
     const newErrs = {};
@@ -48,10 +59,24 @@ function CreateHunt() {
       newErrs.startingNumber4 = 'Must be > 0.';
       err = true;
     }
+    
+    // For DUAL stake type, ensure proper configuration
+    if (selected === 'DUAL') {
+      // Check that at least one range is configured for each stake type
+      const hasAllAge = [selectedStake1, selectedStake2, selectedStake3, selectedStake4].includes('ALL_AGE');
+      const hasDerby = [selectedStake1, selectedStake2, selectedStake3, selectedStake4].includes('DERBY');
+      
+      if (!hasAllAge || !hasDerby) {
+        newErrs.stake = 'Dual stake requires at least one range for All Age and one for Derby';
+        err = true;
+      }
+    }
+    
     setErrs(newErrs);
     if (err) {
       return;
     }
+    
     async function newHunt() {
       const hunt = {
         title: title,
@@ -152,6 +177,16 @@ function CreateHunt() {
                 setSelected={setSelected}
               />
             </div>
+            {errs && errs.stake && (
+              <p className='col-span-2 text-sm italic opacity-60 text-red-500 mt-1'>
+                {errs.stake}
+              </p>
+            )}
+            {selected === 'DUAL' && (
+              <p className='col-span-2 text-sm italic text-blue-600 mt-1'>
+                When using Dual Stake, configure stake ranges below for All Age and Derby dogs.
+              </p>
+            )}
           </div>
         </Box>
         <Box params='w-full bg-slate-50 my-2'>
@@ -185,7 +220,9 @@ function CreateHunt() {
             <p className='col-span-2 row-span-1 pt-2 text-lg font-semibold flex flex-col'>
               Stake Ranges
               <span className='text-sm opacity-60 italic font-normal'>
-                If applicable
+                {selected === 'DUAL' 
+                  ? 'Set up starting numbers for All Age and Derby dogs'
+                  : 'If applicable'}
               </span>
             </p>
             <Box params='col-span-1 mr-2 my-2 row-span-3 bg-white'>

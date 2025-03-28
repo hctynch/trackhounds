@@ -1210,9 +1210,9 @@ public class DogServiceTest {
 
                                 // Scenario 2: Dog3 should win tie with Dog4 due to later time bucket
                                 () -> assertEquals(3, allDogs.get(2).get("dogNumber")), // Dog3 has score in later
-                                                                                        // bucket
+                                // bucket
                                 () -> assertEquals(4, allDogs.get(3).get("dogNumber")), // Dog4 has score in earlier
-                                                                                        // bucket
+                                // bucket
 
                                 // Scenario 3: Dog6 should win tie with Dog5 due to later bucket score
                                 () -> assertEquals(6, allDogs.get(4).get("dogNumber")),
@@ -1246,15 +1246,15 @@ public class DogServiceTest {
 
                                 // Scenario 2: Dog3 and Dog4 both have 40 points
                                 () -> assertEquals(3, day1Dogs.get(1).get("dogNumber")), // Dog3 has score in later
-                                                                                         // bucket
+                                // bucket
                                 () -> assertEquals(4, day1Dogs.get(2).get("dogNumber")), // Dog4 has score in earlier
-                                                                                         // bucket
+                                // bucket
 
                                 // Scenario 3: Dog5 and Dog6 both have 30 points
                                 () -> assertEquals(6, day1Dogs.get(3).get("dogNumber")), // Dog5 has higher individual
-                                                                                         // score
+                                // score
                                 () -> assertEquals(5, day1Dogs.get(4).get("dogNumber")), // Dog6 has lower individual
-                                                                                         // score
+                                // score
 
                                 // Dog2 has lowest points on day 1
                                 () -> assertEquals(2, day1Dogs.get(5).get("dogNumber")) // Dog2 has 25 points on day 1
@@ -1269,11 +1269,11 @@ public class DogServiceTest {
                                 // Scenario 1: Dog2 should win tie with Dog1 due to later day
                                 () -> assertEquals(2, allAgeDogs.get(0).get("dogNumber")), // Dog2 has score on day 2
                                 () -> assertEquals(1, allAgeDogs.get(1).get("dogNumber")), // Dog1 only has score on day
-                                                                                           // 1
+                                // 1
 
                                 // Scenario 2: Dog3 should win tie with Dog4 due to later time bucket
                                 () -> assertEquals(3, allAgeDogs.get(2).get("dogNumber")), // Dog3 has score in later
-                                                                                           // bucket
+                                // bucket
                                 () -> assertEquals(4, allAgeDogs.get(3).get("dogNumber")) // Dog4 has score in earlier
                                                                                           // bucket
                 );
@@ -1286,9 +1286,9 @@ public class DogServiceTest {
 
                                 // Scenario 3: Dog5 should win tie with Dog6 due to higher individual score
                                 () -> assertEquals(6, derbyDogs.get(0).get("dogNumber")), // Dog5 has higher individual
-                                                                                          // score
+                                // score
                                 () -> assertEquals(5, derbyDogs.get(1).get("dogNumber")), // Dog6 has lower individual
-                                                                                          // score
+                                // score
 
                                 // Scenario 4: Dog7 and Dog8 should be sorted by dog number (ascending)
                                 () -> assertEquals(7, derbyDogs.get(2).get("dogNumber")), // Lower dog number
@@ -1305,9 +1305,9 @@ public class DogServiceTest {
                                 // Check expected order for ALL_AGE dogs on day 1
                                 () -> assertEquals(1, day1AllAgeDogs.get(0).get("dogNumber")), // Dog1 has 50 points
                                 () -> assertEquals(3, day1AllAgeDogs.get(1).get("dogNumber")), // Dog3 has 40 points,
-                                                                                               // later bucket
+                                // later bucket
                                 () -> assertEquals(4, day1AllAgeDogs.get(2).get("dogNumber")), // Dog4 has 40 points,
-                                                                                               // earlier bucket
+                                // earlier bucket
                                 () -> assertEquals(2, day1AllAgeDogs.get(3).get("dogNumber")) // Dog2 has 25 points
                 );
 
@@ -1350,6 +1350,110 @@ public class DogServiceTest {
                                 // in a later bucket
                                 () -> assertEquals(1, day3Dogs.get(0).get("dogNumber")), // Dog1 has score in bucket 4
                                 () -> assertEquals(2, day3Dogs.get(1).get("dogNumber")) // Dog2 has score in bucket 1
+                );
+        }
+
+        @Test
+        @Transactional
+        void testGetCrossInfo() {
+                // Create test dogs
+                DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
+                DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
+                DogEntity dog3 = new DogEntity(3, "Dog3", StakeType.DERBY, "Owner3", "Sire3", "Dam3");
+                DogEntity dog4 = new DogEntity(4, "Dog4", StakeType.DERBY, "Owner4", "Sire4", "Dam4");
+
+                dogService.createDogs(List.of(dog1, dog2, dog3, dog4));
+
+                // Test case 1: Single-stake hunt (ALL_AGE)
+                int[] numbers = { 1, 2 };
+                int startingPoints = 35;
+                int interval = 5;
+                StakeType stakeType = StakeType.ALL_AGE;
+
+                final List<Map<String, Object>> crossInfo = dogService.getCrossInfo(numbers, startingPoints, interval,
+                                stakeType);
+
+                assertAll("Single-stake hunt",
+                                () -> assertEquals(2, crossInfo.size()),
+                                () -> assertEquals(1, crossInfo.get(0).get("dogNumber")),
+                                () -> assertEquals(35, crossInfo.get(0).get("points")),
+                                () -> assertEquals(2, crossInfo.get(1).get("dogNumber")),
+                                () -> assertEquals(30, crossInfo.get(1).get("points")));
+
+                // Test case 2: Dual-stake hunt
+                numbers = new int[] { 1, 3, 2, 4 };
+                stakeType = StakeType.DUAL;
+
+                final List<Map<String, Object>> crossInfo1 = dogService.getCrossInfo(numbers, startingPoints, interval,
+                                stakeType);
+
+                assertAll("Dual-stake hunt",
+                                () -> assertEquals(4, crossInfo1.size()),
+                                () -> assertEquals(1, crossInfo1.get(0).get("dogNumber")),
+                                () -> assertEquals(35, crossInfo1.get(0).get("points")), // ALL_AGE starting points
+                                () -> assertEquals(3, crossInfo1.get(1).get("dogNumber")),
+                                () -> assertEquals(35, crossInfo1.get(1).get("points")), // DERBY starting points
+                                () -> assertEquals(2, crossInfo1.get(2).get("dogNumber")),
+                                () -> assertEquals(30, crossInfo1.get(2).get("points")), // ALL_AGE interval applied
+                                () -> assertEquals(4, crossInfo1.get(3).get("dogNumber")),
+                                () -> assertEquals(30, crossInfo1.get(3).get("points")) // DERBY interval applied
+                );
+
+                // Test case 3: Invalid dog numbers
+                numbers = new int[] { 1, 999, 3 };
+                stakeType = StakeType.ALL_AGE;
+
+                final List<Map<String, Object>> crossInfo2 = dogService.getCrossInfo(numbers, startingPoints, interval,
+                                stakeType);
+
+                assertAll("Invalid dog numbers",
+                                () -> assertEquals(3, crossInfo2.size()), // Only valid dogs are included
+                                () -> assertEquals(1, crossInfo2.get(0).get("dogNumber")),
+                                () -> assertEquals(35, crossInfo2.get(0).get("points")),
+                                () -> assertEquals(999, crossInfo2.get(1).get("dogNumber")),
+                                () -> assertNotNull(crossInfo2.get(1).get("error")),
+                                () -> assertEquals(3, crossInfo2.get(2).get("dogNumber")),
+                                () -> assertEquals(25, crossInfo2.get(2).get("points")));
+
+                // Test case 4: Empty numbers array
+                numbers = new int[] {};
+                final List<Map<String, Object>> crossInfo3 = dogService.getCrossInfo(numbers, startingPoints, interval,
+                                stakeType);
+
+                assertAll("Empty numbers array",
+                                () -> assertTrue(crossInfo3.isEmpty()));
+
+                // Test case 5: Dual-stake hunt with only one stake type present
+                numbers = new int[] { 1, 2 };
+                stakeType = StakeType.DUAL;
+
+                final List<Map<String, Object>> crossInfo4 = dogService.getCrossInfo(numbers, startingPoints, interval,
+                                stakeType);
+
+                assertAll("Dual-stake hunt with one stake type",
+                                () -> assertEquals(2, crossInfo4.size()),
+                                () -> assertEquals(1, crossInfo4.get(0).get("dogNumber")),
+                                () -> assertEquals(35, crossInfo4.get(0).get("points")),
+                                () -> assertEquals(2, crossInfo4.get(1).get("dogNumber")),
+                                () -> assertEquals(30, crossInfo4.get(1).get("points")));
+
+                // Test case 6: Dual-stake hunt with mixed stake types
+                numbers = new int[] { 1, 3, 2, 4 };
+                stakeType = StakeType.DUAL;
+
+                final List<Map<String, Object>> crossInfo5 = dogService.getCrossInfo(numbers, startingPoints, interval,
+                                stakeType);
+
+                assertAll("Dual-stake hunt with mixed stake types",
+                                () -> assertEquals(4, crossInfo5.size()),
+                                () -> assertEquals(1, crossInfo5.get(0).get("dogNumber")),
+                                () -> assertEquals(35, crossInfo5.get(0).get("points")), // ALL_AGE starting points
+                                () -> assertEquals(3, crossInfo5.get(1).get("dogNumber")),
+                                () -> assertEquals(35, crossInfo5.get(1).get("points")), // DERBY starting points
+                                () -> assertEquals(2, crossInfo5.get(2).get("dogNumber")),
+                                () -> assertEquals(30, crossInfo5.get(2).get("points")), // ALL_AGE interval applied
+                                () -> assertEquals(4, crossInfo5.get(3).get("dogNumber")),
+                                () -> assertEquals(30, crossInfo5.get(3).get("points")) // DERBY interval applied
                 );
         }
 }

@@ -24,7 +24,11 @@ function Home() {
   const handleOverlay = () => {
     setShowOverlay(!showOverlay);
   };
-
+  const stakeTypes = {
+    ALL_AGE: 'All Age',
+    DERBY: 'Derby',
+    DUAL: 'Dual',
+  }
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -136,7 +140,7 @@ function Home() {
                 Stake
               </p>
               <p className='absolute top-1/2 right-0 w-full text-2xl font-medium text-center'>
-                {hunt.stake == 'ALL_AGE' ? 'All Age' : 'Derby'}
+                {stakeTypes[hunt.stake]}
               </p>
             </div>
           </Box>

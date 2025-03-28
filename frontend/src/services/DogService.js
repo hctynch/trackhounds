@@ -297,6 +297,41 @@ class DogService {
       return error.response.data;
     }
   }
+
+  /**
+   * Get point information for dogs in a cross
+   * @param {number[]} dogNumbers - Array of dog numbers in cross order
+   * @param {number} startingPoints - Starting points for first dog
+   * @param {number} interval - Interval of points between dogs
+   * @param {string} stakeType - Type of stake (ALL_AGE, DERBY, DUAL)
+   * @returns {Promise<Array>} List of dog information with points
+   */
+  async getCrossInfo(dogNumbers, startingPoints, interval, stakeType = 'ALL_AGE') {
+    try {
+      // Filter out empty entries and ensure numbers are valid
+      const filteredNumbers = dogNumbers
+        .filter(num => num && num.toString().trim() !== '')
+        .map(num => parseInt(num, 10));
+      
+      // If no dogs, return empty array
+      if (filteredNumbers.length === 0) {
+        return [];
+      }
+      
+      const request = {
+        dogNumbers: filteredNumbers,
+        startingPoints: startingPoints || 35, // Default to 35 if not specified
+        interval: interval || 5,        // Default to 5 if not specified
+        stakeType: stakeType || 'ALL_AGE'  // Default to ALL_AGE if not specified
+      };
+      
+      const response = await this.api.post('/cross-info', request);
+      return response.data;
+    } catch (error) {
+      console.error("Error in getCrossInfo:", error);
+      return error.response?.data || [];
+    }
+  }
 }
 
 export default new DogService();
