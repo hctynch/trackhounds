@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.trackhounds.trackhounds.Dto.CrossInfoRequest;
 import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DogEntity;
 import com.trackhounds.trackhounds.Entity.Score;
@@ -371,5 +372,21 @@ public class DogController {
   @GetMapping("/scores/{day}")
   public List<Score> getScoresByDay(@PathVariable("day") int day) {
     return dogService.getScoresByDay(day);
+  }
+
+  /**
+   * Get cross information with calculated points for dogs
+   * 
+   * @param crossRequest Object containing dog numbers, starting points, interval,
+   *                     and stake type
+   * @return List of dogs in cross with their assigned points
+   */
+  @PostMapping("/cross-info")
+  public List<Map<String, Object>> getCrossInfo(@RequestBody CrossInfoRequest crossRequest) {
+    return dogService.getCrossInfo(
+        crossRequest.getDogNumbers(),
+        crossRequest.getStartingPoints(),
+        crossRequest.getInterval(),
+        crossRequest.getStakeType());
   }
 }

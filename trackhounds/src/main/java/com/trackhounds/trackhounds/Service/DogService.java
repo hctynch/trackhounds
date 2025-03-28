@@ -149,7 +149,7 @@ public class DogService {
   }
 
   /**
-   * REturn total number of dogs
+   * Return total number of dogs
    * 
    * @return total number of dogs
    */
@@ -171,6 +171,61 @@ public class DogService {
     }
     dogRepository.saveAll(dogs);
     return dogs;
+  }
+
+  /**
+   * Get a list of all dogs in a cross and the points they should be awarded.
+   * 
+   * @return dogs in cross, with stake, and points
+   */
+  public List<Map<String, Object>> getCrossInfo(int[] numbers, int startingPoints, int interval, StakeType stakeType) {
+    List<Map<String, Object>> crossInfo = new ArrayList<>();
+    if (numbers == null || numbers.length == 0) {
+      return crossInfo;
+    }
+    if (stakeType != StakeType.DUAL) {
+      for (int i = 0; i < numbers.length; i++) {
+        Optional<DogEntity> dogRetrieval = dogRepository.findById(numbers[i]);
+        Map<String, Object> dogInfo = new HashMap<>();
+        if (dogRetrieval.isEmpty()) {
+          dogInfo.put("dogNumber", numbers[i]);
+          dogInfo.put("error", "Dog does not exist. Skipping.");
+          crossInfo.add(dogInfo);
+          continue;
+        }
+        DogEntity dog = dogRetrieval.get();
+        dogInfo.put("dogNumber", dog.getNumber());
+        dogInfo.put("stake", dog.getStake());
+        dogInfo.put("points", startingPoints - (interval * i));
+        crossInfo.add(dogInfo);
+      }
+    } else {
+      int sp1 = startingPoints;
+      int sp2 = startingPoints;
+      for (int i = 0; i < numbers.length; i++) {
+        Optional<DogEntity> dogRetrieval = dogRepository.findById(numbers[i]);
+        Map<String, Object> dogInfo = new HashMap<>();
+        if (dogRetrieval.isEmpty()) {
+          dogInfo.put("dogNumber", numbers[i]);
+          dogInfo.put("error", "Dog does not exist. Skipping.");
+          crossInfo.add(dogInfo);
+          continue;
+        }
+        DogEntity dog = dogRetrieval.get();
+        dogInfo.put("dogNumber", dog.getNumber());
+        dogInfo.put("stake", dog.getStake());
+        if (dog.getStake() == StakeType.ALL_AGE) {
+          dogInfo.put("points", sp1);
+          sp1 -= interval;
+        } else {
+          dogInfo.put("points", sp2);
+          sp2 -= interval;
+        }
+        crossInfo.add(dogInfo);
+      }
+    }
+
+    return crossInfo;
   }
 
   /**
@@ -242,9 +297,7 @@ public class DogService {
       errs.put("scores", "Scores cannot be empty.");
     if (score.getDogNumbers().length != score.getScores().length)
       errs.put("scores", "Scores and dog numbers do not match.");
-    for (int i = 0; i < score.getDogNumbers().length; i++) {
-      if (dogRepository.findById(score.getDogNumbers()[i]).isEmpty())
-        errs.put(String.format("dogNumbers%d", i), "Dog does not exist.");
+    for (int i = 0; i < score.getScores().length; i++) {
       if (score.getScores()[i] < 0)
         errs.put(String.format("scores%d", i), "Score cannot be negative.");
     }
@@ -275,7 +328,10 @@ public class DogService {
       day.setStartTime(startTime);
     day = daysRepository.save(day);
     for (int i = 0; i < score.getDogNumbers().length; i++) {
-      DogEntity dog = dogRepository.findById(score.getDogNumbers()[i]).get();
+      Optional<DogEntity> dogRetrieval = dogRepository.findById(score.getDogNumbers()[i]);
+      if (dogRetrieval.isEmpty())
+        continue;
+      DogEntity dog = dogRetrieval.get();
       List<DailyScore> scores = dog.getScores();
       if (scores.size() < score.getDay()) {
         for (int j = scores.size(); j < score.getDay(); j++) {
