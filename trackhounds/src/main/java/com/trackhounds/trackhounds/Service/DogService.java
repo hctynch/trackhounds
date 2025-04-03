@@ -16,6 +16,7 @@ import com.trackhounds.trackhounds.Dto.ScoreDto;
 import com.trackhounds.trackhounds.Entity.DailyScore;
 import com.trackhounds.trackhounds.Entity.Days;
 import com.trackhounds.trackhounds.Entity.DogEntity;
+import com.trackhounds.trackhounds.Entity.HuntEntity;
 import com.trackhounds.trackhounds.Entity.JudgeEntity;
 import com.trackhounds.trackhounds.Entity.Score;
 import com.trackhounds.trackhounds.Entity.Scratch;
@@ -187,6 +188,9 @@ public class DogService {
     if (numbers == null || numbers.length == 0) {
       return crossInfo;
     }
+    if (huntRepository.count() == 0)
+      return crossInfo;
+    HuntEntity hunt = huntRepository.findAll().get(0);
     if (stakeType != StakeType.DUAL) {
       for (int i = 0; i < numbers.length; i++) {
         Optional<DogEntity> dogRetrieval = dogRepository.findById(numbers[i]);
@@ -213,6 +217,33 @@ public class DogService {
           dogInfo.put("dogNumber", numbers[i]);
           dogInfo.put("error", "Dog does not exist. Skipping.");
           crossInfo.add(dogInfo);
+          if (hunt.getStakeRange() != null && hunt.getStakeRange() != null) {
+            if (numbers[i] < hunt.getStakeRange()[1]) {
+              if (hunt.getStakeTypeRange()[0] == StakeType.ALL_AGE) {
+                sp1 -= interval;
+              } else {
+                sp2 -= interval;
+              }
+            } else if (numbers[i] < hunt.getStakeRange()[2]) {
+              if (hunt.getStakeTypeRange()[1] == StakeType.ALL_AGE) {
+                sp1 -= interval;
+              } else {
+                sp2 -= interval;
+              }
+            } else if (numbers[i] < hunt.getStakeRange()[3]) {
+              if (hunt.getStakeTypeRange()[2] == StakeType.ALL_AGE) {
+                sp1 -= interval;
+              } else {
+                sp2 -= interval;
+              }
+            } else {
+              if (hunt.getStakeTypeRange()[3] == StakeType.ALL_AGE) {
+                sp1 -= interval;
+              } else {
+                sp2 -= interval;
+              }
+            }
+          }
           continue;
         }
         DogEntity dog = dogRetrieval.get();
@@ -243,7 +274,7 @@ public class DogService {
     List<DailyScore> scores = dog.getScores();
     for (DailyScore dailyScore : scores) {
       double toAdd = dailyScore.getHighestScores().stream().mapToInt(hs -> hs.getScore().getPoints()).sum();
-      dailyScore.setDailyScore((int) totalPoints);
+      dailyScore.setDailyScore((int) toAdd);
       dailyScoreRepository.save(dailyScore);
       scores.set(dailyScore.getDay().getDay() - 1, dailyScore);
       toAdd += toAdd * (dailyScore.getDay().getDay() * .1);
@@ -472,23 +503,13 @@ public class DogService {
       dogScore.put("sire", dog.getSire()); // Add sire
       dogScore.put("dam", dog.getDam()); // Add dam
       dogScore.put("stake", dog.getStake());
-      dogScore.put("totalPoints", calculateDailyScore(dailyScore));
+      dogScore.put("totalPoints", dailyScore.getDailyScore());
       dogScore.put("lastScore", dailyScore.getLastCross());
       dogScore.put("lastScorePoints", dailyScore.getAssociatedPoints());
       dogScores.add(dogScore);
     }
 
     return dogScores;
-  }
-
-  private int calculateDailyScore(DailyScore dailyScore) {
-    int totalPoints = 0;
-    for (int i = 0; i < dailyScore.getHighestScores().size(); i++) {
-      totalPoints += dailyScore.getHighestScores().get(i).getScore().getPoints();
-    }
-    dailyScore.setDailyScore(totalPoints);
-    dailyScoreRepository.save(dailyScore);
-    return totalPoints;
   }
 
   /**
@@ -592,7 +613,7 @@ public class DogService {
       dogScore.put("totalPoints", totalPoints);
 
       for (DailyScore dailyScore : dog.getScores()) {
-        dogScore.put("s&dScore" + dailyScore.getDay().getDay(), dailyScore.getDailyScore());
+        dogScore.put("sdScore" + dailyScore.getDay().getDay(), dailyScore.getDailyScore());
       }
 
       // Add last score time for tie-breaking
@@ -723,7 +744,7 @@ public class DogService {
         dogScore.put("totalPoints", totalPoints);
 
         for (DailyScore dailyScore : dog.getScores()) {
-          dogScore.put("s&dScore" + dailyScore.getDay().getDay(), dailyScore.getDailyScore());
+          dogScore.put("sdScore" + dailyScore.getDay().getDay(), dailyScore.getDailyScore());
         }
 
         // Add last score time for tie-breaking

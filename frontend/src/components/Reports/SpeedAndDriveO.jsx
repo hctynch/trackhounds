@@ -60,11 +60,7 @@ export const OverallTopDogsLimitSelector = ({ onChange }) => {
 const SpeedAndDriveO = {
   title: 'Overall Speed & Drive Report',
   description: 'View top dogs ranked by total Speed & Drive points across all days',
-  
-  // Change configSelector to configComponent to match the pattern in Reports.jsx
   configComponent: 'OverallTopDogsLimitSelector',
-  
-  // Default configuration
   defaultConfig: { limit: 10, stakeType: 'ALL' },
   
   fetchData: async (config = { limit: 10, stakeType: 'ALL' }) => {
@@ -80,7 +76,7 @@ const SpeedAndDriveO = {
         dogScores = await DogService.getTopScoringDogsByStakeType(stakeType, limit);
       }
       
-      // Extract data for report - the backend now includes s&dScore1, s&dScore2, etc.
+      // Extract data for report
       const stakeLabel = stakeType === 'ALL' ? 'All Dogs' : 
                          stakeType === 'ALL_AGE' ? 'All Age' : 'Derby';
       
@@ -98,22 +94,30 @@ const SpeedAndDriveO = {
           'Name', 
           'Owner'
         ],
-        data: dogScores.map((dog, index) => [
-          (index + 1).toString(),
-          // Use the raw S&D total (sum of daily S&D scores)
-          calculateTotalSD(dog).toString(),
-          // Show individual day scores (or 0 if not available)
-          (dog["s&dScore1"] || 0).toString(),
-          (dog["s&dScore2"] || 0).toString(),
-          (dog["s&dScore3"] || 0).toString(),
-          (dog["s&dScore4"] || 0).toString(),
-          dog.dogNumber.toString(),
-          dog.dogName || '',
-          dog.owner || ''
-        ])
+        data: dogScores.map((dog, index) => {
+          // Correctly access the daily scores
+          const day1Score = getScoreForDay(dog, 1);
+          const day2Score = getScoreForDay(dog, 2);
+          const day3Score = getScoreForDay(dog, 3);
+          const day4Score = getScoreForDay(dog, 4);
+          
+          // Calculate total
+          const totalSDScore = day1Score + day2Score + day3Score + day4Score;
+          
+          return [
+            (index + 1).toString(),
+            totalSDScore.toString(),
+            day1Score.toString(),
+            day2Score.toString(),
+            day3Score.toString(),
+            day4Score.toString(),
+            dog.dogNumber.toString(),
+            dog.dogName || '',
+            dog.owner || ''
+          ];
+        })
       };
     } catch (error) {
-      console.error("Error fetching overall dog scores:", error);
       // Handle errors gracefully
       return {
         title: `Overall Speed & Drive Rankings${stakeType !== 'ALL' ? ` - ${stakeType === 'ALL_AGE' ? 'All Age' : 'Derby'}` : ''}`,
@@ -134,16 +138,25 @@ const SpeedAndDriveO = {
   }
 };
 
-// Calculate total S&D score from the daily scores
-function calculateTotalSD(dog) {
-  let total = 0;
-  for (let i = 1; i <= 4; i++) {
-    const dayScore = dog[`s&dScore${i}`];
-    if (dayScore) {
-      total += dayScore;
+// Helper function to get the correct score for a specific day
+function getScoreForDay(dog, day) {
+  // Try different possible property name formats
+  const possibleNames = [
+    `sdScore${day}`,
+    `sd${day}`,
+    `s&dScore${day}`,
+    `sdScore_${day}`,
+    `dailyScore${day}`
+  ];
+  
+  // Find the first property that exists and has a value
+  for (const propName of possibleNames) {
+    if (dog[propName] !== undefined && dog[propName] !== null) {
+      return parseInt(dog[propName]) || 0;
     }
   }
-  return total;
+  
+  return 0;
 }
 
 export default SpeedAndDriveO;

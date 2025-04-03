@@ -137,6 +137,7 @@ public class DailyScore {
         score.setCounted(false);
       }
     }
+
   }
 
   /**
