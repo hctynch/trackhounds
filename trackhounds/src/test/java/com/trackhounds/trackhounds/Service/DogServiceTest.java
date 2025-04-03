@@ -1356,6 +1356,7 @@ public class DogServiceTest {
         @Test
         @Transactional
         void testGetCrossInfo() {
+                huntRepository.save(new HuntEntity("Cross Info Test Hunt", null, StakeType.ALL_AGE, 5));
                 // Create test dogs
                 DogEntity dog1 = new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire1", "Dam1");
                 DogEntity dog2 = new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire2", "Dam2");
