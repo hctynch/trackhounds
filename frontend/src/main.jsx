@@ -1,11 +1,15 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './buttonOverrides.css';
 import './index.css';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+// Configure Amplify with your AWS settings
+
+import './auth/cognito-config.js';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <App />
-  </StrictMode>,
+  </React.StrictMode>,
 )

@@ -6,6 +6,13 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'https://trackhounds.live',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Add any other API endpoints you have
+    }
   },
 });

@@ -4,9 +4,11 @@ import { HiOutlineDocumentReport, HiOutlineHome } from 'react-icons/hi';
 import { MdOutlinePersonSearch } from 'react-icons/md';
 import { RxCaretDown } from 'react-icons/rx';
 import { TbDog } from 'react-icons/tb';
+import { useAuth } from '../auth/AuthContext';
 
 function Navbar() {
   const [dropdown, setDropdown] = useState(null);
+  const { logout, user } = useAuth();
 
   const links = [
     { name: 'Home', path: '/', icon: <HiOutlineHome className='h-10' /> },
@@ -106,7 +108,17 @@ function Navbar() {
           </div>
         ))}
       </div>
-      <div className='mt-auto flex italic opacity-50 text-md items-center justify-center w-full'>
+      {user && (
+        <div className="mx-auto mt-auto">
+          <button 
+            onClick={logout}
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-medium"
+          >
+            Logout
+          </button>
+        </div>
+      )}
+      <div className='flex italic opacity-50 text-md items-center justify-center w-full'>
         <p className='text-black'>Made by Hunt Tynch (2025)</p>
       </div>
     </div>

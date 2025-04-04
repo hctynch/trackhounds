@@ -1,86 +1,85 @@
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 
 class DogService {
   constructor() {
-    this.api = axios.create({
-      baseURL: 'http://localhost:8080/dogs', // Backend URL running in Docker container
-    });
+    this.api = axiosInstance;
+    this.baseUrl = '/api/dogs';  // Add /api prefix
   }
 
   async getDogs() {
     try {
-      const response = await this.api.get();
+      const response = await this.api.get(this.baseUrl);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getDogTotal() {
     try {
-      const response = await this.api.get('/total');
+      const response = await this.api.get(`${this.baseUrl}/total`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getDogByNumber(number) {
     try {
-      const response = await this.api.get(`/${number}`);
+      const response = await this.api.get(`${this.baseUrl}/${number}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async createDogs(dogsData) {
     try {
-      const response = await this.api.post('', dogsData);
+      const response = await this.api.post(this.baseUrl, dogsData);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async editDog(editDog) {
     try {
-      const response = await this.api.put('', editDog);
+      const response = await this.api.put(this.baseUrl, editDog);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async deleteDog(number) {
     try {
-      const response = await this.api.delete(`/${number}`);
+      const response = await this.api.delete(`${this.baseUrl}/${number}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async postCross(cross) {
     try {
-      const response = await this.api.post('/scores', cross);
+      const response = await this.api.post(`${this.baseUrl}/scores`, cross);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async deleteCross(number, crossId) {
     try {
-      const response = await this.api.delete(`/${number}/scores/${crossId}`);
+      const response = await this.api.delete(`${this.baseUrl}/${number}/scores/${crossId}`);
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getStartTime(day) {
     try {
-      const response = await this.api.get(`/day/${day}`);
+      const response = await this.api.get(`${this.baseUrl}/day/${day}`);
       return response.data;
     } catch (error) {
       return error;
@@ -89,64 +88,79 @@ class DogService {
 
   async getScratches() {
     try {
-      const response = await this.api.get('/scratches');
+      const response = await this.api.get(`${this.baseUrl}/scratches`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async postScratch(scratch) {
     try {
-      const response = await this.api.post('/scratches', scratch);
+      const response = await this.api.post(`${this.baseUrl}/scratches`, scratch);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async deleteScratch(id) {
     try {
-      const response = await this.api.delete(`/scratches/${id}`);
+      const response = await this.api.delete(`${this.baseUrl}/scratches/${id}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getDogScoresByDay(day) {
     try {
-      const response = await this.api.get(`/scores/day/${day}`);
+      const response = await this.api.get(`${this.baseUrl}/scores/day/${day}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getTopScoringDogsByDay(day, limit) {
     try {
-      const response = await this.api.get(`/scores/day/${day}/top/${limit}`);
+      const response = await this.api.get(`${this.baseUrl}/scores/day/${day}/top/${limit}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getTop10ScoringDogsByDay(day) {
     try {
-      const response = await this.api.get(`/scores/day/${day}/top10`);
+      const response = await this.api.get(`${this.baseUrl}/scores/day/${day}/top10`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getTop10ScoringDogsOverall() {
     try {
-      const response = await this.api.get(`/scores/top10/overall`);
+      const response = await this.api.get(`${this.baseUrl}/scores/top10/overall`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
+    }
+  }
+
+  async getTopScoringDogsOverall(limit) {
+    try {
+      const response = await this.api.get(`${this.baseUrl}/scores/top/${limit}/overall`);
+      return response.data;
+    } catch (error) {
+      // If endpoint doesn't exist yet, fall back to top10 and slice
+      try {
+        const response = await this.api.get(`${this.baseUrl}/scores/top10/overall`);
+        return response.data.slice(0, limit);
+      } catch (innerError) {
+        return innerError.response?.data;
+      }
     }
   }
 
@@ -154,63 +168,46 @@ class DogService {
   async getScratchesByDay(day) {
     try {
       // This endpoint doesn't exist yet, but prepare for future implementation
-      const response = await this.api.get(`/scratches/day/${day}`);
+      const response = await this.api.get(`${this.baseUrl}/scratches/day/${day}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getTopScoringDogsByStakeType(stakeType, limit) {
     try {
-      const response = await this.api.get(`/scores/stake/${stakeType}/top/${limit}`);
+      const response = await this.api.get(`${this.baseUrl}/scores/stake/${stakeType}/top/${limit}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getTop10ScoringDogsByStakeType(stakeType) {
     try {
-      const response = await this.api.get(`/scores/stake/${stakeType}/top10`);
+      const response = await this.api.get(`${this.baseUrl}/scores/stake/${stakeType}/top10`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getTopScoringDogsByDayAndStakeType(day, stakeType, limit) {
     try {
-      const response = await this.api.get(`/scores/day/${day}/stake/${stakeType}/top/${limit}`);
+      const response = await this.api.get(`${this.baseUrl}/scores/day/${day}/stake/${stakeType}/top/${limit}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
   async getTop10ScoringDogsByDayAndStakeType(day, stakeType) {
     try {
-      const response = await this.api.get(`/scores/day/${day}/stake/${stakeType}/top10`);
+      const response = await this.api.get(`${this.baseUrl}/scores/day/${day}/stake/${stakeType}/top10`);
       return response.data;
     } catch (error) {
-      return error.response.data;
-    }
-  }
-
-  // Add a new method for getting top dogs overall with any limit
-  async getTopScoringDogsOverall(limit) {
-    try {
-      // Use the existing endpoint but with a custom limit
-      const response = await this.api.get(`/scores/top/${limit}/overall`);
-      return response.data;
-    } catch (error) {
-      // If endpoint doesn't exist yet, fall back to top10 and slice
-      try {
-        const response = await this.api.get(`/scores/top10/overall`);
-        return response.data.slice(0, limit);
-      } catch (innerError) {
-        return innerError.response.data;
-      }
+      return error.response?.data;
     }
   }
 
@@ -221,10 +218,10 @@ class DogService {
    */
   async getScoresByDogNumber(dogNumber) {
     try {
-      const response = await this.api.get(`/${dogNumber}/scores`);
+      const response = await this.api.get(`${this.baseUrl}/${dogNumber}/scores`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
@@ -234,10 +231,10 @@ class DogService {
    */
   async getScores() {
     try {
-      const response = await this.api.get(`/scores`);
+      const response = await this.api.get(`${this.baseUrl}/scores`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
@@ -247,10 +244,10 @@ class DogService {
    */
   async getScoresByDay(day) {
     try {
-      const response = await this.api.get(`/scores/${day}`);
+      const response = await this.api.get(`${this.baseUrl}/scores/${day}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
@@ -261,10 +258,10 @@ class DogService {
    */
   async getScoresByJudgeNumber(judgeNumber) {
     try {
-      const response = await this.api.get(`/scores/judge/${judgeNumber}`);
+      const response = await this.api.get(`${this.baseUrl}/scores/judge/${judgeNumber}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
@@ -276,10 +273,10 @@ class DogService {
    */
   async getScoresByDogNumberAndDay(dogNumber, day) {
     try {
-      const response = await this.api.get(`/${dogNumber}/scores/day/${day}`);
+      const response = await this.api.get(`${this.baseUrl}/${dogNumber}/scores/day/${day}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
@@ -291,10 +288,10 @@ class DogService {
    */
   async getScoresByJudgeNumberAndDay(judgeNumber, day) {
     try {
-      const response = await this.api.get(`/scores/judge/${judgeNumber}/day/${day}`);
+      const response = await this.api.get(`${this.baseUrl}/scores/judge/${judgeNumber}/day/${day}`);
       return response.data;
     } catch (error) {
-      return error.response.data;
+      return error.response?.data;
     }
   }
 
@@ -325,7 +322,7 @@ class DogService {
         stakeType: stakeType || 'ALL_AGE'  // Default to ALL_AGE if not specified
       };
       
-      const response = await this.api.post('/cross-info', request);
+      const response = await this.api.post(`${this.baseUrl}/cross-info`, request);
       return response.data;
     } catch (error) {
       console.error("Error in getCrossInfo:", error);
