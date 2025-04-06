@@ -39,18 +39,24 @@ jobs:
       - name: Extract version from tag
         id: extract_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        shell: bash
 
-      - name: Update version in package.json
+      # Windows version update (PowerShell)
+      - name: Update version in package.json (Windows)
+        if: runner.os == 'Windows'
         working-directory: frontend
+        shell: pwsh
         run: |
-          # On Windows
-          if ("${{ runner.os }}" -eq "Windows") {
-            # PowerShell version
-            (Get-Content package.json) -replace '"version": "[0-9]*\.[0-9]*\.[0-9]*"', '"version": "${{ steps.extract_version.outputs.VERSION }}"' | Set-Content package.json
-          } else {
-            # Unix-based sed command
-            sed -i'' -e "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"${{ steps.extract_version.outputs.VERSION }}\"/" package.json
-          }
+          (Get-Content package.json) -replace '"version": "[0-9]*\.[0-9]*\.[0-9]*"', '"version": "${{ steps.extract_version.outputs.VERSION }}"' | Set-Content package.json
+          cat package.json | Select-String "version"
+
+      # Unix version update (Bash)
+      - name: Update version in package.json (Unix)
+        if: runner.os != 'Windows'
+        working-directory: frontend
+        shell: bash
+        run: |
+          sed -i'' -e "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"${{ steps.extract_version.outputs.VERSION }}\"/" package.json
           cat package.json | grep version
 
       - name: Install dependencies
