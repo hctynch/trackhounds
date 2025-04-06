@@ -133,6 +133,8 @@ jobs:
           body: |
             ## TrackHounds ${{ steps.extract_version.outputs.VERSION }}
 
+            ## [User Guide](https://github.com/hctynch/trackhounds/blob/main/README.md)
+
             ### Download Instructions
 
             #### Windows
