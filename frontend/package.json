@@ -5,7 +5,11 @@
   "type": "module",
   "main": "electron/main.js",
   "description": "TrackHounds application for managing dog hunt events",
-  "author": "Hunt Tynch",
+  "author": {
+    "name": "Hunt Tynch",
+    "email": "tynchhunt@gmail.com"
+  },
+  "homepage": "https://github.com/hctynch/trackhounds",
   "scripts": {
     "dev": "vite --port 3000",
     "build": "vite build",
@@ -76,7 +80,9 @@
         "AppImage",
         "deb"
       ],
-      "icon": "public/dog.png"
+      "icon": "public/dog.png",
+      "maintainer": "Hunt Tynch <tynchhunt@gmail.com>",
+      "category": "Utility"
     },
     "forceCodeSigning": false,
     "npmRebuild": false,
