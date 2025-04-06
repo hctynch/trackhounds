@@ -5,9 +5,20 @@ on:
     tags:
       - 'v*'
 
+# Add permissions block at top level
+permissions:
+  contents: write
+  packages: write
+  issues: read
+  pull-requests: read
+
 jobs:
   release:
     runs-on: ${{ matrix.os }}
+
+    # You can also set permissions at the job level if needed
+    permissions:
+      contents: write # Required for creating releases
 
     strategy:
       matrix:
@@ -16,6 +27,8 @@ jobs:
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Need full history for version determination
 
       - name: Install Node.js
         uses: actions/setup-node@v3
