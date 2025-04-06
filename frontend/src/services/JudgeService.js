@@ -1,9 +1,9 @@
 import axios from 'axios';
-
+import { API_BASE_URL } from '../config'; // Import the API base URL from the config file
 class JudgeService {
   constructor() {
     this.api = axios.create({
-      baseURL: 'http://localhost:8080/judges', // Backend URL running in Docker container
+      baseURL: `${API_BASE_URL}/judges`, // Backend URL running in Docker container
     });
   }
 

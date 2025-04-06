@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 class HuntService {
   constructor() {
     this.api = axios.create({
-      baseURL: 'http://localhost:8080/hunt', // Backend URL running in Docker container
+      baseURL: `${API_BASE_URL}/hunt`, // Backend URL running in Docker container
     });
   }
 
