@@ -1,0 +1,45 @@
+services:
+  backend:
+    image: trackhounds-backend:latest
+    container_name: trackhounds-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=trackhounds-mariadb
+      - DB_USER=root
+      - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - DB_NAME=${DB_NAME:-trackhounds}
+      - IP=trackhounds-mariadb
+    depends_on:
+      trackhounds-mariadb:
+        condition: service_healthy
+    networks:
+      - trackhounds_network
+
+  trackhounds-mariadb:
+    image: mariadb:latest
+    container_name: trackhounds-mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=${DB_NAME:-trackhounds}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - trackhounds_network
+
+volumes:
+  mariadb_data:
+    name: trackhounds_mariadb_data
+
+networks:
+  trackhounds_network:
+    driver: bridge
+    name: trackhounds_network

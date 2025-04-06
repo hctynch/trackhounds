@@ -5,6 +5,37 @@
     <link rel="icon" type="image/svg+xml" href="/dog.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TrackHounds</title>
+    <script>
+      // Add early error logging
+      window.addEventListener('error', function(e) {
+        console.error('Global error caught:', e.error);
+        
+        // Show visible error in development or when holding Shift key while launching
+        if (e.error && (location.hostname === 'localhost' || sessionStorage.getItem('debug') === 'true')) {
+          const errorDiv = document.createElement('div');
+          errorDiv.style.position = 'fixed';
+          errorDiv.style.top = '10px';
+          errorDiv.style.left = '10px';
+          errorDiv.style.right = '10px';
+          errorDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+          errorDiv.style.color = 'red';
+          errorDiv.style.padding = '20px';
+          errorDiv.style.borderRadius = '5px';
+          errorDiv.style.zIndex = '9999';
+          errorDiv.innerHTML = '<h3>Error Loading Application:</h3><pre>' + 
+            (e.error.stack || e.error.message || 'Unknown error') + '</pre>';
+          document.body.appendChild(errorDiv);
+        }
+      });
+      
+      // Enable debug mode with Shift key
+      window.addEventListener('keydown', function(e) {
+        if (e.key === 'Shift' && e.ctrlKey && e.altKey) {
+          sessionStorage.setItem('debug', 'true');
+          console.log('Debug mode enabled');
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

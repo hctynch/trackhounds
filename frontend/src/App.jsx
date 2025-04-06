@@ -1,7 +1,8 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { HashRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
 import AddDogs from './components/AddDogs'
 import CreateHunt from './components/CreateHunt'
+import DockerStatus from './components/DockerStatus'
 import Dogs from './components/Dogs'
 import EditDog from './components/EditDog'
 import EditHunt from './components/EditHunt'
@@ -14,11 +15,11 @@ import ScratchSheet from './components/ScratchSheet'
 import ViewScores from './components/ViewScores'
 
 function App() {
-
   return (
     <div className='w-full h-screen bg-slate-100 absolute top-0 left-0 overflow-auto'>
-      <Navbar />
-      <BrowserRouter>
+      <DockerStatus />
+      <HashRouter>
+        <Navbar />
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/hunt/create' element={<CreateHunt />} />
@@ -32,7 +33,7 @@ function App() {
           <Route path='/scratch-sheet/view' element={<ScratchSheet />} />
           <Route path='/reports' element={<Reports />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </div>
   )
 }

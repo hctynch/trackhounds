@@ -4,6 +4,7 @@ import { HiOutlineDocumentReport, HiOutlineHome } from 'react-icons/hi';
 import { MdOutlinePersonSearch } from 'react-icons/md';
 import { RxCaretDown } from 'react-icons/rx';
 import { TbDog } from 'react-icons/tb';
+import { Link } from 'react-router-dom';
 
 function Navbar() {
   const [dropdown, setDropdown] = useState(null);
@@ -74,18 +75,30 @@ function Navbar() {
           <div
             key={index}
             className='w-full h-auto'>
-            <a
-              href={link.path}
-              className='w-full'
-              onClick={() => link.dropdown && handleDropdown(index)}>
-              <div className='flex w-full'>
-                <div className='flex items-center text-black text-lg hover:bg-gray-800/20 hover:outline-gray-100 rounded-xl px-2 transition duration-275 ease-in-out w-full'>
-                  {link.icon}
-                  <p className='ml-2'>{link.name}</p>
-                  {link.caret && link.caret}
+            {link.dropdown ? (
+              <div
+                className='w-full cursor-pointer'
+                onClick={() => link.dropdown && handleDropdown(index)}>
+                <div className='flex w-full'>
+                  <div className='flex items-center text-black text-lg hover:bg-gray-800/20 hover:outline-gray-100 rounded-xl px-2 transition duration-275 ease-in-out w-full'>
+                    {link.icon}
+                    <p className='ml-2'>{link.name}</p>
+                    {link.caret && link.caret}
+                  </div>
                 </div>
               </div>
-            </a>
+            ) : (
+              <Link
+                to={link.path}
+                className='w-full'>
+                <div className='flex w-full'>
+                  <div className='flex items-center text-black text-lg hover:bg-gray-800/20 hover:outline-gray-100 rounded-xl px-2 transition duration-275 ease-in-out w-full'>
+                    {link.icon}
+                    <p className='ml-2'>{link.name}</p>
+                  </div>
+                </div>
+              </Link>
+            )}
             {dropdown === index && link.dropdown && (
               <div
                 className={`flex flex-col items-center ml-4 pr-5 border-l-2 border-gray-300 h-[49.25%]`}>
@@ -94,11 +107,11 @@ function Navbar() {
                     key={subIndex}
                     className='w-full flex items-center justify-start'>
                     <div className='bg-gray-300 w-4 h-0.5' />
-                    <a
-                      href={item.path}
+                    <Link
+                      to={item.path}
                       className='w-full px-2 py-1 text-start text-black text-lg hover:bg-gray-800/20 hover:outline-gray-100 rounded-xl transition duration-275 ease-in-out'>
                       {item.name}
-                    </a>
+                    </Link>
                   </div>
                 ))}
               </div>
