@@ -3,7 +3,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { initAutoUpdater, updateBackendImages } from './updater.js';
+import { checkForUpdates, initAutoUpdater, updateBackendImages } from './updater.js';
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -461,6 +461,12 @@ ipcMain.on('app-request', (event, data) => {
         result: result
       });
     });
+  } else if (data.type === 'check-updates') {
+    // This will trigger a manual update check
+    event.reply('app-response', { 
+      type: 'checking-update'
+    });
+    checkForUpdates(true);
   }
 });
 

@@ -35,19 +35,24 @@ const MAX_RETRIES = 3;
 const RETRY_DELAYS = [60000, 300000, 1800000]; // 1min, 5min, 30min
 
 export function initAutoUpdater(mainWindow) {
-  // Don't check for updates immediately, wait a moment for network to stabilize
+  // Configure update behavior
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  
+  // Check for updates after a short delay (to let app finish startup)
   setTimeout(() => {
+    console.log('Checking for updates...');
     checkInternetConnection()
       .then(online => {
         if (online) {
-          autoUpdater.checkForUpdatesAndNotify();
+          autoUpdater.checkForUpdates();
         } else {
           console.log('No internet connection, skipping update check');
           updateStatus.offlineMode = true;
           mainWindow.webContents.send('update-status', updateStatus);
         }
       });
-  }, 5000);
+  }, 10000); // 10 seconds after startup
   
   // Set up event handlers
   autoUpdater.on('checking-for-update', () => {
@@ -145,6 +150,27 @@ export function initAutoUpdater(mainWindow) {
   
   // Schedule periodic update checks (e.g., once per day) but only if we have internet
   scheduleUpdateCheck(mainWindow);
+}
+
+// Add a function to check for updates
+export function checkForUpdates(manual = false) {
+  if (manual) {
+    retryCount = 0; // Reset retry count for manual checks
+  }
+  
+  checkInternetConnection()
+    .then(online => {
+      if (online) {
+        updateStatus.offlineMode = false;
+        autoUpdater.checkForUpdates();
+      } else {
+        console.log('No internet connection, skipping update check');
+        updateStatus.offlineMode = true;
+        if (mainWindow) {
+          mainWindow.webContents.send('update-status', updateStatus);
+        }
+      }
+    });
 }
 
 // Simple internet connection check

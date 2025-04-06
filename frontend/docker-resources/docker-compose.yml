@@ -7,8 +7,8 @@ services:
     environment:
       - DB_HOST=trackhounds-mariadb
       - DB_USER=root
-      - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
-      - DB_NAME=${DB_NAME:-trackhounds}
+      - DB_ROOT_PASSWORD=password
+      - DB_NAME=trackhounds
       - IP=trackhounds-mariadb
     depends_on:
       trackhounds-mariadb:
@@ -21,7 +21,7 @@ services:
     container_name: trackhounds-mariadb
     environment:
       - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=${DB_NAME:-trackhounds}
+      - MYSQL_DATABASE=trackhounds
     ports:
       - "3306:3306"
     volumes:
