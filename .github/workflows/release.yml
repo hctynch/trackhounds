@@ -30,15 +30,27 @@ jobs:
       - name: Build Docker images (for backend updates)
         if: runner.os == 'Linux'
         run: |
-          cd backend
-          docker build -t trackhounds-backend:latest .
-          cd ../database
-          docker build -t trackhounds-mariadb:latest .
+          # Create an env file for Docker Compose
+          cp frontend/docker-resources/.env.example frontend/docker-resources/.env
+
+          # Build backend image using the main docker-compose.yml
+          docker-compose build backend
+
+          # Build or pull MariaDB image
+          docker pull mariadb:latest
+
+          # Ensure directories exist
+          mkdir -p frontend/docker-resources
+
+          # Copy the docker-compose file to the resources folder if not already there
+          cp docker-compose.yml frontend/docker-resources/docker-compose.yml || echo "Compose file already exists"
 
           # Save images as tar files
-          mkdir -p frontend/docker-resources
-          docker save trackhounds-backend:latest > frontend/docker-resources/backend.tar
-          docker save trackhounds-mariadb:latest > frontend/docker-resources/mariadb.tar
+          docker save backend:latest > frontend/docker-resources/backend.tar
+          docker save mariadb:latest > frontend/docker-resources/mariadb.tar
+
+          # Verify the tar files were created
+          ls -la frontend/docker-resources/
 
       - name: Build/release Electron app
         uses: samuelmeuli/action-electron-builder@v1
