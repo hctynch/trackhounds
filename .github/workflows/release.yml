@@ -90,14 +90,14 @@ jobs:
           echo "Docker image tar file sizes:"
           du -h frontend/docker-resources/*.tar
 
-      # Modify the electron-builder step to use better naming
+      # Modify the electron-builder step - simplify the args
       - name: Build/release Electron app
         uses: samuelmeuli/action-electron-builder@v1
         with:
           package_root: frontend
           github_token: ${{ secrets.GITHUB_TOKEN }}
           release: ${{ startsWith(github.ref, 'refs/tags/v') }}
-          args: '--publish always --config.publish.files=["*.exe","*.dmg","*.AppImage","*.deb"] --config.publish.artifactName=TrackHounds-${version}-${platform}-${arch}.${ext}'
+          args: '--publish always'
 
       # Add release notes with download instructions
       - name: Update release notes

@@ -101,20 +101,12 @@
         ]
       }
     ],
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "hctynch",
-        "repo": "trackhounds",
-        "releaseType": "release",
-        "publishAutoUpdate": true,
-        "files": [
-          "*.exe",
-          "*.dmg",
-          "*.AppImage",
-          "*.deb"
-        ]
-      }
-    ]
+    "artifactName": "TrackHounds-${version}-${platform}-${arch}.${ext}",
+    "publish": {
+      "provider": "github",
+      "owner": "hctynch",
+      "repo": "trackhounds",
+      "releaseType": "release"
+    }
   }
 }
