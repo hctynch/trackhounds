@@ -259,7 +259,7 @@ export async function updateBackendImages(mainWindow) {
     const currentVersion = app.getVersion();
     
     // GitHub repo details
-    const owner = 'your-github-username';
+    const owner = 'hctynch';  // Update with the correct GitHub username
     const repo = 'trackhounds';
     
     // Get the latest release info
@@ -271,14 +271,7 @@ export async function updateBackendImages(mainWindow) {
     const latestRelease = releaseResponse.data;
     const latestVersion = latestRelease.tag_name.replace('v', '');
     
-    // Check if update is needed
-    if (currentVersion === latestVersion) {
-      console.log(`Already on latest version ${latestVersion}`);
-      return { success: false, reason: 'Already on latest version' };
-    }
-    
-    console.log(`Updating backend from ${currentVersion} to ${latestVersion}`);
-    
+    // We're not checking version for initial download - we just need the resources
     // Get the Docker tarball assets
     const backendTarAsset = latestRelease.assets.find(asset => 
       asset.name === 'backend.tar' || asset.name.includes('backend')
@@ -286,6 +279,10 @@ export async function updateBackendImages(mainWindow) {
     
     const mariadbTarAsset = latestRelease.assets.find(asset => 
       asset.name === 'mariadb.tar' || asset.name.includes('mariadb')
+    );
+    
+    const composeFileAsset = latestRelease.assets.find(asset => 
+      asset.name === 'docker-compose.yml' || asset.name.includes('compose')
     );
     
     if (!backendTarAsset || !mariadbTarAsset) {
@@ -302,6 +299,7 @@ export async function updateBackendImages(mainWindow) {
     
     const backendTarPath = path.join(resourcesPath, 'backend.tar');
     const mariadbTarPath = path.join(resourcesPath, 'mariadb.tar');
+    const composePath = path.join(resourcesPath, 'docker-compose.yml');
     
     // Ensure docker-resources directory exists
     if (!fs.existsSync(resourcesPath)) {
@@ -309,35 +307,49 @@ export async function updateBackendImages(mainWindow) {
     }
     
     // Download the tarball files
-    mainWindow.webContents.send('backend-update-progress', { 
-      state: 'downloading',
-      progress: 0
-    });
+    if (mainWindow) {
+      mainWindow.webContents.send('backend-update-progress', { 
+        state: 'downloading',
+        progress: 0
+      });
+    }
     
     await downloadFile(backendTarAsset.browser_download_url, backendTarPath, progress => {
-      mainWindow.webContents.send('backend-update-progress', { 
-        state: 'downloading-backend',
-        progress
-      });
+      if (mainWindow) {
+        mainWindow.webContents.send('backend-update-progress', { 
+          state: 'downloading-backend',
+          progress
+        });
+      }
     });
     
     await downloadFile(mariadbTarAsset.browser_download_url, mariadbTarPath, progress => {
-      mainWindow.webContents.send('backend-update-progress', { 
-        state: 'downloading-mariadb',
-        progress
-      });
+      if (mainWindow) {
+        mainWindow.webContents.send('backend-update-progress', { 
+          state: 'downloading-mariadb',
+          progress
+        });
+      }
     });
     
-    mainWindow.webContents.send('backend-update-progress', { 
-      state: 'complete',
-      progress: 100
-    });
+    // Download compose file if available
+    if (composeFileAsset) {
+      await downloadFile(composeFileAsset.browser_download_url, composePath);
+    }
+    
+    if (mainWindow) {
+      mainWindow.webContents.send('backend-update-progress', { 
+        state: 'complete',
+        progress: 100
+      });
+    }
     
     return { 
       success: true, 
       version: latestVersion,
       backendTarPath,
-      mariadbTarPath
+      mariadbTarPath,
+      composePath
     };
   } catch (error) {
     console.error('Error updating backend:', error);

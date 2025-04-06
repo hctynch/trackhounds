@@ -188,6 +188,32 @@ function startDockerDesktop() {
 function checkDockerResources() {
   console.log('Checking Docker resources...');
   
+  // First check if the Docker images already exist
+  exec('docker images --format "{{.Repository}}"', async (error, stdout) => {
+    if (error) {
+      console.error('Error checking Docker images:', error);
+      checkLocalDockerResources(); // Fallback to checking local resources
+      return;
+    }
+    
+    const existingImages = stdout.trim().split('\n');
+    const hasBackendImage = existingImages.includes('trackhounds-backend');
+    const hasMariadbImage = existingImages.includes('mariadb');
+    
+    console.log('Existing Docker images:', existingImages);
+    
+    if (hasBackendImage && hasMariadbImage) {
+      console.log('Required Docker images already exist locally');
+      startContainersWithCompose();
+    } else {
+      // Check for local tar files first
+      await checkLocalDockerResources();
+    }
+  });
+}
+
+// Check local Docker resources (tar files and compose file)
+async function checkLocalDockerResources() {
   // Check if compose file exists
   const hasComposeFile = fs.existsSync(composeFilePath);
   console.log(`Docker compose file ${hasComposeFile ? 'found' : 'not found'} at: ${composeFilePath}`);
@@ -198,7 +224,38 @@ function checkDockerResources() {
   
   console.log(`Backend tar ${hasBackendTar ? 'found' : 'not found'} at: ${backendTarPath}`);
   console.log(`MariaDB tar ${hasMariadbTar ? 'found' : 'not found'} at: ${mariadbTarPath}`);
-  loadDockerImagesFromTar(hasBackendTar, hasMariadbTar);
+  
+  // If we don't have all required resources, try to download them
+  if (!hasComposeFile || !hasBackendTar || !hasMariadbTar) {
+    try {
+      console.log('Missing Docker resources, attempting to download from GitHub...');
+      // This uses the updateBackendImages function to download the latest images
+      const downloadResult = await updateBackendImages(mainWindow);
+      
+      if (downloadResult.success) {
+        console.log('Successfully downloaded Docker resources from GitHub');
+        // Re-check if files exist after download
+        const hasComposeFileNow = fs.existsSync(composeFilePath);
+        const hasBackendTarNow = fs.existsSync(backendTarPath);
+        const hasMariadbTarNow = fs.existsSync(mariadbTarPath);
+        
+        loadDockerImagesFromTar(hasBackendTarNow, hasMariadbTarNow);
+        
+        if (hasComposeFileNow) {
+          startContainersWithCompose();
+          return;
+        }
+      } else {
+        console.error('Failed to download Docker resources:', downloadResult.reason);
+      }
+    } catch (err) {
+      console.error('Error downloading Docker resources:', err);
+    }
+  } else {
+    // Load images if we have the tar files
+    loadDockerImagesFromTar(hasBackendTar, hasMariadbTar);
+  }
+  
   if (hasComposeFile) {
     startContainersWithCompose();
   } else {
@@ -280,6 +337,11 @@ function loadDockerImagesFromTar(hasBackendTar, hasMariadbTar) {
       });
     }));
   }
+  
+  // Wait for all images to load
+  Promise.all(loadPromises).then(() => {
+    console.log('Finished loading Docker images from tar files');
+  });
 }
 
 // Start individual containers
