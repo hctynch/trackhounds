@@ -106,7 +106,14 @@
         "provider": "github",
         "owner": "hctynch",
         "repo": "trackhounds",
-        "releaseType": "release"
+        "releaseType": "release",
+        "publishAutoUpdate": true,
+        "files": [
+          "*.exe",
+          "*.dmg",
+          "*.AppImage",
+          "*.deb"
+        ]
       }
     ]
   }

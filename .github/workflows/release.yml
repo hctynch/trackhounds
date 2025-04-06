@@ -33,7 +33,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20 # Updated from 18 to 20
 
       - name: Install dependencies
         run: |
@@ -90,9 +90,49 @@ jobs:
           echo "Docker image tar file sizes:"
           du -h frontend/docker-resources/*.tar
 
+      # Modify the electron-builder step to use better naming
       - name: Build/release Electron app
         uses: samuelmeuli/action-electron-builder@v1
         with:
           package_root: frontend
           github_token: ${{ secrets.GITHUB_TOKEN }}
           release: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          args: '--publish always --config.publish.files=["*.exe","*.dmg","*.AppImage","*.deb"] --config.publish.artifactName=TrackHounds-${version}-${platform}-${arch}.${ext}'
+
+      # Add release notes with download instructions
+      - name: Update release notes
+        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ## TrackHounds ${version}
+
+            ### Download Instructions
+
+            #### Windows
+            - Download the `.exe` file (`TrackHounds-${version}-win-*.exe`)
+
+            #### macOS
+            - Download the `.dmg` file (`TrackHounds-${version}-mac-*.dmg`)
+
+            #### Linux
+            - Download either:
+              - AppImage: `TrackHounds-${version}-linux-*.AppImage`
+              - Debian package: `TrackHounds-${version}-linux-*.deb`
+
+            ### Backend Images
+            The Docker tar files are automatically used by the application for updates.
+          tag_name: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload Docker tar files separately
+      - name: Upload Docker tar files to release
+        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            frontend/docker-resources/backend.tar
+            frontend/docker-resources/mariadb.tar
+            frontend/docker-resources/docker-compose.yml
+          tag_name: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
