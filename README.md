@@ -38,11 +38,18 @@ TrackHounds is a modern scoring application designed to provide an alternative t
 ## Needed Resources
 
 - [**Docker**](https://www.docker.com/get-started/) (Required to run the application)
-- Latest Release of [**trackhounds**](https://github.com/hctynch/trackhounds/releases/latest) (Download `trackhounds-X.X.X.zip` under `Assets`)
+- [**Trackhounds Installer**](https://github.com/hctynch/trackhounds/releases/latest) (Follow `Download Instructions` to get correct installer under `Assets`)
+   - Automatic updates are enabled when connected to internet (So no need to download anything else from newer releases)
+   - Manual Update functionality in the future
 
 ---
 
 ## Usage & Help
+
+### Live Demo
+
+- Email me at `tynchhunt@gmail.com` to possibly demo trackhounds website to test functionality
+   - Trying to keep usage relatively low to maintain free tiers on cloud providers 
 
 ### Issues, Bugs, and Feature Requests
 
@@ -59,29 +66,21 @@ To report issues or request features:
 
 ### Install
 
-1. **Download the Release**
+1. **Download the Installer**
 
    - Go to the [latest release](https://github.com/hctynch/trackhounds/releases).
-   - Under `Assets`, download the `trackhounds-X.X.X.zip` file.
+   - Read the `Download Instructions` and install the correct Installer under `Assets`
 
-2. **Extract the Files**
+2. **Run the Installer**
 
-   - Locate the downloaded `.zip` file in your `Downloads` folder.
-   - Right-click the file and select `Extract All`.
-   - Choose a location to extract the files (e.g., Desktop).
+   - Run the downloaded installer (Will likely say untrusted, click `More Info` and `Run anyway`)
+   - This should install *TrackHounds* on your Desktop and in your Apps
+   - It should also open TrackHounds after installing
 
-3. **Run the Setup Script**
+3. **Close TrackHounds**
 
-   - Navigate to the extracted folder (e.g., `trackhounds-X.X.X`).
-   - Double-click the `windows_docker_setup.bat` file to start the setup process.  
-     **Note for Mac Users**: Follow the Mac-specific instructions in the release notes.
-
-4. **Start the Application**
-   - The setup script will:
-     - Start Docker Desktop.
-     - Load the necessary containers.
-     - Launch TrackHounds in your default web browser.
-   - If the browser shows an error, refresh the page.
+   - When finished close trackhounds, this will shutdown the docker container
+   - Clicking on the TrackHounds application will start everything back up ready to go
 
 ---
 
@@ -96,12 +95,6 @@ To report issues or request features:
    **Optional**: Set the service to start automatically:
    - Right-click `Docker Desktop Service` > `Properties`.
    - Set `Startup Type` to `Automatic`.
-
-#### Application Running in Background
-
-- After using the application, click the terminal window and press any key to stop Docker and shut down the application.
-
----
 
 ### Application Overview
 
