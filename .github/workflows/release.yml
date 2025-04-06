@@ -27,6 +27,21 @@ jobs:
           cd frontend
           npm ci
 
+      # Add these steps to set up Docker and Docker Compose
+      - name: Set up Docker Buildx
+        if: runner.os == 'Linux'
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install Docker Compose
+        if: runner.os == 'Linux'
+        run: |
+          # Install Docker Compose v2
+          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+          mkdir -p $DOCKER_CONFIG/cli-plugins
+          curl -SL https://github.com/docker/compose/releases/download/v2.17.2/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+          docker compose version
+
       - name: Build Docker images (for backend updates)
         if: runner.os == 'Linux'
         run: |
@@ -34,7 +49,7 @@ jobs:
           cp frontend/docker-resources/.env.example frontend/docker-resources/.env
 
           # Build backend image using the main docker-compose.yml
-          docker-compose build backend
+          docker compose build backend
 
           # Build or pull MariaDB image
           docker pull mariadb:latest
