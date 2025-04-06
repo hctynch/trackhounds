@@ -51,6 +51,14 @@ jobs:
           # Build backend image using the main docker-compose.yml
           docker compose build backend
 
+          # List images to see what was built
+          echo "Available Docker images:"
+          docker images
+
+          # Tag the backend image with a consistent name
+          # Docker compose typically names images as projectname_servicename
+          docker tag trackhounds_backend:latest trackhounds-backend:latest || docker tag $(docker images -q --filter "reference=*backend*" | head -n 1) trackhounds-backend:latest
+
           # Build or pull MariaDB image
           docker pull mariadb:latest
 
@@ -61,11 +69,13 @@ jobs:
           cp docker-compose.yml frontend/docker-resources/docker-compose.yml || echo "Compose file already exists"
 
           # Save images as tar files
-          docker save backend:latest > frontend/docker-resources/backend.tar
+          docker save trackhounds-backend:latest > frontend/docker-resources/backend.tar
           docker save mariadb:latest > frontend/docker-resources/mariadb.tar
 
           # Verify the tar files were created
           ls -la frontend/docker-resources/
+          echo "Docker image tar file sizes:"
+          du -h frontend/docker-resources/*.tar
 
       - name: Build/release Electron app
         uses: samuelmeuli/action-electron-builder@v1
