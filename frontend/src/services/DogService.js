@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 class DogService {
   constructor() {
     this.api = axios.create({
-      baseURL: 'http://localhost:8080/dogs', // Backend URL running in Docker container
+      baseURL: `${API_BASE_URL}/dogs`, // Use the config value instead of hardcoded URL
     });
   }
 

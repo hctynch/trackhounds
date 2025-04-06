@@ -1,0 +1,165 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Add permissions block at top level
+permissions:
+  contents: write
+  packages: write
+  issues: read
+  pull-requests: read
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+
+    # You can also set permissions at the job level if needed
+    permissions:
+      contents: write # Required for creating releases
+
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Need full history for version determination
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20 # Updated from 18 to 20
+
+      # Add these steps to extract version from tag and update package.json
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      # Windows version update (PowerShell)
+      - name: Update version in package.json (Windows)
+        if: runner.os == 'Windows'
+        working-directory: frontend
+        shell: pwsh
+        run: |
+          (Get-Content package.json) -replace '"version": "[0-9]*\.[0-9]*\.[0-9]*"', '"version": "${{ steps.extract_version.outputs.VERSION }}"' | Set-Content package.json
+          cat package.json | Select-String "version"
+
+      # Unix version update (Bash)
+      - name: Update version in package.json (Unix)
+        if: runner.os != 'Windows'
+        working-directory: frontend
+        shell: bash
+        run: |
+          sed -i'' -e "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"${{ steps.extract_version.outputs.VERSION }}\"/" package.json
+          cat package.json | grep version
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      # Add these steps to set up Docker and Docker Compose
+      - name: Set up Docker Buildx
+        if: runner.os == 'Linux'
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install Docker Compose
+        if: runner.os == 'Linux'
+        run: |
+          # Install Docker Compose v2
+          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+          mkdir -p $DOCKER_CONFIG/cli-plugins
+          curl -SL https://github.com/docker/compose/releases/download/v2.17.2/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+          docker compose version
+
+      - name: Build Docker images (for backend updates)
+        if: runner.os == 'Linux'
+        run: |
+          # Create an env file for Docker Compose
+          cp frontend/docker-resources/.env.example frontend/docker-resources/.env
+
+          # Build backend image using the main docker-compose.yml
+          docker compose build backend
+
+          # List images to see what was built
+          echo "Available Docker images:"
+          docker images
+
+          # Tag the backend image with a consistent name
+          # Docker compose typically names images as projectname_servicename
+          docker tag trackhounds_backend:latest trackhounds-backend:latest || docker tag $(docker images -q --filter "reference=*backend*" | head -n 1) trackhounds-backend:latest
+
+          # Build or pull MariaDB image
+          docker pull mariadb:latest
+
+          # Ensure directories exist
+          mkdir -p frontend/docker-resources
+
+          # Copy the docker-compose file to the resources folder if not already there
+          cp docker-compose.yml frontend/docker-resources/docker-compose.yml || echo "Compose file already exists"
+
+          # Save images as tar files
+          docker save trackhounds-backend:latest > frontend/docker-resources/backend.tar
+          docker save mariadb:latest > frontend/docker-resources/mariadb.tar
+
+          # Verify the tar files were created
+          ls -la frontend/docker-resources/
+          echo "Docker image tar file sizes:"
+          du -h frontend/docker-resources/*.tar
+
+      # Make sure all release steps use the same variables
+      - name: Build/release Electron app
+        uses: samuelmeuli/action-electron-builder@v1
+        with:
+          package_root: frontend
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          # Use the tag name directly to ensure it matches other steps
+          args: '--publish always --config.publish.vPrefixedTagName=true'
+
+      # Add release notes with download instructions
+      - name: Update release notes
+        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          name: 'TrackHounds ${{ steps.extract_version.outputs.VERSION }}'
+          body: |
+            ## TrackHounds ${{ steps.extract_version.outputs.VERSION }}
+
+            ### Download Instructions
+
+            #### Windows
+            - Download the `.exe` file (`TrackHounds-${{ steps.extract_version.outputs.VERSION }}-win-*.exe`)
+
+            #### macOS
+            - Download the `.dmg` file (`TrackHounds-${{ steps.extract_version.outputs.VERSION }}-mac-*.dmg`)
+
+            #### Linux
+            - Download either:
+              - AppImage: `TrackHounds-${{ steps.extract_version.outputs.VERSION }}-linux-*.AppImage`
+              - Debian package: `TrackHounds-${{ steps.extract_version.outputs.VERSION }}-linux-*.deb`
+
+            ### Backend Images
+            The Docker tar files are automatically used by the application for updates.
+          tag_name: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload Docker tar files separately - use the same release name
+      - name: Upload Docker tar files to release
+        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          name: 'TrackHounds ${{ steps.extract_version.outputs.VERSION }}'
+          files: |
+            frontend/docker-resources/backend.tar
+            frontend/docker-resources/mariadb.tar
+            frontend/docker-resources/docker-compose.yml
+          tag_name: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}

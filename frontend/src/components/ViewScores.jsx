@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { FaFilter, FaInfoCircle, FaRegCalendarAlt, FaTrash } from "react-icons/fa";
 import { FiSearch } from "react-icons/fi";
 import { IoArrowBackCircleOutline } from "react-icons/io5";
+import { useNavigate } from 'react-router-dom';
 import DogService from "../services/DogService";
 import Button from "./Button";
 import StyledTable from "./StyledTable";
 
 function ViewScores() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [day, setDay] = useState("all");
   const [scores, setScores] = useState([]);
@@ -158,7 +160,7 @@ function ViewScores() {
         <div className="flex items-center">
           <Button
             type="secondary"
-            onClick={() => window.location.href = "/score-entry/enter"}
+            onClick={() => navigate('/score-entry/enter')}
             className="mr-4 p-1 rounded-full"
           >
             <IoArrowBackCircleOutline className="text-3xl text-gray-500" />
