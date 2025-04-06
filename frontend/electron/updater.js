@@ -332,9 +332,9 @@ export async function updateBackendImages(mainWindow) {
       }
     });
     
-    // Download compose file if available
+    // Download compose file if available - add an empty callback here
     if (composeFileAsset) {
-      await downloadFile(composeFileAsset.browser_download_url, composePath);
+      await downloadFile(composeFileAsset.browser_download_url, composePath, () => {});
     }
     
     if (mainWindow) {
@@ -372,7 +372,10 @@ async function downloadFile(url, outputPath, progressCallback) {
   response.data.on('data', (chunk) => {
     downloadedLength += chunk.length;
     const progress = Math.round((downloadedLength / totalLength) * 100);
-    progressCallback(progress);
+    // Add this check to ensure progressCallback is a function
+    if (typeof progressCallback === 'function') {
+      progressCallback(progress);
+    }
   });
   
   await streamPipeline(response.data, fs.createWriteStream(outputPath));
