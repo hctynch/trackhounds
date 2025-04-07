@@ -276,31 +276,77 @@ async function checkLocalDockerResources() {
 function startContainersWithCompose() {
   console.log('Starting containers with docker-compose...');
   
-  const composeCommand = `docker-compose -f "${composeFilePath}"  up -d`;
-  console.log(`Running command: ${composeCommand}`);
-  
-  exec(composeCommand, (error) => {
+  // First check if containers with our names already exist
+  exec('docker ps -a --format "{{.Names}}"', (error, stdout) => {
     if (error) {
-      console.error('Error starting containers with docker-compose:', error);
-      
-      if (mainWindow) {
-        dialog.showErrorBox(
-          'Docker Compose Error',
-          'Failed to start containers with docker-compose. Trying individual container startup.'
-        );
-      }
-      
-      // Fall back to individual container startup
+      console.error('Error checking existing containers:', error);
+      proceedWithDockerCompose();
+      return;
+    }
+    
+    const existingContainers = stdout.trim().split('\n');
+    const hasMariadbContainer = existingContainers.includes('trackhounds-mariadb');
+    const hasBackendContainer = existingContainers.includes('trackhounds-backend');
+    
+    // If either container exists, use individual container management
+    if (hasMariadbContainer || hasBackendContainer) {
+      console.log('Existing containers found, using individual container management');
       startIndividualContainers();
     } else {
-      console.log('Containers started successfully with docker-compose');
-      dockerStatus.checking = false;
-      
-      // Check container status
-      setTimeout(() => {
-        checkContainerStatus();
-      }, 5000);
+      // No existing containers, proceed with docker-compose
+      proceedWithDockerCompose();
     }
+  });
+}
+
+// Extracted function to proceed with docker-compose
+function proceedWithDockerCompose() {
+  // Check for docker-compose vs docker compose (v2 format)
+  exec('docker compose version', (error) => {
+    const composeCommand = error 
+      ? `docker-compose -f "${composeFilePath}" up -d` // Use legacy docker-compose
+      : `docker compose -f "${composeFilePath}" up -d`; // Use new docker compose syntax
+    
+    console.log(`Running command: ${composeCommand}`);
+    
+    exec(composeCommand, (error) => {
+      if (error) {
+        console.error('Error starting containers with docker-compose:', error);
+        
+        // Try alternative way
+        console.log('Trying alternative docker-compose command...');
+        const altCommand = error.message.includes('docker-compose') 
+          ? `docker compose -f "${composeFilePath}" up -d`  // Try new syntax
+          : `docker-compose -f "${composeFilePath}" up -d`; // Try legacy syntax
+        
+        exec(altCommand, (altError) => {
+          if (altError) {
+            console.error('Alternative docker-compose command also failed:', altError);
+            if (mainWindow) {
+              dialog.showErrorBox(
+                'Docker Compose Error',
+                'Failed to start containers with docker-compose. Trying individual container startup.'
+              );
+            }
+            startIndividualContainers();
+          } else {
+            console.log('Containers started successfully with alternative command');
+            dockerStatus.checking = false;
+            setTimeout(() => {
+              checkContainerStatus();
+            }, 5000);
+          }
+        });
+      } else {
+        console.log('Containers started successfully with docker-compose');
+        dockerStatus.checking = false;
+        
+        // Check container status
+        setTimeout(() => {
+          checkContainerStatus();
+        }, 5000);
+      }
+    });
   });
 }
 
