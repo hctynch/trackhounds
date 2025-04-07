@@ -102,8 +102,14 @@ jobs:
           # Ensure directories exist
           mkdir -p frontend/docker-resources
 
-          # Copy the docker-compose file to the resources folder if not already there
-          cp docker-compose.yml frontend/docker-resources/docker-compose.yml || echo "Compose file already exists"
+          # Use the docker-compose file from docker-resources directory
+          # If it doesn't exist, use the root one as fallback
+          if [ -f "frontend/docker-resources/docker-compose.yml" ]; then
+            echo "Using docker-compose.yml from frontend/docker-resources"
+          else
+            echo "Copying docker-compose.yml to frontend/docker-resources"
+            cp docker-compose.yml frontend/docker-resources/docker-compose.yml
+          fi
 
           # Save images as tar files
           docker save trackhounds-backend:latest > frontend/docker-resources/backend.tar
@@ -132,6 +138,8 @@ jobs:
           name: 'TrackHounds ${{ steps.extract_version.outputs.VERSION }}'
           body: |
             ## TrackHounds ${{ steps.extract_version.outputs.VERSION }}
+
+            ## [User Guide](https://github.com/hctynch/trackhounds/blob/main/README.md)
 
             ### Download Instructions
 

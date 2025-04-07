@@ -188,73 +188,97 @@ function startDockerDesktop() {
 function checkDockerResources() {
   console.log('Checking Docker resources...');
   
-  // Check if compose file exists
+  // Check if tar files exist first
   const hasComposeFile = fs.existsSync(composeFilePath);
-  console.log(`Docker compose file ${hasComposeFile ? 'found' : 'not found'} at: ${composeFilePath}`);
-  
-  // Check if tar files exist
   const hasBackendTar = fs.existsSync(backendTarPath);
   const hasMariadbTar = fs.existsSync(mariadbTarPath);
   
+  console.log(`Docker compose file ${hasComposeFile ? 'found' : 'not found'} at: ${composeFilePath}`);
   console.log(`Backend tar ${hasBackendTar ? 'found' : 'not found'} at: ${backendTarPath}`);
   console.log(`MariaDB tar ${hasMariadbTar ? 'found' : 'not found'} at: ${mariadbTarPath}`);
-  loadDockerImagesFromTar(hasBackendTar, hasMariadbTar);
-  if (hasComposeFile) {
-    startContainersWithCompose();
+  
+  // If we don't have any of the required resources, try to download them
+  if (!hasComposeFile || !hasBackendTar || !hasMariadbTar) {
+    downloadMissingResources().then(success => {
+      if (success) {
+        // After download, always load from tar files if they exist
+        loadImagesAndStartContainers();
+      } else {
+        console.error('Failed to download Docker resources');
+        if (mainWindow) {
+          dialog.showErrorBox(
+            'Missing Docker Resources',
+            'Could not find or download necessary Docker resources. Please reinstall the application.'
+          );
+        }
+      }
+    });
   } else {
-    console.error('No Docker resources found. Cannot start containers.');
-    dockerStatus.checking = false;
-    
-    if (mainWindow) {
-      mainWindow.webContents.send('docker-status', dockerStatus);
-      dialog.showErrorBox(
-        'Missing Docker Resources',
-        'Could not find the necessary Docker resources. Please reinstall the application.'
-      );
-    }
+    // If we have all resources, load from tar files
+    loadImagesAndStartContainers();
   }
 }
 
-// Start containers using docker-compose
-function startContainersWithCompose() {
-  console.log('Starting containers with docker-compose...');
+// New function to consolidate loading images and starting containers
+function loadImagesAndStartContainers() {
+  // Always load images from tars first, even if they might exist in Docker
+  const hasBackendTar = fs.existsSync(backendTarPath);
+  const hasMariadbTar = fs.existsSync(mariadbTarPath);
   
-  const composeCommand = `docker-compose -f "${composeFilePath}"  up -d`;
-  console.log(`Running command: ${composeCommand}`);
-  
-  exec(composeCommand, (error) => {
-    if (error) {
-      console.error('Error starting containers with docker-compose:', error);
-      
-      if (mainWindow) {
-        dialog.showErrorBox(
-          'Docker Compose Error',
-          'Failed to start containers with docker-compose. Trying individual container startup.'
-        );
-      }
-      
-      // Fall back to individual container startup
-      startIndividualContainers();
-    } else {
-      console.log('Containers started successfully with docker-compose');
-      dockerStatus.checking = false;
-      
-      // Check container status
-      setTimeout(() => {
-        checkContainerStatus();
-      }, 5000);
-    }
+  // Load both images (or any that are available)
+  loadDockerImagesFromTar(hasBackendTar, hasMariadbTar).then(() => {
+    startContainersWithCompose();
   });
 }
 
-// Load Docker images from tar files
+// Download missing Docker resources
+async function downloadMissingResources() {
+  try {
+    console.log('Attempting to download missing Docker resources from GitHub...');
+    
+    // Send progress event to renderer
+    if (mainWindow) {
+      mainWindow.webContents.send('setup-progress', {
+        stage: 'downloading-resources',
+        detail: 'Getting Docker resources from GitHub',
+        progress: 0
+      });
+    }
+    
+    const downloadResult = await updateBackendImages(mainWindow);
+    return downloadResult.success;
+  } catch (err) {
+    console.error('Error downloading Docker resources:', err);
+    return false;
+  }
+}
+
+// Updated to return a Promise and report progress
 function loadDockerImagesFromTar(hasBackendTar, hasMariadbTar) {
   console.log('Loading Docker images from tar files...');
+  
+  // Send progress event to renderer
+  if (mainWindow) {
+    mainWindow.webContents.send('setup-progress', {
+      stage: 'loading-images',
+      detail: 'Preparing Docker images',
+      progress: 0
+    });
+  }
   
   const loadPromises = [];
   
   if (hasMariadbTar) {
     loadPromises.push(new Promise((resolve) => {
+      // Send progress event to renderer
+      if (mainWindow) {
+        mainWindow.webContents.send('setup-progress', {
+          stage: 'loading-images',
+          detail: 'Loading MariaDB image',
+          progress: 0
+        });
+      }
+      
       console.log(`Loading MariaDB image from: ${mariadbTarPath}`);
       exec(`docker load -i "${mariadbTarPath}"`, (error) => {
         if (error) {
@@ -269,6 +293,15 @@ function loadDockerImagesFromTar(hasBackendTar, hasMariadbTar) {
   
   if (hasBackendTar) {
     loadPromises.push(new Promise((resolve) => {
+      // Send progress event to renderer
+      if (mainWindow) {
+        mainWindow.webContents.send('setup-progress', {
+          stage: 'loading-images',
+          detail: 'Loading backend image',
+          progress: hasMariadbTar ? 50 : 0
+        });
+      }
+      
       console.log(`Loading backend image from: ${backendTarPath}`);
       exec(`docker load -i "${backendTarPath}"`, (error) => {
         if (error) {
@@ -280,12 +313,173 @@ function loadDockerImagesFromTar(hasBackendTar, hasMariadbTar) {
       });
     }));
   }
+  
+  // Return the promise that resolves when all images are loaded
+  return Promise.all(loadPromises).then(() => {
+    // Send progress event to renderer
+    if (mainWindow) {
+      mainWindow.webContents.send('setup-progress', {
+        stage: 'loading-images',
+        detail: 'Images loaded successfully',
+        progress: 100
+      });
+    }
+    
+    console.log('Finished loading Docker images from tar files');
+    return true;
+  }).catch(err => {
+    console.error('Error loading images:', err);
+    return false;
+  });
+}
+
+// Start containers using docker-compose with no-pull flag
+function startContainersWithCompose() {
+  console.log('Starting containers with docker-compose...');
+  
+  // Send progress event to renderer
+  if (mainWindow) {
+    mainWindow.webContents.send('setup-progress', {
+      stage: 'starting-containers',
+      detail: 'Checking existing containers',
+      progress: 0
+    });
+  }
+  
+  // First check if containers with our names already exist
+  exec('docker ps -a --format "{{.Names}}"', (error, stdout) => {
+    if (error) {
+      console.error('Error checking existing containers:', error);
+      proceedWithDockerCompose();
+      return;
+    }
+    
+    const existingContainers = stdout.trim().split('\n');
+    const hasMariadbContainer = existingContainers.includes('trackhounds-mariadb');
+    const hasBackendContainer = existingContainers.includes('trackhounds-backend');
+    
+    // If either container exists, use individual container management
+    if (hasMariadbContainer || hasBackendContainer) {
+      console.log('Existing containers found, using individual container management');
+      startIndividualContainers();
+    } else {
+      // No existing containers, proceed with docker-compose
+      proceedWithDockerCompose();
+    }
+  });
+}
+
+// Extracted function to proceed with docker-compose (with no-pull flag)
+function proceedWithDockerCompose() {
+  // Send progress event to renderer
+  if (mainWindow) {
+    mainWindow.webContents.send('setup-progress', {
+      stage: 'starting-containers',
+      detail: 'Starting with docker-compose',
+      progress: 30
+    });
+  }
+  
+  // Check for docker-compose vs docker compose (v2 format)
+  exec('docker compose version', (error) => {
+    // Add --no-build --no-pull flags to prevent Docker from trying to pull images
+    const composeCommand = error 
+      ? `docker-compose -f "${composeFilePath}" up -d --no-build` // Use legacy docker-compose
+      : `docker compose -f "${composeFilePath}" up -d --no-build`; // Use new docker compose syntax
+    
+    console.log(`Running command: ${composeCommand}`);
+    
+    exec(composeCommand, (error) => {
+      if (error) {
+        console.error('Error starting containers with docker-compose:', error);
+        
+        // Update progress to show error state
+        if (mainWindow) {
+          mainWindow.webContents.send('setup-progress', {
+            stage: 'error',
+            detail: 'Docker compose failed, trying alternative',
+            progress: 50
+          });
+        }
+        
+        // Try alternative way
+        console.log('Trying alternative docker-compose command...');
+        const altCommand = error.message.includes('docker-compose') 
+          ? `docker compose -f "${composeFilePath}" up -d`  // Try new syntax
+          : `docker-compose -f "${composeFilePath}" up -d`; // Try legacy syntax
+        
+        exec(altCommand, (altError) => {
+          if (altError) {
+            console.error('Alternative docker-compose command also failed:', altError);
+            
+            // Update progress to show fallback
+            if (mainWindow) {
+              mainWindow.webContents.send('setup-progress', {
+                stage: 'starting-containers',
+                detail: 'Falling back to individual container startup',
+                progress: 60
+              });
+              
+              dialog.showErrorBox(
+                'Docker Compose Error',
+                'Failed to start containers with docker-compose. Trying individual container startup.'
+              );
+            }
+            startIndividualContainers();
+          } else {
+            console.log('Containers started successfully with alternative command');
+            
+            // Update progress to show success
+            if (mainWindow) {
+              mainWindow.webContents.send('setup-progress', {
+                stage: 'complete',
+                detail: 'Containers started successfully',
+                progress: 100
+              });
+            }
+            
+            dockerStatus.checking = false;
+            setTimeout(() => {
+              checkContainerStatus();
+            }, 5000);
+          }
+        });
+      } else {
+        console.log('Containers started successfully with docker-compose');
+        
+        // Update progress to show success
+        if (mainWindow) {
+          mainWindow.webContents.send('setup-progress', {
+            stage: 'complete',
+            detail: 'Containers started successfully',
+            progress: 100
+          });
+        }
+        
+        dockerStatus.checking = false;
+        
+        // Check container status
+        setTimeout(() => {
+          checkContainerStatus();
+        }, 5000);
+      }
+    });
+  });
 }
 
 // Start individual containers
 function startIndividualContainers() {
   console.log('Starting individual containers...');
   dockerStatus.checking = false;
+  
+  // Send progress event for individual startup
+  if (mainWindow) {
+    mainWindow.webContents.send('setup-progress', {
+      stage: 'starting-containers',
+      detail: 'Starting database container',
+      progress: 65
+    });
+  }
   
   // Check for existing containers first
   exec('docker ps -a --format "{{.Names}}"', (error, stdout) => {
@@ -317,6 +511,15 @@ function startIndividualContainers() {
           }
         }
       });
+      
+      // Report progress
+      if (mainWindow) {
+        mainWindow.webContents.send('setup-progress', {
+          stage: 'starting-containers',
+          detail: 'Database container started, waiting for backend',
+          progress: 80
+        });
+      }
     } else {
       console.log('Creating new MariaDB container...');
       exec('docker run -d --name trackhounds-mariadb -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=trackhounds mariadb:latest', (error) => {
@@ -330,10 +533,28 @@ function startIndividualContainers() {
           }
         }
       });
+      
+      // Report progress
+      if (mainWindow) {
+        mainWindow.webContents.send('setup-progress', {
+          stage: 'starting-containers',
+          detail: 'Database container created, waiting for backend',
+          progress: 80
+        });
+      }
     }
     
     // Wait a bit to ensure database is up before starting backend
     setTimeout(() => {
+      // Send progress update for backend startup
+      if (mainWindow) {
+        mainWindow.webContents.send('setup-progress', {
+          stage: 'starting-containers',
+          detail: 'Starting backend container',
+          progress: 85
+        });
+      }
+      
       // Start Backend container
       if (hasBackendContainer) {
         console.log('Starting existing backend container...');
@@ -345,6 +566,15 @@ function startIndividualContainers() {
             dockerStatus.containers.backend.running = true;
             if (mainWindow) {
               mainWindow.webContents.send('docker-status', dockerStatus);
+            }
+            
+            // Final progress update
+            if (mainWindow && !error) {
+              mainWindow.webContents.send('setup-progress', {
+                stage: 'complete',
+                detail: 'All containers started successfully',
+                progress: 100
+              });
             }
           }
         });
@@ -358,6 +588,15 @@ function startIndividualContainers() {
             dockerStatus.containers.backend.running = true;
             if (mainWindow) {
               mainWindow.webContents.send('docker-status', dockerStatus);
+            }
+            
+            // Final progress update
+            if (mainWindow && !error) {
+              mainWindow.webContents.send('setup-progress', {
+                stage: 'complete',
+                detail: 'All containers started successfully',
+                progress: 100
+              });
             }
           }
         });
@@ -385,6 +624,14 @@ function checkContainerStatus() {
     
     // Send updated status to renderer
     if (mainWindow) {
+      if (dockerStatus.containers.backend.running && dockerStatus.containers.database.running) {
+        mainWindow.webContents.send('setup-progress', {
+          stage: 'complete',
+          detail: 'All services running',
+          progress: 100
+        });
+      }
+      
       mainWindow.webContents.send('docker-status', dockerStatus);
     }
   });
