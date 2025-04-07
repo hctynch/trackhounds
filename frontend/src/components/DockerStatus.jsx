@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { FaCircleCheck, FaCircleExclamation, FaCircleXmark, FaSpinner } from 'react-icons/fa6';
-import { checkBackendConnection, checkDockerStatus, isElectron } from '../config';
+import { FaCircleCheck, FaCircleExclamation, FaCircleXmark, FaDownload, FaSpinner } from 'react-icons/fa6';
+import { checkBackendConnection, checkDockerStatus, isElectron, listenForSetupEvents } from '../config';
 
 function DockerStatus() {
   const [backendStatus, setBackendStatus] = useState('checking');
@@ -12,6 +12,11 @@ function DockerStatus() {
       database: { running: false }
     }
   });
+  const [setupProgress, setSetupProgress] = useState({
+    stage: 'initial',
+    detail: 'Starting application',
+    progress: 0
+  });
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -20,6 +25,11 @@ function DockerStatus() {
       checkDockerStatus(status => {
         setDockerStatus(status);
       });
+      
+      // Listen for detailed setup progress events
+      listenForSetupEvents(data => {
+        setSetupProgress(data);
+      });
     }
     
     // Check backend connection
@@ -27,6 +37,15 @@ function DockerStatus() {
       const isConnected = await checkBackendConnection();
       setBackendStatus(isConnected ? 'connected' : 'disconnected');
 
+      // If connected, make sure we clear any lingering setup progress
+      if (isConnected) {
+        setSetupProgress(prev => ({
+          ...prev,
+          stage: 'complete',
+          progress: 100
+        }));
+      }
+      
       // If not connected, try again in 5 seconds
       if (!isConnected) {
         setTimeout(checkConnection, 5000);
@@ -36,13 +55,54 @@ function DockerStatus() {
     checkConnection();
   }, []);
 
-  // Determine overall status
-    const getStatus = () => {
-      console.log(backendStatus, dockerStatus);
+  // Determine overall status based on all states
+  const getStatus = () => {
     if (backendStatus === 'connected') {
       return { type: 'success', message: 'Connected to backend', icon: <FaCircleCheck /> };
     }
     
+    // Handle detailed setup progress stages
+    if (setupProgress.stage === 'loading-images') {
+      return { 
+        type: 'info', 
+        message: `Loading Docker images... ${Math.round(setupProgress.progress)}%`, 
+        icon: <FaSpinner className="animate-spin" /> 
+      };
+    }
+    
+    if (setupProgress.stage === 'starting-containers') {
+      return { 
+        type: 'info', 
+        message: `Starting containers... ${Math.round(setupProgress.progress)}%`, 
+        icon: <FaSpinner className="animate-spin" /> 
+      };
+    }
+    
+    if (setupProgress.stage === 'downloading-resources') {
+      return { 
+        type: 'info', 
+        message: `Downloading resources... ${Math.round(setupProgress.progress)}%`, 
+        icon: <FaDownload /> 
+      };
+    }
+    
+    if (setupProgress.stage === 'complete') {
+      return { 
+        type: 'info', 
+        message: 'Connecting to backend...', 
+        icon: <FaSpinner className="animate-spin" /> 
+      };
+    }
+    
+    if (setupProgress.stage === 'error') {
+      return { 
+        type: 'warning', 
+        message: setupProgress.detail || 'Error during setup', 
+        icon: <FaCircleExclamation /> 
+      };
+    }
+    
+    // Default Docker status handling
     if (dockerStatus.checking) {
       return { type: 'info', message: 'Starting Docker...', icon: <FaSpinner className="animate-spin" /> };
     }
@@ -84,56 +144,93 @@ function DockerStatus() {
       >
         <span className="mr-2">{status.icon}</span>
         {status.message}
+        
+        {/* Add a subtle progress indicator if applicable */}
+        {setupProgress.progress > 0 && setupProgress.progress < 100 && setupProgress.stage !== 'complete' && (
+          <div className="ml-4 bg-white/20 h-1.5 w-24 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-white rounded-full" 
+              style={{ width: `${setupProgress.progress}%` }}
+            ></div>
+          </div>
+        )}
       </div>
       
       {isOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setIsOpen(false)}>
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
-            <h2 className="text-2xl font-bold mb-6 text-gray-900">Docker Status</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 border-b pb-3">Application Status</h2>
             
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <div className={`mr-3 p-2 rounded-full ${dockerStatus.running ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {dockerStatus.running ? <FaCircleCheck /> : <FaCircleXmark />}
+            <div className="space-y-4 py-2">
+              {/* Setup Progress if active */}
+              {setupProgress.stage !== 'complete' && setupProgress.stage !== 'initial' && (
+                <div className="mb-6 bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-medium text-blue-700 mb-2 flex items-center">
+                    <FaSpinner className="animate-spin mr-2" />
+                    Setup in Progress
+                  </h3>
+                  
+                  <div className="mb-2">
+                    <div className="flex justify-between text-sm text-blue-600 mb-1">
+                      <span>{setupProgress.detail || 'Setting up application...'}</span>
+                      <span>{Math.round(setupProgress.progress)}%</span>
+                    </div>
+                    <div className="w-full bg-blue-200 rounded-full h-2.5">
+                      <div 
+                        className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${setupProgress.progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">Docker</p>
+              )}
+              
+              {/* Docker Status */}
+              <div className="flex items-center p-3 rounded-lg bg-gray-50">
+                <div className={`mr-4 p-2.5 rounded-full flex items-center justify-center ${dockerStatus.running ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`} style={{width: '40px', height: '40px'}}>
+                  {dockerStatus.running ? <FaCircleCheck size={20} /> : <FaCircleXmark size={20} />}
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">Docker</p>
                   <p className="text-sm text-gray-500">
                     {dockerStatus.checking ? 'Starting...' : (dockerStatus.running ? 'Running' : 'Not running')}
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center">
-                <div className={`mr-3 p-2 rounded-full ${dockerStatus.containers.database.running ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {dockerStatus.containers.database.running ? <FaCircleCheck /> : <FaCircleXmark />}
+              {/* Database Status */}
+              <div className="flex items-center p-3 rounded-lg bg-gray-50">
+                <div className={`mr-4 p-2.5 rounded-full flex items-center justify-center ${dockerStatus.containers.database.running ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`} style={{width: '40px', height: '40px'}}>
+                  {dockerStatus.containers.database.running ? <FaCircleCheck size={20} /> : <FaCircleXmark size={20} />}
                 </div>
-                <div>
-                  <p className="font-medium">Database</p>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">Database</p>
                   <p className="text-sm text-gray-500">
                     {dockerStatus.checking ? 'Starting...' : (dockerStatus.containers.database.running ? 'Running' : 'Not running')}
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center">
-                <div className={`mr-3 p-2 rounded-full ${dockerStatus.containers.backend.running ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {dockerStatus.containers.backend.running ? <FaCircleCheck /> : <FaCircleXmark />}
+              {/* Backend Status */}
+              <div className="flex items-center p-3 rounded-lg bg-gray-50">
+                <div className={`mr-4 p-2.5 rounded-full flex items-center justify-center ${dockerStatus.containers.backend.running ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`} style={{width: '40px', height: '40px'}}>
+                  {dockerStatus.containers.backend.running ? <FaCircleCheck size={20} /> : <FaCircleXmark size={20} />}
                 </div>
-                <div>
-                  <p className="font-medium">Backend API</p>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">Backend API</p>
                   <p className="text-sm text-gray-500">
                     {dockerStatus.checking ? 'Starting...' : (dockerStatus.containers.backend.running ? 'Running' : 'Not running')}
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center">
-                <div className={`mr-3 p-2 rounded-full ${backendStatus === 'connected' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {backendStatus === 'connected' ? <FaCircleCheck /> : (backendStatus === 'checking' ? <FaSpinner className="animate-spin" /> : <FaCircleXmark />)}
+              {/* Connection Status */}
+              <div className="flex items-center p-3 rounded-lg bg-gray-50">
+                <div className={`mr-4 p-2.5 rounded-full flex items-center justify-center ${backendStatus === 'connected' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`} style={{width: '40px', height: '40px'}}>
+                  {backendStatus === 'connected' ? <FaCircleCheck size={20} /> : (backendStatus === 'checking' ? <FaSpinner className="animate-spin" size={20} /> : <FaCircleXmark size={20} />)}
                 </div>
-                <div>
-                  <p className="font-medium">Connection</p>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">Connection</p>
                   <p className="text-sm text-gray-500">
                     {backendStatus === 'checking' ? 'Checking connection...' : 
                      (backendStatus === 'connected' ? 'Connected to backend' : 'Cannot connect to backend')}
@@ -142,17 +239,21 @@ function DockerStatus() {
               </div>
             </div>
             
-            <div className="mt-6 text-sm text-gray-500">
-              <p>If Docker isn't starting, please check:</p>
-              <ul className="list-disc pl-5 mt-1 space-y-1">
-                <li>Docker Desktop is installed</li>
+            <div className="mt-6 text-sm text-gray-600 bg-amber-50 p-4 rounded-lg">
+              <h3 className="font-medium mb-2 flex items-center">
+                <FaCircleExclamation className="text-amber-500 mr-2" />
+                Troubleshooting Tips
+              </h3>
+              <ul className="list-disc pl-5 space-y-1 text-gray-600">
+                <li>Docker Desktop is installed and running</li>
                 <li>Your user has permission to run Docker</li>
-                <li>Any firewall or antivirus isn't blocking the connection</li>
+                <li>No firewall or antivirus is blocking connection</li>
+                <li>The application has internet access</li>
               </ul>
             </div>
             
             <button 
-              className="mt-6 w-full py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium"
+              className="mt-6 w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
               onClick={() => setIsOpen(false)}
             >
               Close

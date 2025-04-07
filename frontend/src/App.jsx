@@ -12,6 +12,7 @@ import Navbar from './components/Navbar'
 import Reports from './components/Reports'
 import ScoreEntry from './components/ScoreEntry'
 import ScratchSheet from './components/ScratchSheet'
+import UpdateNotification from './components/UpdateNotification'
 import ViewScores from './components/ViewScores'
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
           <Route path='/reports' element={<Reports />} />
         </Routes>
       </HashRouter>
+      <UpdateNotification />
     </div>
   )
 }

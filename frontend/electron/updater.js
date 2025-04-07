@@ -100,19 +100,17 @@ export function initAutoUpdater(mainWindow) {
     mainWindow.webContents.send('update-progress', progressObj);
   });
   
-  autoUpdater.on('update-downloaded', () => {
+  autoUpdater.on('update-downloaded', (info) => {
     updateStatus.downloaded = true;
+    updateStatus.version = info.version;
+    
+    // Instead of showing a dialog, just notify the renderer
     mainWindow.webContents.send('update-status', updateStatus);
     
-    dialog.showMessageBox({
-      type: 'info',
-      title: 'Update Ready',
-      message: 'Update has been downloaded. It will be installed on restart. Would you like to restart now?',
-      buttons: ['Restart', 'Later']
-    }).then((returnValue) => {
-      if (returnValue.response === 0) {
-        autoUpdater.quitAndInstall();
-      }
+    // Send a specific notification for the update being ready
+    mainWindow.webContents.send('update-ready', {
+      version: info.version,
+      releaseNotes: info.releaseNotes
     });
   });
   
@@ -146,6 +144,33 @@ export function initAutoUpdater(mainWindow) {
           }
         }
       });
+  });
+  
+  // Add a new handler for installing updates
+  ipcMain.on('install-update', () => {
+    console.log('Installing update per user request');
+    autoUpdater.quitAndInstall(false, true); // isSilent=false, forceRunAfter=true
+  });
+  
+  // Add a new function to check for updates and return promise
+  ipcMain.handle('check-for-updates-sync', async () => {
+    try {
+      const online = await checkInternetConnection();
+      if (!online) {
+        return { success: false, message: 'No internet connection available' };
+      }
+      
+      const result = await autoUpdater.checkForUpdates();
+      return { 
+        success: true, 
+        updateAvailable: updateStatus.available,
+        updateDownloaded: updateStatus.downloaded,
+        version: updateStatus.version
+      };
+    } catch (error) {
+      console.error('Error checking for updates:', error);
+      return { success: false, message: error.message };
+    }
   });
   
   // Schedule periodic update checks (e.g., once per day) but only if we have internet
@@ -259,7 +284,7 @@ export async function updateBackendImages(mainWindow) {
     const currentVersion = app.getVersion();
     
     // GitHub repo details
-    const owner = 'your-github-username';
+    const owner = 'hctynch';  // Update with the correct GitHub username
     const repo = 'trackhounds';
     
     // Get the latest release info
@@ -271,14 +296,7 @@ export async function updateBackendImages(mainWindow) {
     const latestRelease = releaseResponse.data;
     const latestVersion = latestRelease.tag_name.replace('v', '');
     
-    // Check if update is needed
-    if (currentVersion === latestVersion) {
-      console.log(`Already on latest version ${latestVersion}`);
-      return { success: false, reason: 'Already on latest version' };
-    }
-    
-    console.log(`Updating backend from ${currentVersion} to ${latestVersion}`);
-    
+    // We're not checking version for initial download - we just need the resources
     // Get the Docker tarball assets
     const backendTarAsset = latestRelease.assets.find(asset => 
       asset.name === 'backend.tar' || asset.name.includes('backend')
@@ -286,6 +304,10 @@ export async function updateBackendImages(mainWindow) {
     
     const mariadbTarAsset = latestRelease.assets.find(asset => 
       asset.name === 'mariadb.tar' || asset.name.includes('mariadb')
+    );
+    
+    const composeFileAsset = latestRelease.assets.find(asset => 
+      asset.name === 'docker-compose.yml' || asset.name.includes('compose')
     );
     
     if (!backendTarAsset || !mariadbTarAsset) {
@@ -302,6 +324,7 @@ export async function updateBackendImages(mainWindow) {
     
     const backendTarPath = path.join(resourcesPath, 'backend.tar');
     const mariadbTarPath = path.join(resourcesPath, 'mariadb.tar');
+    const composePath = path.join(resourcesPath, 'docker-compose.yml');
     
     // Ensure docker-resources directory exists
     if (!fs.existsSync(resourcesPath)) {
@@ -309,35 +332,49 @@ export async function updateBackendImages(mainWindow) {
     }
     
     // Download the tarball files
-    mainWindow.webContents.send('backend-update-progress', { 
-      state: 'downloading',
-      progress: 0
-    });
+    if (mainWindow) {
+      mainWindow.webContents.send('backend-update-progress', { 
+        state: 'downloading',
+        progress: 0
+      });
+    }
     
     await downloadFile(backendTarAsset.browser_download_url, backendTarPath, progress => {
-      mainWindow.webContents.send('backend-update-progress', { 
-        state: 'downloading-backend',
-        progress
-      });
+      if (mainWindow) {
+        mainWindow.webContents.send('backend-update-progress', { 
+          state: 'downloading-backend',
+          progress
+        });
+      }
     });
     
     await downloadFile(mariadbTarAsset.browser_download_url, mariadbTarPath, progress => {
-      mainWindow.webContents.send('backend-update-progress', { 
-        state: 'downloading-mariadb',
-        progress
-      });
+      if (mainWindow) {
+        mainWindow.webContents.send('backend-update-progress', { 
+          state: 'downloading-mariadb',
+          progress
+        });
+      }
     });
     
-    mainWindow.webContents.send('backend-update-progress', { 
-      state: 'complete',
-      progress: 100
-    });
+    // Download compose file if available - add an empty callback here
+    if (composeFileAsset) {
+      await downloadFile(composeFileAsset.browser_download_url, composePath, () => {});
+    }
+    
+    if (mainWindow) {
+      mainWindow.webContents.send('backend-update-progress', { 
+        state: 'complete',
+        progress: 100
+      });
+    }
     
     return { 
       success: true, 
       version: latestVersion,
       backendTarPath,
-      mariadbTarPath
+      mariadbTarPath,
+      composePath
     };
   } catch (error) {
     console.error('Error updating backend:', error);
@@ -360,7 +397,10 @@ async function downloadFile(url, outputPath, progressCallback) {
   response.data.on('data', (chunk) => {
     downloadedLength += chunk.length;
     const progress = Math.round((downloadedLength / totalLength) * 100);
-    progressCallback(progress);
+    // Add this check to ensure progressCallback is a function
+    if (typeof progressCallback === 'function') {
+      progressCallback(progress);
+    }
   });
   
   await streamPipeline(response.data, fs.createWriteStream(outputPath));
