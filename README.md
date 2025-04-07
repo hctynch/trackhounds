@@ -15,6 +15,7 @@ _By: Hunt Tynch_
 ## **_Tools and Technologies_**
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED.svg?style=flat&logo=Docker&logoColor=white)
+![Electron](https://img.shields.io/badge/Electron-47848F.svg?style=flat&logo=Electron&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB.svg?style=flat&logo=React&logoColor=black)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-6DB33F.svg?style=flat&logo=Spring-Boot&logoColor=white)
 ![MariaDB](https://img.shields.io/badge/MariaDB-003545.svg?style=flat&logo=MariaDB&logoColor=white)
