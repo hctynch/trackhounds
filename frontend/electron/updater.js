@@ -100,19 +100,17 @@ export function initAutoUpdater(mainWindow) {
     mainWindow.webContents.send('update-progress', progressObj);
   });
   
-  autoUpdater.on('update-downloaded', () => {
+  autoUpdater.on('update-downloaded', (info) => {
     updateStatus.downloaded = true;
+    updateStatus.version = info.version;
+    
+    // Instead of showing a dialog, just notify the renderer
     mainWindow.webContents.send('update-status', updateStatus);
     
-    dialog.showMessageBox({
-      type: 'info',
-      title: 'Update Ready',
-      message: 'Update has been downloaded. It will be installed on restart. Would you like to restart now?',
-      buttons: ['Restart', 'Later']
-    }).then((returnValue) => {
-      if (returnValue.response === 0) {
-        autoUpdater.quitAndInstall();
-      }
+    // Send a specific notification for the update being ready
+    mainWindow.webContents.send('update-ready', {
+      version: info.version,
+      releaseNotes: info.releaseNotes
     });
   });
   
@@ -146,6 +144,33 @@ export function initAutoUpdater(mainWindow) {
           }
         }
       });
+  });
+  
+  // Add a new handler for installing updates
+  ipcMain.on('install-update', () => {
+    console.log('Installing update per user request');
+    autoUpdater.quitAndInstall(false, true); // isSilent=false, forceRunAfter=true
+  });
+  
+  // Add a new function to check for updates and return promise
+  ipcMain.handle('check-for-updates-sync', async () => {
+    try {
+      const online = await checkInternetConnection();
+      if (!online) {
+        return { success: false, message: 'No internet connection available' };
+      }
+      
+      const result = await autoUpdater.checkForUpdates();
+      return { 
+        success: true, 
+        updateAvailable: updateStatus.available,
+        updateDownloaded: updateStatus.downloaded,
+        version: updateStatus.version
+      };
+    } catch (error) {
+      console.error('Error checking for updates:', error);
+      return { success: false, message: error.message };
+    }
   });
   
   // Schedule periodic update checks (e.g., once per day) but only if we have internet

@@ -45,3 +45,33 @@ export function checkDockerStatus(callback) {
     callback(status);
   });
 }
+
+// Listen for detailed setup events
+export function listenForSetupEvents(callback) {
+  if (!isElectron) return;
+  
+  window.electron.receive('setup-progress', (data) => {
+    callback(data);
+  });
+}
+
+// Check for application updates
+export function checkForUpdates(callback) {
+  if (!isElectron) return;
+  
+  window.electron.send('app-request', { type: 'check-updates' });
+  
+  window.electron.receive('update-status', (status) => {
+    callback(status);
+  });
+  
+  window.electron.receive('update-ready', (data) => {
+    callback({ ...data, ready: true });
+  });
+}
+
+// Install available update
+export function installUpdate() {
+  if (!isElectron) return;
+  window.electron.send('install-update');
+}
