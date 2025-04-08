@@ -19,7 +19,9 @@
     "clean": "rimraf release",
     "precleanup": "node cleanup-asar.js",
     "cleanup": "rimraf release",
-    "electron:build": "npm run cleanup && vite build && cross-env NODE_ENV=production electron-builder",
+    "clean-deps": "node scripts/clean-deps.js",
+    "preinstall": "node -e \"try { require('./scripts/clean-deps.js') } catch(e) { console.log('Dependency check skipped'); }\"",
+    "electron:build": "npm run cleanup && npm run clean-deps && vite build && cross-env NODE_ENV=production electron-builder",
     "electron:preview": "cross-env NODE_ENV=production electron ."
   },
   "dependencies": {

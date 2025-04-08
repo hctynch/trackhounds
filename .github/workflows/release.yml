@@ -62,7 +62,62 @@ jobs:
       - name: Install dependencies
         run: |
           cd frontend
+          # First clean up any existing node_modules to avoid symlink issues
+          rm -rf node_modules || true
+          # Ensure package.json doesn't have circular references
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            (Get-Content package.json) -replace '"frontend": "file:",' -replace '"frontend": "file:"', '' | Set-Content package.json
+          else
+            # macOS requires different sed parameters
+            if [ "$RUNNER_OS" == "macOS" ]; then
+              sed -i '' 's/"frontend": "file:",//g' package.json
+            else
+              sed -i 's/"frontend": "file:",//g' package.json
+            fi
+          fi
+          # Perform a fresh install
           npm ci
+
+      # Ensure package.json is properly cleaned up
+      - name: Double check package.json
+        run: |
+          cd frontend
+          echo "Current package.json dependencies:"
+          cat package.json | grep dependencies -A 15
+          # Make absolutely sure the circular reference is gone
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            # macOS sed is different
+            sed -i '' 's/"frontend": ".*",//g' package.json
+          else
+            sed -i 's/"frontend": ".*",//g' package.json
+          fi
+
+      # Verify there are no circular symlinks in node_modules
+      - name: Check node_modules structure
+        run: |
+          cd frontend
+          echo "Looking for circular references in node_modules..."
+          if [ -d "node_modules/frontend" ]; then
+            echo "⚠️ Found frontend in node_modules, removing..."
+            rm -rf node_modules/frontend
+          fi
+          find node_modules -type l -name "frontend" -delete || true
+
+      # Add step to fix circular dependency issue
+      - name: Remove circular dependencies
+        run: |
+          cd frontend
+          # Check for and remove the frontend self-reference
+          if grep -q '"frontend": "file:"' package.json; then
+            echo "Fixing circular dependency in package.json"
+            sed -i 's/"frontend": "file:",//g' package.json
+          fi
+          # Create empty node_modules if it doesn't exist
+          mkdir -p node_modules
+          # Remove any circular symlinks in node_modules
+          find node_modules -type l -name "frontend" -delete
+          # Show the fixed package.json
+          cat package.json | grep -v "^    //"
 
       # Add these steps to set up Docker and Docker Compose
       - name: Set up Docker Buildx
