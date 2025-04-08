@@ -1,0 +1,43 @@
+TrackHounds Commercial Proprietary License
+
+Copyright (c) 2025 Hunt Tynch. All rights reserved.
+
+OWNERSHIP AND LICENSE
+This software and associated documentation files ("TrackHounds") is the proprietary 
+and confidential property of Hunt Tynch. No ownership rights are granted to any 
+other party by possession or use of this software.
+
+END USER LICENSE TERMS
+Permission is granted to use this software for personal or business purposes 
+according to the following conditions and payment terms as established by the 
+copyright holder:
+
+1. The user may install and use the software on their own devices subject to any 
+   payment obligations set forth at the time of acquisition or as subsequently 
+   updated by the copyright holder.
+
+2. The user may NOT:
+   a. Modify, adapt, or create derivative works based on this software
+   b. Reverse engineer, decompile, or disassemble the software
+   c. Remove or alter any proprietary notices or labels on the software
+   d. Distribute, sublicense, lease, rent, sell, or transfer the software to any 
+      third party
+
+3. The user acknowledges that this software is provided "as is" without warranty 
+   of any kind, express or implied, including but not limited to the warranties 
+   of merchantability, fitness for a particular purpose, and non-infringement.
+
+4. In no event shall the author be liable for any claim, damages or other liability, 
+   whether in action of contract, tort or otherwise, arising from, out of or in 
+   connection with the software or the use or other dealings in the software.
+
+5. The author reserves all rights not expressly granted to the user, including 
+   the right to charge fees for the use, distribution, or access to the software.
+
+6. Non-payment of any required fees constitutes a violation of this license and 
+   immediately terminates the user's rights to use the software.
+
+This license is governed by the laws of the jurisdiction in which the copyright 
+holder maintains their principal place of business.
+
+Any use of this software constitutes acceptance of the terms of this license.

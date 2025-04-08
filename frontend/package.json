@@ -72,7 +72,24 @@
         "nsis"
       ],
       "icon": "public/dog.ico",
-      "sign": null
+      "sign": true,
+      "signingHashAlgorithms": [
+        "sha256"
+      ],
+      "certificateSubjectName": "Hunt Tynch",
+      "publisherName": "Hunt Tynch",
+      "verifyUpdateCodeSignature": false,
+      "signDlls": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true,
+      "installerIcon": "public/dog.ico",
+      "uninstallerIcon": "public/dog.ico",
+      "license": "LICENSE.txt",
+      "artifactName": "TrackHounds-Setup-${version}.${ext}"
     },
     "mac": {
       "category": "public.app-category.utilities",
