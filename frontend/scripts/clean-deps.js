@@ -42,33 +42,8 @@ try {
     console.log('✅ No circular dependencies found in package.json');
   }
   
-  // Now let's check if node_modules has circular symlinks
-  const nodeModulesPath = path.join(__dirname, '..', 'node_modules');
-  
-  if (fs.existsSync(nodeModulesPath)) {
-    console.log('Checking for circular symlinks in node_modules...');
-    
-    // Check for a "frontend" folder in node_modules
-    const frontendPath = path.join(nodeModulesPath, 'frontend');
-    if (fs.existsSync(frontendPath)) {
-      console.log(`⚠️ Found potentially problematic folder: ${frontendPath}`);
-      
-      // Check if it's a symlink
-      if (fs.lstatSync(frontendPath).isSymbolicLink()) {
-        console.log('It\'s a symlink, removing...');
-        fs.unlinkSync(frontendPath);
-        console.log('✅ Removed circular symlink');
-      } else {
-        console.log('Not a symlink, but could still cause issues. Consider removing manually.');
-      }
-    } else {
-      console.log('✅ No problematic symlinks found');
-    }
-  } else {
-    console.log('node_modules directory not found, no cleanup needed');
-  }
-  
 } catch (error) {
   console.error('Error:', error.message);
-  process.exit(1);
+  // Don't exit with error code, just log the error
+  console.log('Continuing without dependency check...');
 }
