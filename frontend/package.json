@@ -72,11 +72,9 @@
         "nsis"
       ],
       "icon": "public/dog.ico",
-      "sign": true,
-      "signingHashAlgorithms": [
-        "sha256"
-      ],
-      "certificateSubjectName": "Hunt Tynch",
+      "sign": null,
+      "signingHashAlgorithms": null,
+      "certificateSubjectName": null,
       "publisherName": "Hunt Tynch",
       "verifyUpdateCodeSignature": false,
       "signDlls": false
