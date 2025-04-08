@@ -7,7 +7,7 @@ contextBridge.exposeInMainWorld('electron', {
   // Example API: sending notifications from renderer to main and getting responses
   send: (channel, data) => {
     // Whitelist channels
-    const validChannels = ['app-request', 'app-event', 'install-update', 'check-for-updates'];
+    const validChannels = ['app-request', 'app-event', 'install-update', 'check-for-updates', 'open-external-url'];
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
     }
@@ -20,7 +20,8 @@ contextBridge.exposeInMainWorld('electron', {
       'update-status', 
       'update-ready', 
       'update-progress',
-      'setup-progress'
+      'setup-progress',
+      'app-navigation'  // Add this new channel
     ];
     if (validChannels.includes(channel)) {
       // Deliberately strip event as it includes `sender` 
