@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 # Add permissions block at top level
 permissions:
@@ -127,15 +127,15 @@ jobs:
           package_root: frontend
           github_token: ${{ secrets.GITHUB_TOKEN }}
           release: ${{ startsWith(github.ref, 'refs/tags/v') }}
-          # Use the tag name directly to ensure it matches other steps
-          args: '--publish always --config.publish.vPrefixedTagName=true'
+          # Fix duplicate --publish flag
+          args: "--publish always --config.publish.vPrefixedTagName=true"
 
       # Add release notes with download instructions
       - name: Update release notes
         if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
-          name: 'TrackHounds ${{ steps.extract_version.outputs.VERSION }}'
+          name: "TrackHounds ${{ steps.extract_version.outputs.VERSION }}"
           body: |
             ## TrackHounds ${{ steps.extract_version.outputs.VERSION }}
 
@@ -164,7 +164,7 @@ jobs:
         if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
-          name: 'TrackHounds ${{ steps.extract_version.outputs.VERSION }}'
+          name: "TrackHounds ${{ steps.extract_version.outputs.VERSION }}"
           files: |
             frontend/docker-resources/backend.tar
             frontend/docker-resources/mariadb.tar
