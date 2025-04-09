@@ -8,7 +8,6 @@ _By: Hunt Tynch_
 ![Commit](https://img.shields.io/github/last-commit/hctynch/trackhounds?style=flat&logo=git&logoColor=white&color=0080ff)
 ![Language](https://img.shields.io/github/languages/top/hctynch/trackhounds?style=flat&color=0080ff)
 ![Languages](https://img.shields.io/github/languages/count/hctynch/trackhounds?style=flat&color=0080ff)
-![Downloads](https://img.shields.io/github/downloads/hctynch/trackhounds/total?color=0080ff)
 
 ---
 
