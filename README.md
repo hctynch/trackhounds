@@ -40,8 +40,8 @@ TrackHounds is a modern scoring application designed to provide an alternative t
 
 - [**Docker**](https://www.docker.com/get-started/) (Required to run the application)
 - [**Trackhounds Installer**](https://github.com/hctynch/trackhounds/releases/latest) (Follow `Download Instructions` to get correct installer under `Assets`)
-   - Automatic updates are enabled when connected to internet (So no need to download anything else from newer releases)
-   - Manual Update functionality in the future
+  - Automatic updates are enabled when connected to internet (So no need to download anything else from newer releases)
+  - Manual Update functionality in the future
 
 ---
 
@@ -50,7 +50,7 @@ TrackHounds is a modern scoring application designed to provide an alternative t
 ### Live Demo
 
 - Email me at `tynchhunt@gmail.com` to possibly demo trackhounds website to test functionality
-   - Trying to keep usage relatively low to maintain free tiers on cloud providers 
+  - Trying to keep usage relatively low to maintain free tiers on cloud providers
 
 ### Issues, Bugs, and Feature Requests
 
@@ -75,7 +75,7 @@ To report issues or request features:
 2. **Run the Installer**
 
    - Run the downloaded installer (Will likely say untrusted, click `More Info` and `Run anyway`)
-   - This should install *TrackHounds* on your Desktop and in your Apps
+   - This should install _TrackHounds_ on your Desktop and in your Apps
    - It should also open TrackHounds after installing
 
 3. **Close TrackHounds**

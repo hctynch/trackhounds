@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 # Add permissions block at top level
 permissions:
@@ -59,10 +59,196 @@ jobs:
           sed -i'' -e "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"${{ steps.extract_version.outputs.VERSION }}\"/" package.json
           cat package.json | grep version
 
-      - name: Install dependencies
+      # Create scripts directory and clean-deps.js script - Windows version
+      - name: Prepare dependency cleanup script (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          cd frontend
+          New-Item -Path frontend/scripts -ItemType Directory -Force
+          $cleanDepsContent = @'
+          /**
+           * This script cleans up circular dependencies in package.json
+           */
+          const fs = require('fs');
+          const path = require('path');
+
+          // Path to package.json
+          const packageJsonPath = path.join(__dirname, '..', 'package.json');
+
+          console.log(`Reading package.json from ${packageJsonPath}`);
+
+          try {
+            // Read the package.json file
+            const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
+            
+            // Parse the JSON
+            const packageJson = JSON.parse(packageJsonContent);
+            
+            const packageName = packageJson.name;
+            let modified = false;
+            
+            // Check for self-references in dependencies
+            if (packageJson.dependencies && packageJson.dependencies[packageName]) {
+              console.log(`⚠️ Found self-reference in dependencies: "${packageName}"`);
+              delete packageJson.dependencies[packageName];
+              modified = true;
+            }
+            
+            // Check specifically for "frontend" reference
+            if (packageJson.dependencies && packageJson.dependencies.frontend) {
+              console.log('⚠️ Found "frontend" reference in dependencies');
+              delete packageJson.dependencies.frontend;
+              modified = true;
+            }
+            
+            // Write the updated package.json back to disk if changes were made
+            if (modified) {
+              fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+              console.log('✅ Successfully removed circular dependencies from package.json');
+            } else {
+              console.log('✅ No circular dependencies found in package.json');
+            }
+            
+          } catch (error) {
+            console.error('Error:', error.message);
+            // Don't exit with error code, just log the error
+            console.log('Continuing without dependency check...');
+          }
+          '@
+          Set-Content -Path frontend/scripts/clean-deps.js -Value $cleanDepsContent
+
+      # Create scripts directory and clean-deps.js script - Unix version
+      - name: Prepare dependency cleanup script (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p frontend/scripts
+          cat > frontend/scripts/clean-deps.js << 'EOF'
+          /**
+           * This script cleans up circular dependencies in package.json
+           */
+          const fs = require('fs');
+          const path = require('path');
+
+          // Path to package.json
+          const packageJsonPath = path.join(__dirname, '..', 'package.json');
+
+          console.log(`Reading package.json from ${packageJsonPath}`);
+
+          try {
+            // Read the package.json file
+            const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
+            
+            // Parse the JSON
+            const packageJson = JSON.parse(packageJsonContent);
+            
+            const packageName = packageJson.name;
+            let modified = false;
+            
+            // Check for self-references in dependencies
+            if (packageJson.dependencies && packageJson.dependencies[packageName]) {
+              console.log(`⚠️ Found self-reference in dependencies: "${packageName}"`);
+              delete packageJson.dependencies[packageName];
+              modified = true;
+            }
+            
+            // Check specifically for "frontend" reference
+            if (packageJson.dependencies && packageJson.dependencies.frontend) {
+              console.log('⚠️ Found "frontend" reference in dependencies');
+              delete packageJson.dependencies.frontend;
+              modified = true;
+            }
+            
+            // Write the updated package.json back to disk if changes were made
+            if (modified) {
+              fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+              console.log('✅ Successfully removed circular dependencies from package.json');
+            } else {
+              console.log('✅ No circular dependencies found in package.json');
+            }
+            
+          } catch (error) {
+            console.error('Error:', error.message);
+            // Don't exit with error code, just log the error
+            console.log('Continuing without dependency check...');
+          }
+          EOF
+          chmod +x frontend/scripts/clean-deps.js
+
+      # Windows-specific dependencies installation
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        working-directory: frontend
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
+          (Get-Content package.json) -replace '"frontend": "file:",' -replace '"frontend": "file:"', '' | Set-Content package.json
           npm ci
+
+      # Unix-specific dependencies installation
+      - name: Install dependencies (Unix)
+        if: runner.os != 'Windows'
+        working-directory: frontend
+        shell: bash
+        run: |
+          rm -rf node_modules || true
+          # Use different sed commands for macOS vs Linux
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            sed -i '' 's/"frontend": "file:",//g' package.json
+          else
+            sed -i 's/"frontend": "file:",//g' package.json
+          fi
+          npm ci
+
+      # Update this step to handle Windows separately
+      - name: Double check package.json (Windows)
+        if: runner.os == 'Windows'
+        working-directory: frontend
+        shell: pwsh
+        run: |
+          echo "Current package.json dependencies:"
+          Select-String -Path package.json -Pattern "dependencies" -Context 0,15
+          (Get-Content package.json) -replace '"frontend": ".*",' -replace '"frontend": ".*"', '' | Set-Content package.json
+
+      # Handle macOS and Linux separately for double-checking
+      - name: Double check package.json (Unix)
+        if: runner.os != 'Windows'
+        working-directory: frontend
+        shell: bash
+        run: |
+          echo "Current package.json dependencies:"
+          cat package.json | grep dependencies -A 15
+          # Make absolutely sure the circular reference is gone
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            # macOS sed is different
+            sed -i '' 's/"frontend": ".*",//g' package.json
+          else
+            sed -i 's/"frontend": ".*",//g' package.json
+          fi
+
+      # Verify there are no circular symlinks in node_modules
+      - name: Check node_modules structure (Windows)
+        if: runner.os == 'Windows'
+        working-directory: frontend
+        shell: pwsh
+        run: |
+          echo "Looking for circular references in node_modules..."
+          if (Test-Path "node_modules/frontend") {
+            echo "⚠️ Found frontend in node_modules, removing..."
+            Remove-Item -Recurse -Force node_modules/frontend
+          }
+
+      - name: Check node_modules structure (Unix)
+        if: runner.os != 'Windows'
+        working-directory: frontend
+        shell: bash
+        run: |
+          echo "Looking for circular references in node_modules..."
+          if [ -d "node_modules/frontend" ]; then
+            echo "⚠️ Found frontend in node_modules, removing..."
+            rm -rf node_modules/frontend
+          fi
+          find node_modules -type l -name "frontend" -delete || true
 
       # Add these steps to set up Docker and Docker Compose
       - name: Set up Docker Buildx
@@ -127,15 +313,15 @@ jobs:
           package_root: frontend
           github_token: ${{ secrets.GITHUB_TOKEN }}
           release: ${{ startsWith(github.ref, 'refs/tags/v') }}
-          # Use the tag name directly to ensure it matches other steps
-          args: '--publish always --config.publish.vPrefixedTagName=true'
+          # Fix duplicate --publish flag
+          args: "--publish always --config.publish.vPrefixedTagName=true"
 
       # Add release notes with download instructions
       - name: Update release notes
         if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
-          name: 'TrackHounds ${{ steps.extract_version.outputs.VERSION }}'
+          name: "TrackHounds ${{ steps.extract_version.outputs.VERSION }}"
           body: |
             ## TrackHounds ${{ steps.extract_version.outputs.VERSION }}
 
@@ -164,7 +350,7 @@ jobs:
         if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
-          name: 'TrackHounds ${{ steps.extract_version.outputs.VERSION }}'
+          name: "TrackHounds ${{ steps.extract_version.outputs.VERSION }}"
           files: |
             frontend/docker-resources/backend.tar
             frontend/docker-resources/mariadb.tar

@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "2.0.6",
+  "version": "2.0.7",
   "type": "module",
   "main": "electron/main.js",
   "description": "TrackHounds application for managing dog hunt events",
@@ -19,7 +19,9 @@
     "clean": "rimraf release",
     "precleanup": "node cleanup-asar.js",
     "cleanup": "rimraf release",
-    "electron:build": "npm run cleanup && vite build && cross-env NODE_ENV=production electron-builder",
+    "clean-deps": "node scripts/clean-deps.js",
+    "preinstall": "node -e \"try { require('./scripts/clean-deps.js') } catch(e) { console.log('Dependency check skipped'); }\"",
+    "electron:build": "npm run cleanup && npm run clean-deps && vite build && cross-env NODE_ENV=production electron-builder",
     "electron:preview": "cross-env NODE_ENV=production electron ."
   },
   "dependencies": {
@@ -27,6 +29,7 @@
     "axios": "^1.7.9",
     "electron-log": "^4.4.8",
     "electron-updater": "^6.6.2",
+    "frontend": "file:",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -69,7 +72,22 @@
         "nsis"
       ],
       "icon": "public/dog.ico",
-      "sign": null
+      "sign": null,
+      "signingHashAlgorithms": null,
+      "certificateSubjectName": null,
+      "publisherName": "Hunt Tynch",
+      "verifyUpdateCodeSignature": false,
+      "signDlls": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true,
+      "installerIcon": "public/dog.ico",
+      "uninstallerIcon": "public/dog.ico",
+      "license": "LICENSE.txt",
+      "artifactName": "TrackHounds-Setup-${version}.${ext}"
     },
     "mac": {
       "category": "public.app-category.utilities",

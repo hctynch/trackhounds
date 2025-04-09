@@ -1,5 +1,5 @@
 import { exec, spawn } from 'child_process';
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -37,6 +37,69 @@ let dockerStatus = {
   }
 };
 
+const template = [
+  {
+    label: 'About',
+    submenu: [
+      {
+        label: 'About TrackHounds',
+        click: () => {
+          const appVersion = app.getVersion();
+          dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'About TrackHounds',
+            message: 'TrackHounds',
+            detail: `Version: ${appVersion}\n\nA modern scoring application designed to provide an alternative to outdated scoring software currently used in Master's Foxhunts.\n\nAuthor: Hunt Tynch\nEmail: tynchhunt@gmail.com\n\nBuilt with: Electron, React, Docker, Spring Boot, and MariaDB`,
+            buttons: ['OK'],
+            icon: path.join(__dirname, '../public/dog.ico')
+          });
+        }
+      },
+      { type: 'separator' },
+      {
+        label: 'View on GitHub',
+        click: () => {
+          shell.openExternal('https://github.com/hctynch/trackhounds');
+        }
+      },
+      {
+        label: 'Report an Issue',
+        click: () => {
+          shell.openExternal('https://github.com/hctynch/trackhounds/issues');
+        }
+      }
+    ]
+  },
+  {
+    label: 'Help',
+    submenu: [
+      {
+        label: 'Documentation',
+        click: () => {
+          if (mainWindow) {
+            // Send a message to the renderer process to navigate
+            mainWindow.webContents.send('app-navigation', { route: '/docs' });
+          }
+        }
+      }
+    ]
+  },
+  {
+    label: 'Update',
+    submenu: [
+      {
+        label: 'Check for Updates',
+        click: () => {
+          checkForUpdates(true);
+        }
+      }
+    ]
+  }
+]
+
+const menu = Menu.buildFromTemplate(template);
+Menu.setApplicationMenu(menu);
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -46,7 +109,8 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false
     },
-    icon: path.join(__dirname, '../public/dog.ico')
+    icon: path.join(__dirname, '../public/dog.ico'),
+    
   });
 
   // Load the app
@@ -714,6 +778,16 @@ ipcMain.on('app-request', (event, data) => {
       type: 'checking-update'
     });
     checkForUpdates(true);
+  } else if (data.type === 'open-external-url') {
+    // Handle opening external URLs safely
+    if (data.url && typeof data.url === 'string') {
+      // Validate URL to prevent security issues
+      const validUrlPattern = /^(https?:\/\/|mailto:)/i;
+      if (validUrlPattern.test(data.url)) {
+        // Open URL in default browser
+        shell.openExternal(data.url);
+      }
+    }
   }
 });
 
