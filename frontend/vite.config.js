@@ -1,23 +1,25 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
 
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
-  base: './', // Use relative paths for Electron
+  // Relative asset paths: the build is served from the root of the embedded server.
+  base: './',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(rootDir, './src'),
     },
   },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    // Add these settings for better Electron compatibility
     assetsDir: './',
-    sourcemap: true,
-    // Ensure compatible output format
+    sourcemap: false,
     rollupOptions: {
       output: {
         format: 'es',

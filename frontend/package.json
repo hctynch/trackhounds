@@ -1,10 +1,9 @@
 {
-  "name": "frontend",
+  "name": "trackhounds-ui",
   "private": true,
-  "version": "2.0.7",
+  "version": "3.0.0",
   "type": "module",
-  "main": "electron/main.js",
-  "description": "TrackHounds application for managing dog hunt events",
+  "description": "TrackHounds user interface (React). Built by Maven and bundled into the TrackHounds desktop application.",
   "author": {
     "name": "Hunt Tynch",
     "email": "tynchhunt@gmail.com"
@@ -14,22 +13,11 @@
     "dev": "vite --port 3000",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
-    "clean": "rimraf release",
-    "precleanup": "node cleanup-asar.js",
-    "cleanup": "rimraf release",
-    "clean-deps": "node scripts/clean-deps.js",
-    "preinstall": "node -e \"try { require('./scripts/clean-deps.js') } catch(e) { console.log('Dependency check skipped'); }\"",
-    "electron:build": "npm run cleanup && npm run clean-deps && vite build && cross-env NODE_ENV=production electron-builder",
-    "electron:preview": "cross-env NODE_ENV=production electron ."
+    "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.4",
     "axios": "^1.7.9",
-    "electron-log": "^4.4.8",
-    "electron-updater": "^6.6.2",
-    "frontend": "file:",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -43,91 +31,11 @@
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
-    "concurrently": "^8.2.2",
-    "cross-env": "^7.0.3",
-    "electron": "^28.3.3",
-    "electron-builder": "^24.13.3",
     "eslint": "^9.19.0",
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
-    "rimraf": "^5.0.5",
-    "vite": "^6.1.0",
-    "wait-on": "^7.2.0"
-  },
-  "build": {
-    "appId": "com.trackhounds.app",
-    "productName": "TrackHounds",
-    "files": [
-      "dist/**/*",
-      "electron/**/*"
-    ],
-    "directories": {
-      "buildResources": "assets",
-      "output": "release"
-    },
-    "win": {
-      "target": [
-        "nsis"
-      ],
-      "icon": "public/dog.ico",
-      "sign": null,
-      "signingHashAlgorithms": null,
-      "certificateSubjectName": null,
-      "publisherName": "Hunt Tynch",
-      "verifyUpdateCodeSignature": false,
-      "signDlls": false
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "runAfterFinish": true,
-      "installerIcon": "public/dog.ico",
-      "uninstallerIcon": "public/dog.ico",
-      "license": "LICENSE.txt",
-      "artifactName": "TrackHounds-Setup-${version}.${ext}"
-    },
-    "mac": {
-      "category": "public.app-category.utilities",
-      "icon": "public/dog.icns"
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "icon": "public/dog.png",
-      "maintainer": "Hunt Tynch <tynchhunt@gmail.com>",
-      "category": "Utility"
-    },
-    "forceCodeSigning": false,
-    "npmRebuild": false,
-    "asar": true,
-    "extraResources": [
-      {
-        "from": "dist",
-        "to": "app/dist"
-      },
-      {
-        "from": "docker-resources",
-        "to": "docker-resources",
-        "filter": [
-          "**/*",
-          "!**/*.example"
-        ]
-      }
-    ],
-    "artifactName": "TrackHounds-${version}-${platform}-${arch}.${ext}",
-    "publish": {
-      "provider": "github",
-      "owner": "hctynch",
-      "repo": "trackhounds",
-      "releaseType": "release",
-      "vPrefixedTagName": true,
-      "private": false,
-      "publishAutoUpdate": true
-    }
+    "vite": "^6.1.0"
   }
 }

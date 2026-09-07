@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.trackhounds.trackhounds.Entity.JudgeEntity;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
@@ -15,6 +16,7 @@ import com.trackhounds.trackhounds.Repository.JudgeRepository;
 import lombok.AllArgsConstructor;
 
 @Service
+@Transactional
 @AllArgsConstructor
 /**
  * Service class for Judges. This class is used to interact with the database.
