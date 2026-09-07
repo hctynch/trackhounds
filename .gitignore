@@ -1,3 +1,7 @@
 .env
 .vscode
 *.bat
+*.db
+*.db-wal
+*.db-shm
+*.log

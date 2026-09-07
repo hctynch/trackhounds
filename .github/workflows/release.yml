@@ -1,359 +1,77 @@
 name: Build and Release
 
+# Builds the Windows installer and portable package with jpackage and attaches
+# them to a GitHub release. Triggered by pushing a tag such as v3.0.0.
 on:
   push:
     tags:
       - "v*"
 
-# Add permissions block at top level
 permissions:
   contents: write
-  packages: write
-  issues: read
-  pull-requests: read
 
 jobs:
-  release:
-    runs-on: ${{ matrix.os }}
-
-    # You can also set permissions at the job level if needed
-    permissions:
-      contents: write # Required for creating releases
-
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+  windows:
+    runs-on: windows-latest
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # Need full history for version determination
+        uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v3
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          node-version: 20 # Updated from 18 to 20
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+          cache-dependency-path: 'trackhounds/pom.xml'
 
-      # Add these steps to extract version from tag and update package.json
       - name: Extract version from tag
-        id: extract_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        id: version
         shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
-      # Windows version update (PowerShell)
-      - name: Update version in package.json (Windows)
-        if: runner.os == 'Windows'
-        working-directory: frontend
+      - name: Set project version
+        shell: bash
+        working-directory: trackhounds
+        run: ./mvnw -B versions:set -DnewVersion="${{ steps.version.outputs.VERSION }}" -DgenerateBackupPoms=false
+
+      # WiX Toolset 3.x (required by jpackage for .exe/.msi installers) is preinstalled on windows-latest.
+      - name: Build application, app image and installer
+        shell: bash
+        working-directory: trackhounds
+        run: ./mvnw -B clean package -DskipTests -Papp-image,win-installer
+
+      - name: Create portable zip
         shell: pwsh
-        run: |
-          (Get-Content package.json) -replace '"version": "[0-9]*\.[0-9]*\.[0-9]*"', '"version": "${{ steps.extract_version.outputs.VERSION }}"' | Set-Content package.json
-          cat package.json | Select-String "version"
+        working-directory: trackhounds/target/dist
+        run: Compress-Archive -Path TrackHounds -DestinationPath "TrackHounds-${{ steps.version.outputs.VERSION }}-win-portable.zip"
 
-      # Unix version update (Bash)
-      - name: Update version in package.json (Unix)
-        if: runner.os != 'Windows'
-        working-directory: frontend
+      - name: List artifacts
         shell: bash
-        run: |
-          sed -i'' -e "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"${{ steps.extract_version.outputs.VERSION }}\"/" package.json
-          cat package.json | grep version
+        run: ls -la trackhounds/target/dist
 
-      # Create scripts directory and clean-deps.js script - Windows version
-      - name: Prepare dependency cleanup script (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          New-Item -Path frontend/scripts -ItemType Directory -Force
-          $cleanDepsContent = @'
-          /**
-           * This script cleans up circular dependencies in package.json
-           */
-          const fs = require('fs');
-          const path = require('path');
-
-          // Path to package.json
-          const packageJsonPath = path.join(__dirname, '..', 'package.json');
-
-          console.log(`Reading package.json from ${packageJsonPath}`);
-
-          try {
-            // Read the package.json file
-            const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
-            
-            // Parse the JSON
-            const packageJson = JSON.parse(packageJsonContent);
-            
-            const packageName = packageJson.name;
-            let modified = false;
-            
-            // Check for self-references in dependencies
-            if (packageJson.dependencies && packageJson.dependencies[packageName]) {
-              console.log(`⚠️ Found self-reference in dependencies: "${packageName}"`);
-              delete packageJson.dependencies[packageName];
-              modified = true;
-            }
-            
-            // Check specifically for "frontend" reference
-            if (packageJson.dependencies && packageJson.dependencies.frontend) {
-              console.log('⚠️ Found "frontend" reference in dependencies');
-              delete packageJson.dependencies.frontend;
-              modified = true;
-            }
-            
-            // Write the updated package.json back to disk if changes were made
-            if (modified) {
-              fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-              console.log('✅ Successfully removed circular dependencies from package.json');
-            } else {
-              console.log('✅ No circular dependencies found in package.json');
-            }
-            
-          } catch (error) {
-            console.error('Error:', error.message);
-            // Don't exit with error code, just log the error
-            console.log('Continuing without dependency check...');
-          }
-          '@
-          Set-Content -Path frontend/scripts/clean-deps.js -Value $cleanDepsContent
-
-      # Create scripts directory and clean-deps.js script - Unix version
-      - name: Prepare dependency cleanup script (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          mkdir -p frontend/scripts
-          cat > frontend/scripts/clean-deps.js << 'EOF'
-          /**
-           * This script cleans up circular dependencies in package.json
-           */
-          const fs = require('fs');
-          const path = require('path');
-
-          // Path to package.json
-          const packageJsonPath = path.join(__dirname, '..', 'package.json');
-
-          console.log(`Reading package.json from ${packageJsonPath}`);
-
-          try {
-            // Read the package.json file
-            const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
-            
-            // Parse the JSON
-            const packageJson = JSON.parse(packageJsonContent);
-            
-            const packageName = packageJson.name;
-            let modified = false;
-            
-            // Check for self-references in dependencies
-            if (packageJson.dependencies && packageJson.dependencies[packageName]) {
-              console.log(`⚠️ Found self-reference in dependencies: "${packageName}"`);
-              delete packageJson.dependencies[packageName];
-              modified = true;
-            }
-            
-            // Check specifically for "frontend" reference
-            if (packageJson.dependencies && packageJson.dependencies.frontend) {
-              console.log('⚠️ Found "frontend" reference in dependencies');
-              delete packageJson.dependencies.frontend;
-              modified = true;
-            }
-            
-            // Write the updated package.json back to disk if changes were made
-            if (modified) {
-              fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-              console.log('✅ Successfully removed circular dependencies from package.json');
-            } else {
-              console.log('✅ No circular dependencies found in package.json');
-            }
-            
-          } catch (error) {
-            console.error('Error:', error.message);
-            // Don't exit with error code, just log the error
-            console.log('Continuing without dependency check...');
-          }
-          EOF
-          chmod +x frontend/scripts/clean-deps.js
-
-      # Windows-specific dependencies installation
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        working-directory: frontend
-        shell: pwsh
-        run: |
-          Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
-          (Get-Content package.json) -replace '"frontend": "file:",' -replace '"frontend": "file:"', '' | Set-Content package.json
-          npm ci
-
-      # Unix-specific dependencies installation
-      - name: Install dependencies (Unix)
-        if: runner.os != 'Windows'
-        working-directory: frontend
-        shell: bash
-        run: |
-          rm -rf node_modules || true
-          # Use different sed commands for macOS vs Linux
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            sed -i '' 's/"frontend": "file:",//g' package.json
-          else
-            sed -i 's/"frontend": "file:",//g' package.json
-          fi
-          npm ci
-
-      # Update this step to handle Windows separately
-      - name: Double check package.json (Windows)
-        if: runner.os == 'Windows'
-        working-directory: frontend
-        shell: pwsh
-        run: |
-          echo "Current package.json dependencies:"
-          Select-String -Path package.json -Pattern "dependencies" -Context 0,15
-          (Get-Content package.json) -replace '"frontend": ".*",' -replace '"frontend": ".*"', '' | Set-Content package.json
-
-      # Handle macOS and Linux separately for double-checking
-      - name: Double check package.json (Unix)
-        if: runner.os != 'Windows'
-        working-directory: frontend
-        shell: bash
-        run: |
-          echo "Current package.json dependencies:"
-          cat package.json | grep dependencies -A 15
-          # Make absolutely sure the circular reference is gone
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            # macOS sed is different
-            sed -i '' 's/"frontend": ".*",//g' package.json
-          else
-            sed -i 's/"frontend": ".*",//g' package.json
-          fi
-
-      # Verify there are no circular symlinks in node_modules
-      - name: Check node_modules structure (Windows)
-        if: runner.os == 'Windows'
-        working-directory: frontend
-        shell: pwsh
-        run: |
-          echo "Looking for circular references in node_modules..."
-          if (Test-Path "node_modules/frontend") {
-            echo "⚠️ Found frontend in node_modules, removing..."
-            Remove-Item -Recurse -Force node_modules/frontend
-          }
-
-      - name: Check node_modules structure (Unix)
-        if: runner.os != 'Windows'
-        working-directory: frontend
-        shell: bash
-        run: |
-          echo "Looking for circular references in node_modules..."
-          if [ -d "node_modules/frontend" ]; then
-            echo "⚠️ Found frontend in node_modules, removing..."
-            rm -rf node_modules/frontend
-          fi
-          find node_modules -type l -name "frontend" -delete || true
-
-      # Add these steps to set up Docker and Docker Compose
-      - name: Set up Docker Buildx
-        if: runner.os == 'Linux'
-        uses: docker/setup-buildx-action@v2
-
-      - name: Install Docker Compose
-        if: runner.os == 'Linux'
-        run: |
-          # Install Docker Compose v2
-          DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
-          mkdir -p $DOCKER_CONFIG/cli-plugins
-          curl -SL https://github.com/docker/compose/releases/download/v2.17.2/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
-          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
-          docker compose version
-
-      - name: Build Docker images (for backend updates)
-        if: runner.os == 'Linux'
-        run: |
-          # Create an env file for Docker Compose
-          cp frontend/docker-resources/.env.example frontend/docker-resources/.env
-
-          # Build backend image using the main docker-compose.yml
-          docker compose build backend
-
-          # List images to see what was built
-          echo "Available Docker images:"
-          docker images
-
-          # Tag the backend image with a consistent name
-          # Docker compose typically names images as projectname_servicename
-          docker tag trackhounds_backend:latest trackhounds-backend:latest || docker tag $(docker images -q --filter "reference=*backend*" | head -n 1) trackhounds-backend:latest
-
-          # Build or pull MariaDB image
-          docker pull mariadb:latest
-
-          # Ensure directories exist
-          mkdir -p frontend/docker-resources
-
-          # Use the docker-compose file from docker-resources directory
-          # If it doesn't exist, use the root one as fallback
-          if [ -f "frontend/docker-resources/docker-compose.yml" ]; then
-            echo "Using docker-compose.yml from frontend/docker-resources"
-          else
-            echo "Copying docker-compose.yml to frontend/docker-resources"
-            cp docker-compose.yml frontend/docker-resources/docker-compose.yml
-          fi
-
-          # Save images as tar files
-          docker save trackhounds-backend:latest > frontend/docker-resources/backend.tar
-          docker save mariadb:latest > frontend/docker-resources/mariadb.tar
-
-          # Verify the tar files were created
-          ls -la frontend/docker-resources/
-          echo "Docker image tar file sizes:"
-          du -h frontend/docker-resources/*.tar
-
-      # Make sure all release steps use the same variables
-      - name: Build/release Electron app
-        uses: samuelmeuli/action-electron-builder@v1
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
         with:
-          package_root: frontend
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
-          # Fix duplicate --publish flag
-          args: "--publish always --config.publish.vPrefixedTagName=true"
-
-      # Add release notes with download instructions
-      - name: Update release notes
-        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          name: "TrackHounds ${{ steps.extract_version.outputs.VERSION }}"
+          name: "TrackHounds ${{ steps.version.outputs.VERSION }}"
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
           body: |
-            ## TrackHounds ${{ steps.extract_version.outputs.VERSION }}
+            ## TrackHounds ${{ steps.version.outputs.VERSION }}
 
             ## [User Guide](https://github.com/hctynch/trackhounds/blob/main/README.md)
 
-            ### Download Instructions
+            ### Download Instructions (Windows)
 
-            #### Windows
-            - Download the `.exe` file (`TrackHounds-${{ steps.extract_version.outputs.VERSION }}-win-*.exe`)
+            - **Installer**: download `TrackHounds-${{ steps.version.outputs.VERSION }}.exe` and run it.
+              Windows SmartScreen may warn that the publisher is unknown: click *More info* then *Run anyway*.
+              The installer upgrades an existing installation in place and keeps your data.
+            - **Portable**: download `TrackHounds-${{ steps.version.outputs.VERSION }}-win-portable.zip`,
+              extract it anywhere and run `TrackHounds\TrackHounds.exe`.
 
-            #### macOS
-            - Download the `.dmg` file (`TrackHounds-${{ steps.extract_version.outputs.VERSION }}-mac-*.dmg`)
-
-            #### Linux
-            - Download either:
-              - AppImage: `TrackHounds-${{ steps.extract_version.outputs.VERSION }}-linux-*.AppImage`
-              - Debian package: `TrackHounds-${{ steps.extract_version.outputs.VERSION }}-linux-*.deb`
-
-            ### Backend Images
-            The Docker tar files are automatically used by the application for updates.
-          tag_name: ${{ github.ref_name }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Upload Docker tar files separately - use the same release name
-      - name: Upload Docker tar files to release
-        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          name: "TrackHounds ${{ steps.extract_version.outputs.VERSION }}"
+            No Docker, Java or internet connection is required. Data is stored in `%LOCALAPPDATA%\TrackHounds`.
           files: |
-            frontend/docker-resources/backend.tar
-            frontend/docker-resources/mariadb.tar
-            frontend/docker-resources/docker-compose.yml
-          tag_name: ${{ github.ref_name }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+            trackhounds/target/dist/TrackHounds-${{ steps.version.outputs.VERSION }}.exe
+            trackhounds/target/dist/TrackHounds-${{ steps.version.outputs.VERSION }}-win-portable.zip
+            trackhounds/target/trackhounds-${{ steps.version.outputs.VERSION }}.jar

@@ -1,23 +1,21 @@
-// Configuration file for the application
+// Configuration for the TrackHounds user interface.
+//
+// In the packaged desktop application the UI is served by the embedded Java
+// server itself, so API calls are relative to the current origin. During UI
+// development (`npm run dev`) Vite serves the UI on port 3000 and the backend
+// runs separately on port 8080; VITE_API_BASE_URL can override either case.
 
-// Base API URL
-export const API_BASE_URL = 'http://localhost:8080';
-
-// Detect if running in Electron
-export const isElectron = window.electron !== undefined;
-
-// Get platform information from Electron preload if available
-export const platformInfo = isElectron ? window.electron.platform : 'browser';
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
 // Utility to check backend connection
 export async function checkBackendConnection() {
   try {
-    const response = await fetch(`${API_BASE_URL}/actuator/health`, { 
+    const response = await fetch(`${API_BASE_URL}/actuator/health`, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
-      timeout: 5000, // 5 second timeout
     });
     return response.ok;
   } catch (error) {
@@ -26,52 +24,16 @@ export async function checkBackendConnection() {
   }
 }
 
-// Docker status check via Electron IPC
-export function checkDockerStatus(callback) {
-  if (!isElectron) return;
-  
-  // Send request to main process
-  window.electron.send('app-request', { type: 'check-docker' });
-  
-  // Set up one-time listener for the response
-  window.electron.receive('app-response', (data) => {
-    if (data.type === 'docker-status') {
-      callback(data.status);
-    }
-  });
-  
-  // Also listen for ongoing status updates
-  window.electron.receive('docker-status', (status) => {
-    callback(status);
-  });
-}
-
-// Listen for detailed setup events
-export function listenForSetupEvents(callback) {
-  if (!isElectron) return;
-  
-  window.electron.receive('setup-progress', (data) => {
-    callback(data);
-  });
-}
-
-// Check for application updates
-export function checkForUpdates(callback) {
-  if (!isElectron) return;
-  
-  window.electron.send('app-request', { type: 'check-updates' });
-  
-  window.electron.receive('update-status', (status) => {
-    callback(status);
-  });
-  
-  window.electron.receive('update-ready', (data) => {
-    callback({ ...data, ready: true });
-  });
-}
-
-// Install available update
-export function installUpdate() {
-  if (!isElectron) return;
-  window.electron.send('install-update');
+// Information about the running application (version, data folder, ...)
+export async function getAppInfo() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/app/info`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    console.error('Could not load application info:', error);
+    return null;
+  }
 }

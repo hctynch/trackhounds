@@ -1,8 +1,31 @@
-# React + Vite
+# TrackHounds UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite + Tailwind user interface for TrackHounds.
 
-Currently, two official plugins are available:
+The UI is **not** deployed on its own. The Maven build in [`../trackhounds`](../trackhounds) runs
+`npm ci && npm run build` here (using a private Node download, so only a JDK is needed) and copies
+`dist/` into the application jar, where the embedded server serves it at `/`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## UI development with hot reload
+
+```bash
+# terminal 1: backend in server-only mode (no window, no tray icon) on http://localhost:8080
+cd ../trackhounds
+./mvnw spring-boot:run -DskipFrontend=true -Dspring-boot.run.arguments=--server
+
+# terminal 2: Vite dev server on http://localhost:3000, API calls go to port 8080
+cd ../frontend
+npm install
+npm run dev
+```
+
+`VITE_API_BASE_URL` overrides the backend address if needed.
+
+## Scripts
+
+| Script            | Purpose                                  |
+| ----------------- | ---------------------------------------- |
+| `npm run dev`     | Vite dev server with hot module reload   |
+| `npm run build`   | Production build into `dist/`            |
+| `npm run preview` | Serve the production build locally       |
+| `npm run lint`    | ESLint                                   |

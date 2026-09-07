@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.trackhounds.trackhounds.Entity.HuntEntity;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
@@ -17,6 +18,7 @@ import lombok.AllArgsConstructor;
  * Service class for Hunt's. This class is used to interact with the database.
  */
 @Service
+@Transactional
 @AllArgsConstructor
 public class HuntService {
     /**

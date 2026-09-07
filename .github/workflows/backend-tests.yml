@@ -1,4 +1,4 @@
-name: Backend Tests
+name: Build and Test
 
 on:
   push:
@@ -12,20 +12,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      mariadb:
-        image: mariadb:latest
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: trackhounds_test
-        ports:
-          - 3307:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,28 +24,36 @@ jobs:
           cache: 'maven'
           cache-dependency-path: 'trackhounds/pom.xml'
 
-      - name: Cache Maven packages
+      - name: Cache frontend dependencies
         uses: actions/cache@v4
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          path: |
+            frontend/node_modules
+            trackhounds/target/node
+          key: ${{ runner.os }}-frontend-${{ hashFiles('frontend/package-lock.json') }}
 
-      - name: Run Tests with JaCoCo Coverage
-        run: mvn clean verify
+      # Builds the React UI, bundles it into the jar and runs the test suite against SQLite.
+      # No database server or Docker is needed.
+      - name: Build and test
+        run: ./mvnw -B clean verify
         working-directory: trackhounds
 
       - name: Upload JaCoCo Coverage to Codecov
-        uses: codecov/codecov-action@v4 # Latest version
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: trackhounds/target/site/jacoco/jacoco.xml
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
 
       - name: Upload Coverage Report as Artifact
-        uses: actions/upload-artifact@v4 # Latest version
+        uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
           path: trackhounds/target/site/jacoco/
+
+      - name: Upload application jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: trackhounds-jar
+          path: trackhounds/target/trackhounds-*.jar
