@@ -150,12 +150,28 @@ ends it.
 **Still to verify** (needs the first tag / a second PC): the `.exe` installer produced by CI, and a run
 on a clean Windows machine without a JDK.
 
-### ⏳ Iteration 4: first release and hardening
+### 🔄 Iteration 4: first release and hardening
 
 Goal: ship `v3.0.0` and make the first-run experience robust.
 
 - Push tag `v3.0.0-rc.1`, install the CI-built `.exe` on a machine without Java/Docker, test install →
   use → upgrade → uninstall; confirm data survives the upgrade.
+
+Learned from the first tag build (2026-09-07): Windows installers accept only a numeric
+`MAJOR[.MINOR[.BUILD]]` version, so jpackage rejected the tag version `3.0.0-rc.1` outright. The build
+now derives a numeric `app.version` (`3.0.0`) with `build-helper-maven-plugin:regex-property` while the
+jar, the About dialog and `/app/info` keep the full `3.0.0-rc.1`. Two traps worth remembering:
+
+- `app.version` must **not** be declared in `<properties>`. Maven interpolates the whole POM, plugin
+  configuration included, before any plugin runs, so a declared property is frozen and `regex-property`
+  can never override it. The first attempt at this fix failed exactly that way.
+- jpackage names the installer after the numeric version, so a `v3.0.0-rc.1` tag produces
+  `TrackHounds-3.0.0.exe`. The release workflow renames it to the full tag version before upload and
+  marks tags containing a hyphen as GitHub pre-releases.
+
+Consequence for the upgrade test: an RC and its final release share the Windows version `3.0.0`, so
+installing `v3.0.0` over `v3.0.0-rc.1` is a repair rather than an upgrade. Uninstall the RC first, or
+test the upgrade path between two versions that differ numerically.
 - Handle start-up failure modes with a message instead of a silent exit: port grabbed between the
   free-port check and Tomcat bind, corrupt database file, unwritable data directory.
 - Loading page while Spring starts (the window currently opens after `ApplicationReadyEvent`, which is

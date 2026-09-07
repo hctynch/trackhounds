@@ -21,10 +21,19 @@
 		<!-- Frontend build (React/Vite). The build downloads its own Node so only a JDK is required. -->
 		<frontend.directory>${project.basedir}/../frontend</frontend.directory>
 		<node.version>v22.23.2</node.version>
+		<!-- Outside target/ so "mvn clean" neither re-downloads Node nor trips over a locked node.exe. -->
+		<node.installDirectory>${project.basedir}/.node</node.installDirectory>
 		<skipFrontend>false</skipFrontend>
 
 		<!-- Desktop packaging (jpackage). -->
 		<app.name>TrackHounds</app.name>
+		<!--
+		  Note: app.version (the numeric version handed to jpackage) is deliberately NOT declared here.
+		  Maven interpolates the whole POM, including plugin configuration, before any plugin runs, so a
+		  property declared here would be frozen to its literal value and build-helper's regex-property
+		  could never override it. Leaving it undeclared keeps ${app.version} unresolved until the
+		  numeric-app-version execution below sets it at build time.
+		-->
 		<app.vendor>Hunt Tynch</app.vendor>
 		<app.mainClass>com.trackhounds.trackhounds.TrackhoundsApplication</app.mainClass>
 		<!--
@@ -115,7 +124,7 @@
 				<version>2.0.2</version>
 				<configuration>
 					<workingDirectory>${frontend.directory}</workingDirectory>
-					<installDirectory>${project.build.directory}</installDirectory>
+					<installDirectory>${node.installDirectory}</installDirectory>
 					<skip>${skipFrontend}</skip>
 				</configuration>
 				<executions>
@@ -191,6 +200,33 @@
 						<goals>
 							<goal>build-info</goal>
 						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!--
+			  Derive the numeric jpackage version from the project version: 3.0.0-rc.1 and 3.0.0-SNAPSHOT
+			  both become 3.0.0. Windows rejects anything else. app.version is intentionally not declared as a
+			  property, otherwise POM interpolation would freeze it before this execution runs.
+			-->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.6.1</version>
+				<executions>
+					<execution>
+						<id>numeric-app-version</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>regex-property</goal>
+						</goals>
+						<configuration>
+							<name>app.version</name>
+							<value>${project.version}</value>
+							<regex>^(\d+(?:\.\d+){0,2}).*$</regex>
+							<replacement>$1</replacement>
+							<failIfNoMatch>true</failIfNoMatch>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -297,7 +333,7 @@
 								<configuration>
 									<type>APP_IMAGE</type>
 									<name>${app.name}</name>
-									<appVersion>${project.version}</appVersion>
+									<appVersion>${app.version}</appVersion>
 									<vendor>${app.vendor}</vendor>
 									<description>${project.description}</description>
 									<icon>${app.icon}</icon>
@@ -366,7 +402,7 @@
 								<configuration>
 									<type>EXE</type>
 									<name>${app.name}</name>
-									<appVersion>${project.version}</appVersion>
+									<appVersion>${app.version}</appVersion>
 									<vendor>${app.vendor}</vendor>
 									<description>${project.description}</description>
 									<icon>${app.icon}</icon>

@@ -47,6 +47,24 @@ jobs:
         working-directory: trackhounds/target/dist
         run: Compress-Archive -Path TrackHounds -DestinationPath "TrackHounds-${{ steps.version.outputs.VERSION }}-win-portable.zip"
 
+      # Windows installers carry a numeric version only, so jpackage names the installer after the
+      # stripped version (3.0.0) even for a tag like v3.0.0-rc.1. Give the release asset the full name.
+      - name: Name the installer after the tag
+        shell: bash
+        working-directory: trackhounds/target/dist
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          installers=(TrackHounds-*.exe)
+          if [ ${#installers[@]} -eq 0 ]; then
+            echo "No installer produced by jpackage" >&2
+            exit 1
+          fi
+          if [ "${installers[0]}" != "TrackHounds-$VERSION.exe" ]; then
+            mv "${installers[0]}" "TrackHounds-$VERSION.exe"
+          fi
+
       - name: List artifacts
         shell: bash
         run: ls -la trackhounds/target/dist
@@ -57,6 +75,8 @@ jobs:
           name: "TrackHounds ${{ steps.version.outputs.VERSION }}"
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
+          # Tags with a qualifier (v3.0.0-rc.1) are published as pre-releases.
+          prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
           body: |
             ## TrackHounds ${{ steps.version.outputs.VERSION }}
 
