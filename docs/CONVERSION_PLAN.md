@@ -6,7 +6,7 @@ the next iterations are**. Keep it up to date: when an iteration finishes, move 
 note anything that was learned.
 
 - Status legend: ✅ done · 🔄 in progress · ⏳ planned · 💡 idea / needs a decision
-- Last updated: 2026-09-07 (iterations 1-3 implemented on branch `feature/java-sqlite-desktop`)
+- Last updated: 2026-09-07 (iterations 1-3 implemented on branch `java-sqlite-desktop`)
 
 ---
 
