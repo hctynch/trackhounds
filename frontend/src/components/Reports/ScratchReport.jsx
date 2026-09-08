@@ -1,36 +1,30 @@
 import DogService from '../../services/DogService';
 
+const columns = ['Dog', 'Name', 'Time', 'Judge', 'Reason'];
+
 const ScratchReport = {
-  title: 'Dog Scratches Report',
-  description: 'Shows all scratched dogs',
-  
+  title: 'Scratches',
+  description: 'Every dog withdrawn from the hunt, with the judge and reason.',
+
   fetchData: async () => {
     try {
-      // Get all scratches
       const scratches = await DogService.getScratches();
-      
-      const data = scratches.map(scratch => [
-        scratch.dogNumber.toString(),
-        scratch.dogName || 'Unknown',
-        scratch.time || '',
-        scratch.judgeNumber?.toString() || '',
-        scratch.reason || 'No reason provided'
-      ]);
-      
       return {
-        title: 'Scratch Report',
-        columns: ['Dog #', 'Dog Name', 'Time', 'Judge #', 'Reason'],
-        data: data
+        title: 'Scratches',
+        columns,
+        data: (Array.isArray(scratches) ? scratches : []).map((scratch) => [
+          scratch.dogNumber.toString(),
+          scratch.dogName || '',
+          scratch.time || '',
+          scratch.judgeNumber?.toString() || '',
+          scratch.reason || '',
+        ]),
       };
     } catch (error) {
-      console.error("Error fetching scratch report data:", error);
-      return {
-        title: 'Scratch Report',
-        columns: ['Dog #', 'Dog Name', 'Time', 'Judge #', 'Reason'],
-        data: []
-      };
+      console.error('Error fetching scratch report data:', error);
+      return { title: 'Scratches', columns, data: [] };
     }
-  }
+  },
 };
 
 export default ScratchReport;

@@ -10,10 +10,9 @@ const CLIENT_ID =
 /**
  * Keeps the desktop application alive while this page is open.
  *
- * The page holds a Server-Sent Events connection to /app/events and sends a
- * beacon to /app/window-closed when it unloads, so the Java process can exit
- * once the last window is closed. When the application shuts down first (for
- * example from the tray icon) a full-screen notice is shown.
+ * The page holds a Server-Sent Events connection to /app/events and sends a beacon to
+ * /app/window-closed when it unloads, so the Java process can exit once the last window is closed.
+ * When the application shuts down first (for example from the tray icon) a full-screen notice is shown.
  */
 function AppLifecycle() {
   const [closed, setClosed] = useState(false);
@@ -45,12 +44,11 @@ function AppLifecycle() {
   if (!closed) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-100 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">TrackHounds has been closed</h1>
-        <p className="text-gray-600">
-          The application was shut down. You can close this window and start TrackHounds again from its
-          shortcut whenever you need it.
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-canvas p-6">
+      <div className="max-w-md rounded-lg border border-line bg-surface p-8 text-center shadow-pop">
+        <p className="font-serif text-title font-semibold text-pine-800">TrackHounds is closed</p>
+        <p className="mt-3 text-body text-ink-muted">
+          The application was shut down from the tray icon. Close this window and start TrackHounds again from its shortcut when you need it.
         </p>
       </div>
     </div>

@@ -6,7 +6,7 @@ the next iterations are**. Keep it up to date: when an iteration finishes, move 
 note anything that was learned.
 
 - Status legend: ✅ done · 🔄 in progress · ⏳ planned · 💡 idea / needs a decision
-- Last updated: 2026-09-07 (iterations 1-3 implemented on branch `java-sqlite-desktop`)
+- Last updated: 2026-09-07 (iterations 1-3 and 5 done, iteration 4 partly done; all on `main`)
 
 ---
 
@@ -154,6 +154,18 @@ on a clean Windows machine without a JDK.
 
 Goal: ship `v3.0.0` and make the first-run experience robust.
 
+Done (2026-09-07):
+
+- Start-up failures now show a dialog instead of exiting silently: the packaged launcher has no
+  console, so `TrackhoundsApplication.main` catches the failure, closes the splash and shows the root
+  cause with a hint (port in use, database cannot be opened, folder not writable) and the log path.
+- A branded splash screen (`src/main/jpackage/splash.png`, passed as `-splash:$APPDIR\splash.png` in the
+  jpackage launcher options) is shown by the JVM until the server is ready; `DesktopLauncher` closes it.
+- `GET /hunt` returns `404` with a message when no hunt exists (it used to return `100 Continue`).
+- The ESLint errors were cleared as part of the UI redesign (iteration 5); `npm run lint` passes.
+
+Still to do:
+
 - Push tag `v3.0.0-rc.1`, install the CI-built `.exe` on a machine without Java/Docker, test install →
   use → upgrade → uninstall; confirm data survives the upgrade.
 
@@ -174,17 +186,47 @@ installing `v3.0.0` over `v3.0.0-rc.1` is a repair rather than an upgrade. Unins
 test the upgrade path between two versions that differ numerically.
 - Handle start-up failure modes with a message instead of a silent exit: port grabbed between the
   free-port check and Tomcat bind, corrupt database file, unwritable data directory.
-- Loading page while Spring starts (the window currently opens after `ApplicationReadyEvent`, which is
-  correct, but a splash or "Starting TrackHounds..." tray notification would reassure users).
 - Confirm behaviour when Edge is already running with the default profile (app mode uses a separate
   profile, so it should be independent) and when Edge is missing (default-browser fallback + tray Quit).
-- Fix `HuntService.getHunt()` returning HTTP `100 Continue` when no hunt exists (use `404`); adjust the
-  UI's "no active hunt" handling accordingly.
-- Frontend hygiene: the existing ESLint errors (prop-types, missing keys, unused vars). These are
-  cleared page by page during the UI redesign (iteration 5) unless a release needs them earlier.
-- Decide whether to keep the `Live Demo` section (cloud demo) in README/Docs.
+- Decide whether to keep the `Live Demo` section in README (it was dropped from the in-app docs).
+- Open question for the scoring rules: the score entry page starts with an interval of 5 regardless
+  of the hunt's point interval, and the same number is used both as the points step between dogs and
+  as the length of a scoring interval in minutes (server side, `ScoreDto.interval`; rankings use
+  `HuntEntity.huntInterval`). Prefilling the page from the hunt would keep the two consistent, but the
+  behaviour was kept as it was until the rule is confirmed.
 
-### ⏳ Iteration 5: professional UI redesign
+### ✅ Iteration 5: professional UI redesign
+
+Done 2026-09-07 (deep green). What was built, on top of the plan below:
+
+- One stylesheet (`frontend/src/index.css`): Tailwind 4 `@theme` tokens with the default palette
+  removed, so every colour is a token (pine, brass, neutrals, semantic). IBM Plex Sans and Serif are
+  bundled from `@fontsource` packages (latin subsets, about 140 KB of fonts). The three legacy
+  stylesheets and the inline-style `Button` are gone.
+- Primitives in `frontend/src/components/ui/`: `Button`/`IconButton`, `Field`/`Input`/`Select`/`CellInput`,
+  `Panel`, `PageHeader`, `DataTable` (aligned numeric columns, tabular figures, sticky header, empty
+  states), `Dialog`/`ConfirmDialog` on the native `<dialog>` element, `Toast`, `Alert`, `Badge`/`StakeBadge`,
+  `EmptyState`, `SegmentedControl` (a real radio group), `SearchInput`. Icons come from one set (Lucide).
+- App shell: the green rail (`components/layout/Sidebar.jsx`) with wordmark, grouped navigation,
+  Docs link and the loaded hunt; the content area is a CSS grid (no more `ml-[276px]`). The rail collapses
+  to icons below the `lg` breakpoint.
+- A shared `HuntProvider` (`hooks/useHunt.jsx`) so the rail and every page agree on the current hunt.
+- Every page rebuilt on the primitives. Behavioural changes worth knowing: deleting a dog, judge or
+  score asks for confirmation; judges are added/edited in a dialog; create and edit hunt share one
+  `HuntForm`; each report has its own route (`/reports/<id>`), so a report can be bookmarked; success and
+  failure are reported with toasts and inline alerts instead of `alert()`; a dog can no longer be given
+  the `DUAL` stake on the edit page (only hunts are dual).
+- Reports print through the shared `@media print` rules in `index.css`; the injected `<style>` element
+  is gone. Verified by printing a report to PDF from headless Edge.
+- Verification: every page was screenshotted from the built jar with seeded data using headless Edge
+  (`docs/screenshots/`), and `npm run lint` reports no errors. One headless artefact to remember: with
+  `--virtual-time-budget`, CSS colour transitions are frozen mid-way, so a freshly enabled primary
+  button captures as pale green; a longer budget renders it correctly.
+
+Not covered yet: dialogs and toasts were not screenshot-tested (they need interaction); the rail's
+collapsed state below 1024 px was not reviewed visually; there is no dark theme.
+
+Original plan for reference:
 
 Goal: make TrackHounds look and feel like a finished product rather than a prototype, without changing
 what it does. The scoring logic, the API and the page set stay the same; the visual layer is rebuilt on a
@@ -210,15 +252,17 @@ truck or a clubhouse, so clarity, large touch/click targets and keyboard speed m
 - Feedback states are ad hoc: success banners, error maps and empty states are styled differently in
   each page; no loading skeletons; dialogs are hand-rolled fixed overlays.
 
-**Design direction (decide before building; sketch in a design canvas or a mock first)**
+**Design direction (decided 2026-09-07: deep green)**
 
-- One brand: pick a primary colour that fits the sport (deep green or a rich hunting-red/oxblood with
-  warm neutrals reads better than generic SaaS blue), one accent for actions, semantic colours for
-  success/warning/danger, and a neutral scale for surfaces. Use the existing dog mark as the logo and
-  add a simple wordmark in the sidebar.
-- Typography: bundle one open-licence variable font locally (`public/fonts/*.woff2`, `@font-face` in
-  CSS) with a system-font fallback; define a small type scale (display, title, body, caption, tabular
-  numbers for scores and times).
+- Brand: pine green `#1F4D3A` (hover `#173A2C`, tints down to `#E6EEE9`). The green lives in the
+  sidebar rail and primary actions; content sits on a light green-grey canvas `#F1F4F2` with white
+  panels separated by hairline rules rather than shadows. Ink `#172119`. Brass `#A8782A` is reserved
+  for "leading" and "current" states (top dog, selected day) and for keyboard focus rings, so it always
+  means "look here". Semantic colours are separate from the brand: success `#2E7D4F`, warning
+  `#B5651D`, danger `#B23A3A`. The dog mark stays as the logo; a serif wordmark is added.
+- Typography: IBM Plex Sans (UI, tabular figures for scores and times) and IBM Plex Serif (wordmark,
+  printed report titles), bundled through `@fontsource` packages so nothing loads from the network.
+  Type scale: 28/22/17/15/13 px with 15 px body.
 - Density: this is a data-entry tool. Prefer a compact, well-aligned layout with clear grouping over
   large marketing-style cards. Score tables need tabular figures, right-aligned numbers and zebra rows.
 - Motion: minimal and purposeful (hover, focus, panel open); respect `prefers-reduced-motion`.

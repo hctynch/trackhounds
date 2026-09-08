@@ -33,6 +33,8 @@ TrackHounds is a modern scoring application designed to provide an alternative t
 
 > Migrating from TrackHounds 2 (the Docker/Electron version)? See [Upgrading from version 2](#upgrading-from-version-2).
 
+![Hunt dashboard with overall and daily standings](docs/screenshots/home.png)
+
 ---
 
 ## Needed Resources
@@ -122,58 +124,48 @@ Version 2 stored its data inside a Docker volume; version 3 stores it in `trackh
 
 ### Application Overview
 
-#### Navbar
-
-Provides access to major pages:
-
-- Home
-- Add Dogs
-- View Dogs
-- Judges
-- Add Score
-- View Scores
-- Scratch Sheet
-- Reports
-- Docs
+The green rail on the left is the navigation. It always shows which hunt is loaded, and `Docs and help` at the bottom
+opens the in-app guide, including where this installation keeps its data.
 
 #### Home
 
-Displays an overview of the current hunt. Use the `Hunt Options` button to:
-
-- Create a new hunt.
-- Edit the current hunt.
+The dashboard for the current hunt: how many dogs and judges are registered, the stake and point interval, and the
+overall and daily standings (speed and drive plus endurance). `Edit hunt` and `New hunt` live in the page header.
+Creating a new hunt clears the current one.
 
 #### Dogs
 
-- **All Dogs**: View all registered dogs.
-- **Add Dogs**: Add new dogs to the hunt.
+- **All dogs**: every registered dog with its stake, owner, sire, dam and points. Edit or remove a dog from the row;
+  removing asks for confirmation.
+- **Add dogs**: register several dogs at once. Arrow keys move between cells, and sire and dam suggest names already
+  typed on the page. Dogs take their stake from the hunt's number ranges.
+
+![Registering dogs](docs/screenshots/add-dogs.png)
 
 #### Judges
 
-Manage judges for the hunt:
+The judges of the hunt. Adding and editing happens in a small dialog; scores are recorded against the judge number.
 
-- View current judges.
-- Add or edit judges.
+#### Scores
 
-#### Score Entry
+- **Enter scores**: one cross at a time. Pick the day, enter the start time (the first cross of the day sets it), the
+  cross time and the judge, then the dogs in crossing order. Points fill in from the first-dog points and the interval
+  and can be changed per dog. Everything is reachable with the arrow keys and Enter.
+- **View scores**: every cross recorded, filterable by day, dog or judge, with whether the score counted.
 
-- **Enter Score**: Add scores for dogs.
-- **View Scores**: View and delete entered scores.
+![Entering a cross](docs/screenshots/score-entry.png)
 
-#### Scratch Sheet
+#### Scratch sheet
 
-View and manage scratches:
-
-- Add new scratches.
-- View all entered scratches.
+Dogs withdrawn from the hunt, with the time, the judge and the reason, and the form to record a new scratch.
 
 #### Reports
 
-Generate printable reports:
+Printable sheets, grouped into daily, whole-hunt and detail reports: daily and overall speed and drive, top dogs with
+a chosen number of places and stake, all dogs on all days, scratches, and the scores of one dog or one judge. Each
+report has a preview with its options and a `Print` button that uses the normal Windows print dialog.
 
-- Overall Speed & Drive Report
-- Daily Speed & Drive Report
-- Top dogs (overall, by day, by stake type), dog and judge detail reports, scratch report
+![A printable report](docs/screenshots/report-overall-speed-and-drive.png)
 
 ---
 

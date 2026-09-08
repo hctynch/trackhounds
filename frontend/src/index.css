@@ -1,56 +1,193 @@
+/* Fonts are bundled locally (no network at runtime). Latin subsets only. */
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-500.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
+@import '@fontsource/ibm-plex-serif/latin-600.css';
+
 @import 'tailwindcss';
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/*
+  Design tokens. The default Tailwind palette is removed on purpose so that every colour in the
+  application comes from this list: pine (brand), brass (attention), neutrals, and semantics.
+*/
+@theme {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  --color-pine-50: #f2f6f3;
+  --color-pine-100: #e6eee9;
+  --color-pine-200: #c5d6cc;
+  --color-pine-300: #9dbbaa;
+  --color-pine-400: #6f9a83;
+  --color-pine-500: #3f7358;
+  --color-pine-600: #2c5d45;
+  --color-pine-700: #1f4d3a;
+  --color-pine-800: #173a2c;
+  --color-pine-900: #10281f;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --color-brass-100: #f5ecd6;
+  --color-brass-300: #dcc48e;
+  --color-brass-500: #a8782a;
+  --color-brass-700: #7d5a1f;
+
+  --color-canvas: #f1f4f2;
+  --color-surface: #ffffff;
+  --color-sunken: #f7f9f8;
+  --color-line: #d9e2dc;
+  --color-line-strong: #b9c8bf;
+  --color-ink: #172119;
+  --color-ink-muted: #5b6a61;
+  --color-ink-faint: #8a978f;
+
+  --color-success-100: #e2f2e8;
+  --color-success-600: #2e7d4f;
+  --color-success-700: #24623e;
+  --color-warning-100: #fbeedd;
+  --color-warning-600: #b5651d;
+  --color-warning-700: #8f4f16;
+  --color-danger-100: #f8e4e4;
+  --color-danger-600: #b23a3a;
+  --color-danger-700: #8e2e2e;
+
+  --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+
+  --text-display: 28px;
+  --text-display--line-height: 1.2;
+  --text-title: 22px;
+  --text-title--line-height: 1.25;
+  --text-heading: 17px;
+  --text-heading--line-height: 1.35;
+  --text-body: 15px;
+  --text-body--line-height: 1.5;
+  --text-small: 13px;
+  --text-small--line-height: 1.45;
+  --text-tiny: 12px;
+  --text-tiny--line-height: 1.4;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --shadow-pop: 0 10px 28px -10px rgb(23 33 25 / 0.28), 0 2px 6px rgb(23 33 25 / 0.08);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer base {
+  html {
+    color-scheme: light;
   }
-  a:hover {
-    color: #747bff;
+
+  body {
+    margin: 0;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
+
+  input,
+  select,
+  textarea,
   button {
-    background-color: #f9f9f9;
+    font: inherit;
+    color: inherit;
+  }
+
+  /* Brass focus ring everywhere: scorekeepers work with the keyboard. */
+  :focus-visible {
+    outline: 2px solid var(--color-brass-500);
+    outline-offset: 2px;
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline-offset: 0;
+  }
+
+  ::selection {
+    background-color: var(--color-brass-300);
+    color: var(--color-ink);
+  }
+
+  /* Native dialogs */
+  dialog::backdrop {
+    background-color: rgb(16 40 31 / 0.45);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Number inputs: no spinner buttons, right-aligned figures. */
+@utility input-number {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+@layer utilities {
+  .input-number::-webkit-outer-spin-button,
+  .input-number::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+/*
+  Printed reports. react-to-print copies the stylesheet into its print frame, so the rules live
+  here rather than in an injected <style> element.
+*/
+@media print {
+  @page {
+    margin: 1.4cm 1.2cm;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+  }
+
+  .report-sheet {
+    display: table;
+    width: 100%;
+  }
+
+  .report-sheet__header {
+    display: table-header-group;
+  }
+
+  .report-sheet__body {
+    display: table-row-group;
+  }
+
+  .report-table thead {
+    display: table-header-group;
+  }
+
+  .report-table tr {
+    break-inside: avoid;
+  }
+
+  .report-table th,
+  .report-table td {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

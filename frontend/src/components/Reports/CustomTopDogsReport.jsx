@@ -1,51 +1,37 @@
 import DogService from '../../services/DogService';
 
+const columns = ['Place', 'Score', 'Dog', 'Name', 'Sire', 'Dam', 'Owner'];
+
 const CustomTopDogsReport = {
-  title: 'Custom Top Dogs Report',
-  description: 'View top dogs with customizable limit and optional stake filtering',
-  
-  // Reference component by name
+  title: 'Top dogs overall',
+  description: 'The leading dogs across the whole hunt, for any number of places and stake.',
   configComponent: 'CustomLimitSelector',
-  
-  // Default configuration
   defaultConfig: { limit: 10, stakeType: 'ALL' },
-  
+
   fetchData: async (config = { limit: 10, stakeType: 'ALL' }) => {
     const { limit, stakeType } = config;
-    let topDogs;
-    
+    const stakeLabel = stakeType === 'ALL' ? 'all dogs' : stakeType === 'ALL_AGE' ? 'all age' : 'derby';
+    const title = `Top ${limit} overall, ${stakeLabel}`;
     try {
-      if (stakeType === 'ALL') {
-        topDogs = await DogService.getTopScoringDogsOverall(limit);
-      } else {
-        topDogs = await DogService.getTopScoringDogsByStakeType(stakeType, limit);
-      }
-      
-      const stakeLabel = stakeType === 'ALL' ? 'All Dogs' : 
-                         stakeType === 'ALL_AGE' ? 'All Age' : 'Derby';
-      
+      const topDogs = stakeType === 'ALL' ? await DogService.getTopScoringDogsOverall(limit) : await DogService.getTopScoringDogsByStakeType(stakeType, limit);
       return {
-        title: `Top ${limit} Dogs - ${stakeLabel}`,
-        columns: ['Place', 'Score', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
-        data: topDogs.map((dog, index) => [
-          (index + 1).toString(),  // Add place number
+        title,
+        columns,
+        data: (Array.isArray(topDogs) ? topDogs : []).map((dog, index) => [
+          (index + 1).toString(),
           dog.totalPoints.toString(),
           dog.dogNumber.toString(),
           dog.dogName || '',
           dog.sire || '',
           dog.dam || '',
-          dog.owner || ''
-        ])
+          dog.owner || '',
+        ]),
       };
     } catch (error) {
-      console.error("Error fetching custom top dogs report data:", error);
-      return {
-        title: `Top ${limit} Dogs${stakeType !== 'ALL' ? ` - ${stakeType}` : ''}`,
-        columns: ['Place', 'Score', 'Dog #', 'Name', 'Sire', 'Dam', 'Owner'],
-        data: []
-      };
+      console.error('Error fetching top dogs report data:', error);
+      return { title, columns, data: [] };
     }
-  }
+  },
 };
 
 export default CustomTopDogsReport;

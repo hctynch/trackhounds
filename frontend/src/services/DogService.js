@@ -73,7 +73,8 @@ class DogService {
 
   async deleteCross(number, crossId) {
     try {
-      const response = await this.api.delete(`/${number}/scores/${crossId}`);
+      await this.api.delete(`/${number}/scores/${crossId}`);
+      return null;
     } catch (error) {
       return error.response.data;
     }
@@ -204,7 +205,7 @@ class DogService {
       // Use the existing endpoint but with a custom limit
       const response = await this.api.get(`/scores/top/${limit}/overall`);
       return response.data;
-    } catch (error) {
+    } catch {
       // If endpoint doesn't exist yet, fall back to top10 and slice
       try {
         const response = await this.api.get(`/scores/top10/overall`);
