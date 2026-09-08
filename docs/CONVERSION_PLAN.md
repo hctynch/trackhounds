@@ -60,7 +60,7 @@ TrackHounds.exe (jpackage launcher + private JRE)
    10/11, gives a chrome-less window that looks like a native app, supports modern CSS (Tailwind 4) and
    prints reports properly. JavaFX WebView was rejected for now: its WebKit build lacks `window.print()`
    and has uncertain Tailwind 4 support. Embedding WebView2 (JNI) was rejected for now because of native
-   packaging risk. Both remain options for a later iteration (see 7).
+   packaging risk. Both remain options for a later iteration (see 8).
 5. **Process lifetime is tracked by the pages, not by processes.** Edge on Windows hands the window over to
    a new browser process and exits immediately, and Java cannot read other processes' command lines on
    Windows, so watching the launched process is useless. Instead every UI page keeps a Server-Sent Events
@@ -78,7 +78,7 @@ TrackHounds.exe (jpackage launcher + private JRE)
    (portable folder, works on any machine with a JDK) and `win-installer` profile (`.exe`, needs WiX 3.x,
    built in CI). A fixed `winUpgradeUuid` lets new installers upgrade in place. Per-user install: no admin.
 10. **No auto-update.** Version 2 used `electron-updater`. Version 3 updates manually via the installer;
-    an optional, user-triggered "check for updates" can be added later (iteration 8). SmartScreen warnings
+    an optional, user-triggered "check for updates" can be added later (iteration 9). SmartScreen warnings
     remain because code signing was dropped for cost reasons.
 11. **Version 3.0.0** (major bump: different installation and data location). Maven `pom.xml` is the
     single source of the version; the release workflow sets it from the git tag.
@@ -180,11 +180,93 @@ test the upgrade path between two versions that differ numerically.
   profile, so it should be independent) and when Edge is missing (default-browser fallback + tray Quit).
 - Fix `HuntService.getHunt()` returning HTTP `100 Continue` when no hunt exists (use `404`); adjust the
   UI's "no active hunt" handling accordingly.
-- Frontend hygiene: the existing ESLint errors (prop-types, missing keys, unused vars) and the
-  `__dirname` usage in `vite.config.js`.
+- Frontend hygiene: the existing ESLint errors (prop-types, missing keys, unused vars). These are
+  cleared page by page during the UI redesign (iteration 5) unless a release needs them earlier.
 - Decide whether to keep the `Live Demo` section (cloud demo) in README/Docs.
 
-### ⏳ Iteration 5: data safety and hunt management
+### ⏳ Iteration 5: professional UI redesign
+
+Goal: make TrackHounds look and feel like a finished product rather than a prototype, without changing
+what it does. The scoring logic, the API and the page set stay the same; the visual layer is rebuilt on a
+proper foundation. Users are judges and scorekeepers working quickly at a hunt, often on a laptop in a
+truck or a clubhouse, so clarity, large touch/click targets and keyboard speed matter more than flourish.
+
+**Where the current UI falls short (audit, 2026-09-07)**
+
+- `index.css` is still the Vite starter sheet: dark `color-scheme`, `#242424` body, centred flex body,
+  `h1 { font-size: 3.2em }`. Every page fights it with utility classes, which is why colours look
+  inconsistent and why `buttonOverrides.css` exists (a file of `!important` catch-alls, including invalid
+  `:contains()` selectors). `Button.jsx` layers inline styles, `!` utilities and a hover-state hook to win
+  the same fight. `App.css` still contains the spinning Vite logo animation.
+- No design tokens. Colours (`blue-500`, `amber-500`, `purple-500`...), radii and shadows are chosen per
+  page, so cards, tables and dialogs differ from screen to screen.
+- Layout is hard-coded: a fixed 260 px sidebar and `ml-[276px]` on every page; a `h-[49.25%]` magic
+  number in the nav dropdown; nothing adapts to narrower windows or the Edge app window being resized.
+- Six different `react-icons` families are mixed (Hi, Io, Fa, Gr, Md, Tb), so icon weight and style vary
+  line by line. The sidebar has an empty `<img />` where a logo should be; the app has a dog icon but no
+  wordmark or brand colour.
+- Typography: `Inter` is named but never bundled, so the app silently falls back to Arial on most PCs.
+  As an offline application it cannot load fonts from Google Fonts at runtime.
+- Feedback states are ad hoc: success banners, error maps and empty states are styled differently in
+  each page; no loading skeletons; dialogs are hand-rolled fixed overlays.
+
+**Design direction (decide before building; sketch in a design canvas or a mock first)**
+
+- One brand: pick a primary colour that fits the sport (deep green or a rich hunting-red/oxblood with
+  warm neutrals reads better than generic SaaS blue), one accent for actions, semantic colours for
+  success/warning/danger, and a neutral scale for surfaces. Use the existing dog mark as the logo and
+  add a simple wordmark in the sidebar.
+- Typography: bundle one open-licence variable font locally (`public/fonts/*.woff2`, `@font-face` in
+  CSS) with a system-font fallback; define a small type scale (display, title, body, caption, tabular
+  numbers for scores and times).
+- Density: this is a data-entry tool. Prefer a compact, well-aligned layout with clear grouping over
+  large marketing-style cards. Score tables need tabular figures, right-aligned numbers and zebra rows.
+- Motion: minimal and purposeful (hover, focus, panel open); respect `prefers-reduced-motion`.
+- Light theme only for v3 (matches the printed reports and the current pages); dark mode is an idea
+  for later once tokens exist.
+
+**Approach (foundation first, then pages; ship behind the same routes)**
+
+1. **Foundation.** Replace `index.css`/`App.css`/`buttonOverrides.css` with one stylesheet: Tailwind 4
+   `@theme` tokens (colours, radii, shadows, spacing, fonts), a sane reset, bundled font, print base.
+   Delete the inline-style hacks in `Button.jsx`.
+2. **Primitives** in `src/components/ui/`: `Button` (primary/secondary/danger/ghost, sizes, loading),
+   `Input`/`Select`/`Field` (label, help text, error text, required marker), `Card`, `Table` (sortable
+   header, numeric alignment, empty state, sticky header for long lists), `Dialog` (accessible: focus
+   trap, Esc, `aria-modal`), `Toast` for success/error feedback, `EmptyState`, `Badge`, `Stat`.
+   Standardise on a single icon set (one `react-icons` family such as Lucide via `react-icons/lu`).
+3. **App shell.** Collapsible sidebar with logo/wordmark, active-route highlighting, current hunt name
+   and day, and a content area that uses CSS grid instead of `ml-[276px]`; a page header component
+   (title, description, actions) shared by every page; responsive down to ~1024 px.
+4. **Pages, in order of daily use:** Score Entry (keyboard-first: Tab/Enter flow through dog numbers,
+   inline validation, clear cross preview), View Scores, Home dashboard, Dogs (list + add + edit),
+   Judges, Scratch Sheet, Reports (report picker + preview), Create/Edit Hunt, Docs.
+5. **Reports and printing.** Keep `ReportGenerator`'s print layout working: run every report through
+   Edge's print preview after the restyle; use `@media print` in the shared stylesheet instead of the
+   injected `<style>` element; consistent report header with logo, hunt title, dates and day.
+6. **Hygiene while touching each file:** fix the pre-existing ESLint errors (prop-types, missing keys,
+   unused vars) so `npm run lint` passes at the end of the iteration.
+
+**Constraints**
+
+- Fully offline: no CDN fonts, icons or stylesheets; everything is bundled by Vite.
+- Do not change API contracts or `HashRouter` routes; the desktop launcher and `AppLifecycle` depend on
+  the same origin and paths.
+- Printing must remain browser-native (the reason the React UI was kept).
+- Accessibility baseline: visible focus rings, labels on every input, contrast AA, dialogs usable by
+  keyboard.
+
+**Done when**
+
+- Every page uses the shared shell, primitives and tokens; no page-level hex colours or `!important`.
+- The three legacy stylesheets and inline-style hacks are gone; `npm run lint` is clean.
+- All reports print correctly from the Edge app window and from a normal browser.
+- A screenshot set of every page is added under `docs/screenshots/` and the README uses them.
+
+Suggested sequencing: do this after the first `v3.0.0` installer is confirmed on a clean machine
+(iteration 4), so the visual work lands on a stable base and can ship as `v3.1.0`.
+
+### ⏳ Iteration 6: data safety and hunt management
 
 - In-app **Backup** (copy `trackhounds.db` to a chosen file; use SQLite's online backup API so the app
   need not be closed) and **Restore**.
@@ -194,7 +276,7 @@ test the upgrade path between two versions that differ numerically.
   screen; alternative: add a `hunt_id` to all tables. Needs a decision.
 - "Open data folder" and "Show log file" from the UI (currently tray menu only).
 
-### ⏳ Iteration 6: schema migrations
+### ⏳ Iteration 7: schema migrations
 
 `spring.jpa.hibernate.ddl-auto=update` is fine while every user starts from an empty file, but it cannot
 rename or drop columns and SQLite has limited `ALTER TABLE`. Before the first schema change ships to
@@ -204,7 +286,7 @@ users with existing data:
   generate `V1__baseline.sql` from the current Hibernate schema, switch to `ddl-auto=validate`.
 - Add a start-up backup of the database before migrations run.
 
-### ⏳ Iteration 7: window technology review
+### ⏳ Iteration 8: window technology review
 
 Revisit after real-world use of the Edge app-mode window. Options, in order of effort:
 
@@ -218,7 +300,7 @@ Revisit after real-world use of the Edge app-mode window. Options, in order of e
    (e.g. OpenPDF) instead of printed from HTML. Only worth it if the browser-based window proves
    unreliable for users.
 
-### ⏳ Iteration 8: distribution extras
+### ⏳ Iteration 9: distribution extras
 
 - Optional "Check for updates" button that queries GitHub releases **only when the user asks** and opens
   the download page (the app itself never phones home).
