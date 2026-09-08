@@ -74,7 +74,8 @@ public class HuntService {
      */
     public HuntEntity getHunt() {
         if (huntRepository.count() == 0) {
-            throw new TrackHoundsAPIException(HttpStatus.CONTINUE, null, null);
+            throw new TrackHoundsAPIException(HttpStatus.NOT_FOUND, "No hunt has been created yet.",
+                    Map.of("hunt", "Create a hunt from the Home page to get started."));
         }
         return huntRepository.findAll().get(0);
     }

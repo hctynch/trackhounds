@@ -112,6 +112,7 @@ public class DesktopLauncher {
         this.context = event.getApplicationContext();
         int port = ((WebServerApplicationContext) context).getWebServer().getPort();
         this.url = "http://127.0.0.1:" + port + "/";
+        com.trackhounds.trackhounds.TrackhoundsApplication.closeSplash();
         LOG.info("TrackHounds is running at {}", url);
         LOG.info("Data directory: {}", properties.getDataDir());
 

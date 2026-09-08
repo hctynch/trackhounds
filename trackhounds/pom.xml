@@ -314,6 +314,7 @@
 										<delete dir="${jpackage.input}" quiet="true"/>
 										<mkdir dir="${jpackage.input}"/>
 										<copy file="${project.build.directory}/${project.build.finalName}.jar" todir="${jpackage.input}"/>
+										<copy file="${project.basedir}/src/main/jpackage/splash.png" todir="${jpackage.input}"/>
 									</target>
 								</configuration>
 							</execution>
@@ -349,6 +350,8 @@
 										<option>-XX:TieredStopAtLevel=1</option>
 										<option>-Dfile.encoding=UTF-8</option>
 										<option>-Dtrackhounds.launcher=jpackage</option>
+										<!-- Shown by the JVM until the server is ready and the launcher closes it. -->
+										<option>-splash:$APPDIR\splash.png</option>
 									</javaOptions>
 									<!-- Minimal runtime image; everything else is stripped by jlink. -->
 									<addModules>
