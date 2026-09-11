@@ -100,17 +100,8 @@ public class DogEntity {
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + number;
-    result = prime * result + ((name == null) ? 0 : name.hashCode());
-    result = prime * result + ((stake == null) ? 0 : stake.hashCode());
-    result = prime * result + ((owner == null) ? 0 : owner.hashCode());
-    result = prime * result + ((sire == null) ? 0 : sire.hashCode());
-    result = prime * result + ((dam == null) ? 0 : dam.hashCode());
-    result = prime * result + (scratched ? 1231 : 1237);
-    result = prime * result + ((scores == null) ? 0 : scores.hashCode());
-    return result;
+    // Must agree with equals, which compares the number only.
+    return Integer.hashCode(number);
   }
 
   @Override

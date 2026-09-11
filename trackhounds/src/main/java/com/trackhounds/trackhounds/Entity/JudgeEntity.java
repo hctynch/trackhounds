@@ -39,7 +39,12 @@ public class JudgeEntity {
             return false;
         }
         JudgeEntity judge = (JudgeEntity) o;
-        return judge.getNumber() == this.getNumber() && judge.getMemberPin().equals(this.getMemberPin())
-                && judge.getName().equals(this.getName());
+        // The number is the identity; the PIN is optional and must not be dereferenced.
+        return judge.getNumber() == this.getNumber();
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(number);
     }
 }

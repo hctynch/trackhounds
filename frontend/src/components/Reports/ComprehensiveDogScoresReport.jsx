@@ -29,7 +29,7 @@ const ComprehensiveDogScoresReport = {
           const entry = byDog[score.dogNumber];
           if (!entry) return;
           const sd = score.totalPoints || 0;
-          const endurance = Number.parseInt(sd * day * 0.1, 10);
+          const endurance = score.endurance ?? Math.floor((sd * day) / 10);
           entry.sd[day] = sd;
           entry.endurance[day] = endurance;
           entry.total += sd + endurance;

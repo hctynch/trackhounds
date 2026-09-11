@@ -24,6 +24,8 @@ function ScoreEntry() {
   const [startingPoints, setStartingPoints] = useState(35);
   const [interval, setInterval] = useState(5);
   const [startTime, setStartTime] = useState('');
+  // Once the first cross of a day has been saved, the day's start time is fixed on the server.
+  const [dayStarted, setDayStarted] = useState(false);
   const [judge, setJudge] = useState('');
   const [crossTime, setCrossTime] = useState('');
   const [error, setError] = useState({});
@@ -37,12 +39,14 @@ function ScoreEntry() {
   useEffect(() => {
     if (!huntExists) return;
     DogService.getStartTime(selectedDay).then((result) => {
-      if (result instanceof Error) {
-        setError((current) => ({ ...current, startTime: result.response?.data?.fields?.startTime }));
+      if (result instanceof Error || !result) {
+        setError((current) => ({ ...current, startTime: undefined }));
         setStartTime('');
+        setDayStarted(false);
       } else {
         setError((current) => ({ ...current, startTime: undefined }));
-        setStartTime(result || '');
+        setStartTime(result);
+        setDayStarted(true);
       }
     });
   }, [selectedDay, huntExists]);
@@ -246,9 +250,24 @@ function ScoreEntry() {
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Start time" error={error.startTime} hint={!error.startTime ? 'First cross of the day sets it.' : undefined}>
+              <Field
+                label="Start time"
+                required={!dayStarted}
+                error={error.startTime}
+                hint={!error.startTime ? (dayStarted ? `Fixed by the first cross of day ${selectedDay}.` : 'The first cross of the day sets it.') : undefined}
+              >
                 {({ id, invalid }) => (
-                  <Input id={id} type="time" invalid={invalid} value={startTime} onChange={(e) => setStartTime(e.target.value)} onKeyDown={(e) => handleKeyDown(e, 'startTime')} ref={setRef('startTime')} className="tabular" />
+                  <Input
+                    id={id}
+                    type="time"
+                    invalid={invalid}
+                    value={startTime}
+                    readOnly={dayStarted}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, 'startTime')}
+                    ref={setRef('startTime')}
+                    className="tabular read-only:bg-sunken read-only:text-ink-muted"
+                  />
                 )}
               </Field>
               <Field label="Cross time" required error={error.crossTime}>

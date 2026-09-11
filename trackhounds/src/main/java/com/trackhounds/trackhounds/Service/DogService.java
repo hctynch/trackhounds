@@ -3,9 +3,11 @@ package com.trackhounds.trackhounds.Service;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,6 +104,7 @@ public class DogService {
     if (dogs == null || dogs.size() == 0) {
       return;
     }
+    Set<Integer> numbersInBatch = new HashSet<>();
     for (int i = 0; i < dogs.size(); i++) {
       DogEntity d = dogs.get(i);
       if (d == null)
@@ -112,6 +115,8 @@ public class DogService {
         errs.put(String.format("number%d", i + 1), "Dog number not specified.");
       } else if (d.getNumber() < 0) {
         errs.put(String.format("number%d", i + 1), "Dog number cannot be negative.");
+      } else if (!numbersInBatch.add(d.getNumber())) {
+        errs.put(String.format("number%d", i + 1), "Dog number is repeated in this list.");
       }
       if (d.getName() == null || d.getName().isEmpty())
         errs.put(String.format("name%d", i + 1), "Name cannot be empty.");
@@ -146,7 +151,8 @@ public class DogService {
         .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog with this number does not exist.",
             Map.of("number", "Dog with this number does not exist.")));
     Map<String, String> errs = new HashMap<>();
-    if (d.getName() == null || d.getName().isEmpty())
+    // Validate the submitted values, not the stored ones (the old check let a dog be renamed to "").
+    if (dog.getName() == null || dog.getName().isBlank())
       errs.put("name", "Name cannot be empty.");
     if (dog.getStake() == null)
       errs.put("stake", "Stake not specified.");
@@ -224,7 +230,7 @@ public class DogService {
           dogInfo.put("dogNumber", numbers[i]);
           dogInfo.put("error", "Dog does not exist. Skipping.");
           crossInfo.add(dogInfo);
-          if (hunt.getStakeRange() != null && hunt.getStakeRange() != null) {
+          if (hunt.getStakeRange() != null && hunt.getStakeTypeRange() != null) {
             if (numbers[i] < hunt.getStakeRange()[1]) {
               if (hunt.getStakeTypeRange()[0] == StakeType.ALL_AGE) {
                 sp1 -= interval;
@@ -278,16 +284,26 @@ public class DogService {
    */
   private int calculateTotalPoints(DogEntity dog) {
     int totalPoints = 0;
-    List<DailyScore> scores = dog.getScores();
-    for (DailyScore dailyScore : scores) {
-      double toAdd = dailyScore.getHighestScores().stream().mapToInt(hs -> hs.getScore().getPoints()).sum();
-      dailyScore.setDailyScore((int) toAdd);
+    for (DailyScore dailyScore : dog.getScores()) {
+      int speedAndDrive = dailyScore.getHighestScores().stream().mapToInt(hs -> hs.getScore().getPoints()).sum();
+      dailyScore.setDailyScore(speedAndDrive);
       dailyScoreRepository.save(dailyScore);
-      scores.set(dailyScore.getDay().getDay() - 1, dailyScore);
-      toAdd += toAdd * (dailyScore.getDay().getDay() * .1);
-      totalPoints += toAdd;
+      totalPoints += speedAndDrive + endurance(speedAndDrive, dailyScore.getDay().getDay());
     }
     return totalPoints;
+  }
+
+  /**
+   * Endurance points for one day: ten percent of the day's speed and drive per
+   * day number (day 1 adds 10%, day 2 adds 20%, ...), in whole points. Integer
+   * arithmetic so the daily sheets and the overall total always agree.
+   *
+   * @param speedAndDrive counted points of the day
+   * @param day           day number (1-4)
+   * @return endurance points
+   */
+  public static int endurance(int speedAndDrive, int day) {
+    return speedAndDrive * day / 10;
   }
 
   /**
@@ -333,39 +349,60 @@ public class DogService {
     Map<String, String> errs = new HashMap<>();
     if (judgeRepository.findById(score.getJudge()).isEmpty())
       errs.put("judge", "Judge does not exist.");
-    if (score.getDogNumbers() == null || score.getDogNumbers().length == 0)
+    int[] dogNumbers = score.getDogNumbers() == null ? new int[0] : score.getDogNumbers();
+    int[] points = score.getScores() == null ? new int[0] : score.getScores();
+    if (dogNumbers.length == 0)
       errs.put("dogNumbers", "Dog numbers cannot be empty.");
-    if (score.getScores() == null || score.getScores().length == 0)
+    if (points.length == 0)
       errs.put("scores", "Scores cannot be empty.");
-    if (score.getDogNumbers().length != score.getScores().length)
+    if (dogNumbers.length != points.length)
       errs.put("scores", "Scores and dog numbers do not match.");
-    for (int i = 0; i < score.getScores().length; i++) {
-      if (score.getScores()[i] < 0)
+    for (int i = 0; i < points.length; i++) {
+      if (points[i] < 0)
         errs.put(String.format("scores%d", i), "Score cannot be negative.");
     }
-    if (score.getStartTime() == null || score.getStartTime().isEmpty())
-      errs.put("startTime", "Start time cannot be empty.");
-    if (score.getCrossTime() == null || score.getCrossTime().isEmpty())
-      errs.put("crossTime", "Cross time cannot be empty.");
-    LocalTime crossTime = null;
-    LocalTime startTime = null;
-    try {
-      crossTime = LocalTime.parse(score.getCrossTime());
-    } catch (Exception e) {
-      errs.put("crossTime", "Invalid cross time.");
+    // Every dog in a cross must be registered and listed once; a silently dropped
+    // dog is a lost score nobody notices until the standings are wrong.
+    Set<Integer> seen = new HashSet<>();
+    for (int i = 0; i < dogNumbers.length; i++) {
+      if (!seen.add(dogNumbers[i]))
+        errs.put(String.format("dogNumbers%d", i), String.format("Dog %d is listed twice in this cross.", dogNumbers[i]));
+      else if (!dogRepository.existsById(dogNumbers[i]))
+        errs.put(String.format("dogNumbers%d", i), String.format("Dog %d is not registered in this hunt.", dogNumbers[i]));
     }
-    try {
-      startTime = LocalTime.parse(score.getStartTime());
-    } catch (Exception e) {
-      errs.put("startTime", "Invalid start time.");
+
+    // The day's start time is set by its first cross and is authoritative afterwards:
+    // every bucket of the day is measured from it.
+    Optional<Days> existingDay = daysRepository.findById(score.getDay());
+    LocalTime startTime = existingDay.map(Days::getStartTime).orElse(null);
+    if (startTime == null) {
+      if (score.getStartTime() == null || score.getStartTime().isEmpty()) {
+        errs.put("startTime", "Start time cannot be empty.");
+      } else {
+        try {
+          startTime = LocalTime.parse(score.getStartTime());
+        } catch (Exception e) {
+          errs.put("startTime", "Invalid start time.");
+        }
+      }
+    }
+    LocalTime crossTime = null;
+    if (score.getCrossTime() == null || score.getCrossTime().isEmpty()) {
+      errs.put("crossTime", "Cross time cannot be empty.");
+    } else {
+      try {
+        crossTime = LocalTime.parse(score.getCrossTime());
+      } catch (Exception e) {
+        errs.put("crossTime", "Invalid cross time.");
+      }
     }
     if (crossTime != null && startTime != null && crossTime.isBefore(startTime))
-      errs.put("crossTime", "Cross time cannot be before start time.");
+      errs.put("crossTime", String.format("Cross time cannot be before the day's start time (%s).", startTime));
 
     if (errs.size() > 0)
       throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields", errs);
 
-    Days day = daysRepository.findById(score.getDay()).orElse(new Days(score.getDay(), startTime));
+    Days day = existingDay.orElse(new Days(score.getDay(), startTime));
     if (day.getStartTime() == null)
       day.setStartTime(startTime);
     day = daysRepository.save(day);
@@ -484,7 +521,18 @@ public class DogService {
    * @param id ID of scratch
    */
   public void deleteScratch(Long id) {
-    scratchRepository.deleteById(id);
+    Optional<Scratch> scratch = scratchRepository.findById(id);
+    if (scratch.isEmpty())
+      return;
+    int dogNumber = scratch.get().getDogNumber();
+    scratchRepository.delete(scratch.get());
+    boolean stillScratched = scratchRepository.findAll().stream().anyMatch(s -> s.getDogNumber() == dogNumber);
+    if (!stillScratched) {
+      dogRepository.findById(dogNumber).ifPresent(dog -> {
+        dog.setScratched(false);
+        dogRepository.save(dog);
+      });
+    }
   }
 
   /**
@@ -511,6 +559,8 @@ public class DogService {
       dogScore.put("dam", dog.getDam()); // Add dam
       dogScore.put("stake", dog.getStake());
       dogScore.put("totalPoints", dailyScore.getDailyScore());
+      dogScore.put("endurance", endurance(dailyScore.getDailyScore(), day));
+      dogScore.put("dayTotal", dailyScore.getDailyScore() + endurance(dailyScore.getDailyScore(), day));
       dogScore.put("lastScore", dailyScore.getLastCross());
       dogScore.put("lastScorePoints", dailyScore.getAssociatedPoints());
       dogScores.add(dogScore);

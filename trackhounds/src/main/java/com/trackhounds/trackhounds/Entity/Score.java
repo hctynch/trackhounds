@@ -77,7 +77,14 @@ public class Score {
     if (!(o instanceof Score))
       return false;
     Score score = (Score) o;
-    return id == score.id;
+    // Boxed ids: compare values, never references. Unsaved scores are only equal to themselves.
+    return id != null && id.equals(score.id);
+  }
+
+  @Override
+  public int hashCode() {
+    // Constant per class: the id is assigned on save, so it cannot take part in the hash.
+    return Score.class.hashCode();
   }
 
 }

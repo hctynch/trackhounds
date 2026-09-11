@@ -97,8 +97,8 @@ function Home() {
   ];
 
   const dailyRows = daily.map((dog) => {
-    const endurance = Number.parseInt(dog.totalPoints * 0.1 * day, 10);
-    return { ...dog, endurance, total: dog.totalPoints + endurance };
+    const endurance = dog.endurance ?? Math.floor((dog.totalPoints * day) / 10);
+    return { ...dog, endurance, total: dog.dayTotal ?? dog.totalPoints + endurance };
   });
 
   const dailyColumns = [

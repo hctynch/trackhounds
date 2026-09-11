@@ -6,7 +6,7 @@ the next iterations are**. Keep it up to date: when an iteration finishes, move 
 note anything that was learned.
 
 - Status legend: ✅ done · 🔄 in progress · ⏳ planned · 💡 idea / needs a decision
-- Last updated: 2026-09-07 (iterations 1-3 and 5 done, iteration 4 partly done; all on `main`)
+- Last updated: 2026-09-10 (iterations 1-3 and 5 done, 4 and 6 in progress; all on `main`)
 
 ---
 
@@ -60,7 +60,7 @@ TrackHounds.exe (jpackage launcher + private JRE)
    10/11, gives a chrome-less window that looks like a native app, supports modern CSS (Tailwind 4) and
    prints reports properly. JavaFX WebView was rejected for now: its WebKit build lacks `window.print()`
    and has uncertain Tailwind 4 support. Embedding WebView2 (JNI) was rejected for now because of native
-   packaging risk. Both remain options for a later iteration (see 8).
+   packaging risk. Both remain options for a later iteration (see 9).
 5. **Process lifetime is tracked by the pages, not by processes.** Edge on Windows hands the window over to
    a new browser process and exits immediately, and Java cannot read other processes' command lines on
    Windows, so watching the launched process is useless. Instead every UI page keeps a Server-Sent Events
@@ -78,7 +78,7 @@ TrackHounds.exe (jpackage launcher + private JRE)
    (portable folder, works on any machine with a JDK) and `win-installer` profile (`.exe`, needs WiX 3.x,
    built in CI). A fixed `winUpgradeUuid` lets new installers upgrade in place. Per-user install: no admin.
 10. **No auto-update.** Version 2 used `electron-updater`. Version 3 updates manually via the installer;
-    an optional, user-triggered "check for updates" can be added later (iteration 9). SmartScreen warnings
+    an optional, user-triggered "check for updates" can be added later (iteration 10). SmartScreen warnings
     remain because code signing was dropped for cost reasons.
 11. **Version 3.0.0** (major bump: different installation and data location). Maven `pom.xml` is the
     single source of the version; the release workflow sets it from the git tag.
@@ -310,7 +310,34 @@ truck or a clubhouse, so clarity, large touch/click targets and keyboard speed m
 Suggested sequencing: do this after the first `v3.0.0` installer is confirmed on a clean machine
 (iteration 4), so the visual work lands on a stable base and can ship as `v3.1.0`.
 
-### ⏳ Iteration 6: data safety and hunt management
+### 🔄 Iteration 6: logic review and user-flow smoothing
+
+Context from the author (2026-09-10): the original project was not fully fleshed out when it was
+created. The scoring logic and the user flows therefore have to be **reviewed and confirmed**, not
+carried over on trust, before the data-safety and migration work builds on them.
+
+The working document is [LOGIC_REVIEW.md](LOGIC_REVIEW.md): how scoring works as implemented, the
+questions that need a rules decision, the defects fixed, what is still to do, and the flow notes.
+
+Done so far:
+
+- Audit of `DogService`, `DailyScore`, `HuntService`, the controllers and the tests.
+- Eight defects fixed without changing any scoring rule: submitted-name validation on edit, duplicate
+  dog numbers in a batch, unknown or duplicated dogs in a cross (now rejected instead of silently
+  dropped), endurance rounding made identical on server and UI, the day's stored start time made
+  authoritative for buckets, un-scratching when a scratch is deleted, entity `equals`/`hashCode`, and a
+  copy-paste check in `getCrossInfo`. Covered by `DogServiceReviewTest`.
+- The by-day results now include `endurance` and `dayTotal`, so the UI stops recomputing scoring maths.
+
+Next:
+
+- Answer the ten questions in the review (Q1 interval vs. point step and Q4 scratches matter most)
+  and implement the answers with tests.
+- Work through section 4 (side-effect-free points, simpler score model) before iteration 8 freezes the
+  schema with migrations.
+- Smooth the flows in section 5, starting with the first-run checklist and the score entry page.
+
+### ⏳ Iteration 7: data safety and hunt management
 
 - In-app **Backup** (copy `trackhounds.db` to a chosen file; use SQLite's online backup API so the app
   need not be closed) and **Restore**.
@@ -320,7 +347,7 @@ Suggested sequencing: do this after the first `v3.0.0` installer is confirmed on
   screen; alternative: add a `hunt_id` to all tables. Needs a decision.
 - "Open data folder" and "Show log file" from the UI (currently tray menu only).
 
-### ⏳ Iteration 7: schema migrations
+### ⏳ Iteration 8: schema migrations
 
 `spring.jpa.hibernate.ddl-auto=update` is fine while every user starts from an empty file, but it cannot
 rename or drop columns and SQLite has limited `ALTER TABLE`. Before the first schema change ships to
@@ -330,7 +357,7 @@ users with existing data:
   generate `V1__baseline.sql` from the current Hibernate schema, switch to `ddl-auto=validate`.
 - Add a start-up backup of the database before migrations run.
 
-### ⏳ Iteration 8: window technology review
+### ⏳ Iteration 9: window technology review
 
 Revisit after real-world use of the Edge app-mode window. Options, in order of effort:
 
@@ -344,7 +371,7 @@ Revisit after real-world use of the Edge app-mode window. Options, in order of e
    (e.g. OpenPDF) instead of printed from HTML. Only worth it if the browser-based window proves
    unreliable for users.
 
-### ⏳ Iteration 9: distribution extras
+### ⏳ Iteration 10: distribution extras
 
 - Optional "Check for updates" button that queries GitHub releases **only when the user asks** and opens
   the download page (the app itself never phones home).
