@@ -57,13 +57,13 @@ function Docs() {
             <PanelBody>
               <ol className="list-decimal space-y-2 pl-5 text-body">
                 <li>
-                  <span className="font-medium">Create the hunt</span> from Home: title, dates, point interval and stake.
+                  <span className="font-medium">Create the hunt</span> from Home: title, dates, scoring interval, point step and stake.
                 </li>
                 <li>
                   <span className="font-medium">Add judges</span>, then <span className="font-medium">add dogs</span>. Dogs take their stake from their number when the hunt defines number ranges.
                 </li>
                 <li>
-                  <span className="font-medium">Enter scores</span> one cross at a time: day, start and cross time, judge, then the dogs in crossing order. Points fill in from the first-dog points and the interval, and can be overridden.
+                  <span className="font-medium">Enter scores</span> one cross at a time: day, start and cross time, judge, then the dogs in crossing order. Points fill in from the first-dog points and the hunt&apos;s point step, and can be overridden.
                 </li>
                 <li>
                   <span className="font-medium">Scratch</span> any dog withdrawn from the hunt from the scratch sheet.
@@ -82,7 +82,7 @@ function Docs() {
             <PanelHeader title="How scoring works" />
             <PanelBody className="space-y-3 text-body">
               <p>
-                Each cross awards the first dog the first-dog points and every following dog the interval less. Within one scoring interval only a dog&apos;s highest cross counts, so the interval also sets how often a dog can score.
+                Each cross awards the first dog the first-dog points and every following dog the point step less (normally 5 points). Separately, the hunt has a scoring interval in minutes: counted from the day&apos;s start time, only a dog&apos;s highest cross within each interval is scored. A scratched dog keeps its points, stays in the standings and is marked as scratched on every report.
               </p>
               <p>
                 Daily standings show speed and drive (the counted points for the day) and endurance, which adds ten percent per day: day 1 adds 10%, day 2 adds 20%, and so on. Overall standings add every day together.

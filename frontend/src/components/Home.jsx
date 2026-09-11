@@ -4,7 +4,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
 import DogService from '../services/DogService';
 import JudgeService from '../services/JudgeService';
-import { Button, DataTable, EmptyState, PageHeader, Panel, PanelHeader, STAKE_LABELS, SegmentedControl } from './ui';
+import { Badge, Button, DataTable, EmptyState, PageHeader, Panel, PanelHeader, STAKE_LABELS, SegmentedControl } from './ui';
+
+function DogName({ dog }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="font-medium">{dog.dogName}</span>
+      {dog.scratched && <Badge tone="warning">Scratched</Badge>}
+    </span>
+  );
+}
+
+DogName.propTypes = { dog: (props, propName) => (props[propName] && typeof props[propName] === 'object' ? null : new Error('dog is required')) };
 
 const DAYS = [1, 2, 3, 4].map((day) => ({ value: day, label: `Day ${day}` }));
 
@@ -91,7 +102,7 @@ function Home() {
   const overallColumns = [
     { key: 'rank', header: '', width: '3rem', align: 'right', render: (row, index) => <Rank rank={index + 1} /> },
     { key: 'dogNumber', header: 'Dog', numeric: true, width: '4.5rem' },
-    { key: 'dogName', header: 'Name', render: (row) => <span className="font-medium">{row.dogName}</span> },
+    { key: 'dogName', header: 'Name', render: (row) => <DogName dog={row} /> },
     { key: 'owner', header: 'Owner', cellClassName: 'text-ink-muted' },
     { key: 'totalPoints', header: 'Points', numeric: true, cellClassName: 'font-semibold', width: '5.5rem' },
   ];
@@ -104,7 +115,7 @@ function Home() {
   const dailyColumns = [
     { key: 'rank', header: '', width: '3rem', align: 'right', render: (row, index) => <Rank rank={index + 1} /> },
     { key: 'dogNumber', header: 'Dog', numeric: true, width: '4.5rem' },
-    { key: 'dogName', header: 'Name', render: (row) => <span className="font-medium">{row.dogName}</span> },
+    { key: 'dogName', header: 'Name', render: (row) => <DogName dog={row} /> },
     { key: 'totalPoints', header: 'S&D', numeric: true, width: '4.5rem' },
     { key: 'endurance', header: 'Endurance', numeric: true, width: '6rem' },
     { key: 'total', header: 'Total', numeric: true, cellClassName: 'font-semibold', width: '5rem' },
@@ -127,11 +138,12 @@ function Home() {
         }
       />
 
-      <Panel className="mb-6 grid grid-cols-2 divide-x divide-line md:grid-cols-4">
+      <Panel className="mb-6 grid grid-cols-2 divide-x divide-line md:grid-cols-5">
         <Fact label="Dogs registered" value={dogTotal} />
         <Fact label="Judges" value={judgeTotal} />
         <Fact label="Stake" value={STAKE_LABELS[hunt?.stake] || 'Not set'} />
-        <Fact label="Point interval" value={hunt?.huntInterval ?? 0} />
+        <Fact label="Scoring interval" value={`${hunt?.huntInterval ?? 0} min`} />
+        <Fact label="Point step" value={hunt?.pointStep ?? 5} />
       </Panel>
 
       <div className="grid gap-6 xl:grid-cols-2">

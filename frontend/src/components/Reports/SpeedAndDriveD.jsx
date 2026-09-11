@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import DogService from '../../services/DogService';
+import { dogLabel } from './format';
 import { configShape, DaySelect, LimitInput, OptionsRow, StakeSelect } from './OptionControls';
 
 export const DailySpeedAndDriveLimitSelector = ({ onChange, config }) => {
@@ -49,7 +50,7 @@ const SpeedAndDriveD = {
           (index + 1).toString(),
           dog.totalPoints.toString(),
           dog.dogNumber.toString(),
-          dog.dogName || '',
+          dogLabel(dog),
           dog.sire || '',
           dog.dam || '',
           dog.owner || '',

@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import DogService from '../../services/DogService';
+import { dogLabel } from './format';
 import { configShape, LimitInput, OptionsRow, StakeSelect } from './OptionControls';
 
 export const OverallTopDogsLimitSelector = ({ onChange, config }) => {
@@ -49,7 +50,7 @@ const SpeedAndDriveO = {
         data: (Array.isArray(dogScores) ? dogScores : []).map((dog, index) => {
           const days = [1, 2, 3, 4].map((day) => scoreForDay(dog, day));
           const total = days.reduce((sum, value) => sum + value, 0);
-          return [(index + 1).toString(), total.toString(), ...days.map(String), dog.dogNumber.toString(), dog.dogName || '', dog.owner || ''];
+          return [(index + 1).toString(), total.toString(), ...days.map(String), dog.dogNumber.toString(), dogLabel(dog), dog.owner || ''];
         }),
       };
     } catch (error) {

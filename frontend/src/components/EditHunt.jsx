@@ -21,6 +21,7 @@ function EditHunt() {
             title: hunt.title || '',
             dates: hunt.dates || '',
             huntInterval: hunt.huntInterval ?? 0,
+            pointStep: hunt.pointStep ?? 5,
             stake: hunt.stake || 'ALL_AGE',
             stakeTypeRange: hunt.stakeTypeRange || emptyHunt.stakeTypeRange,
             stakeRange: hunt.stakeRange || emptyHunt.stakeRange,

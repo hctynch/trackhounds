@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import DogService from '../../services/DogService';
+import { dogLabel } from './format';
 import { configShape, DaySelect, LimitInput, OptionsRow, StakeSelect } from './OptionControls';
 
 export const DailyCustomLimitSelector = ({ onChange, config }) => {
@@ -50,7 +51,7 @@ const DailyCustomTopDogsReport = {
           (dog.dayTotal ?? dog.totalPoints + Math.floor((dog.totalPoints * day) / 10)).toString(),
           dog.totalPoints.toString(),
           dog.dogNumber.toString(),
-          dog.dogName || '',
+          dogLabel(dog),
           dog.sire || '',
           dog.dam || '',
           dog.owner || '',

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { LuDog, LuPencil, LuPlus, LuTrash2 } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 import DogService from '../services/DogService.js';
-import { Button, ConfirmDialog, DataTable, EmptyState, IconButton, PageHeader, Panel, SearchInput, StakeBadge, useToast } from './ui';
+import { Badge, Button, ConfirmDialog, DataTable, EmptyState, IconButton, PageHeader, Panel, SearchInput, StakeBadge, useToast } from './ui';
 
 function Dogs() {
   const navigate = useNavigate();
@@ -45,7 +45,16 @@ function Dogs() {
 
   const columns = [
     { key: 'number', header: 'Dog', numeric: true, width: '4.5rem', cellClassName: 'font-semibold' },
-    { key: 'name', header: 'Name', render: (dog) => <span className="font-medium">{dog.name}</span> },
+    {
+      key: 'name',
+      header: 'Name',
+      render: (dog) => (
+        <span className="inline-flex items-center gap-2">
+          <span className="font-medium">{dog.name}</span>
+          {dog.scratched && <Badge tone="warning">Scratched</Badge>}
+        </span>
+      ),
+    },
     { key: 'stake', header: 'Stake', render: (dog) => <StakeBadge stake={dog.stake} /> },
     { key: 'owner', header: 'Owner' },
     { key: 'sire', header: 'Sire', cellClassName: 'text-ink-muted' },

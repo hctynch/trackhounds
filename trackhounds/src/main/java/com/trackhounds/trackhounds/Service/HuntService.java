@@ -45,6 +45,9 @@ public class HuntService {
         if (hunt.getHuntInterval() < 0) {
             errs.put("interval", "Interval cannot be negative.");
         }
+        if (hunt.getPointStep() < 0) {
+            errs.put("pointStep", "The point step cannot be negative.");
+        }
         int[] stakeRange = hunt.getStakeRange();
         for (int i = 1; i < 4; i++) {
             if (stakeRange[i] < stakeRange[i - 1])
@@ -97,6 +100,9 @@ public class HuntService {
         if (entity.getHuntInterval() < 0) {
             errs.put("interval", "Interval must be greater than 0.");
         }
+        if (entity.getPointStep() < 0) {
+            errs.put("pointStep", "The point step cannot be negative.");
+        }
         int[] stakeRange = entity.getStakeRange();
         for (int i = 1; i < 4; i++) {
             if (stakeRange[i] < stakeRange[i - 1])
@@ -109,6 +115,7 @@ public class HuntService {
         hunt.setDates(entity.getDates());
         hunt.setStake(entity.getStake());
         hunt.setHuntInterval(entity.getHuntInterval());
+        hunt.setPointStep(entity.getPointStep());
         hunt.setStakeRange(entity.getStakeRange());
         hunt.setStakeTypeRange(entity.getStakeTypeRange());
         return huntRepository.save(hunt);

@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import DogService from '../../services/DogService';
+import { dogLabel } from './format';
 import { configShape, DaySelect, OptionsRow, StakeSelect } from './OptionControls';
 
 export const DayAndStakeTypeSelector = ({ onChange, config }) => {
@@ -42,7 +43,7 @@ const TopDogsByDayAndStakeTypeReport = {
         (index + 1).toString(),
         (dog.dayTotal ?? dog.totalPoints + Math.floor((dog.totalPoints * day) / 10)).toString(),
         dog.dogNumber.toString(),
-        dog.dogName || '',
+        dogLabel(dog),
         dog.sire || '',
         dog.dam || '',
         dog.owner || '',

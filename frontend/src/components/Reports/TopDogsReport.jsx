@@ -1,4 +1,5 @@
 import DogService from '../../services/DogService';
+import { dogLabel } from './format';
 
 const columns = ['Place', 'Score', 'Dog', 'Name', 'Sire', 'Dam', 'Owner'];
 
@@ -16,7 +17,7 @@ const TopDogsReport = {
           (index + 1).toString(),
           dog.totalPoints.toString(),
           dog.dogNumber.toString(),
-          dog.dogName || '',
+          dogLabel(dog),
           dog.sire || '',
           dog.dam || '',
           dog.owner || '',

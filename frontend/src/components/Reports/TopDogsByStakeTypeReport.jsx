@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import DogService from '../../services/DogService';
+import { dogLabel } from './format';
 import { configShape, OptionsRow, StakeSelect } from './OptionControls';
 
 export const StakeTypeSelector = ({ onChange, config }) => {
@@ -39,7 +40,7 @@ const TopDogsByStakeTypeReport = {
         (index + 1).toString(),
         dog.totalPoints.toString(),
         dog.dogNumber.toString(),
-        dog.dogName || '',
+        dogLabel(dog),
         dog.sire || '',
         dog.dam || '',
         dog.owner || '',

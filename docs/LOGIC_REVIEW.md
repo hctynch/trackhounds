@@ -30,14 +30,22 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
   stored on the dog and never re-derived.
 - A **scratch** records the dog, the time, the judge and a reason and sets `dog.scratched = true`.
 
-## 2. Questions to confirm with the rules (need a decision, code unchanged)
+## 2. Decisions taken (answered by the author on 2026-09-10)
+
+| # | Decision | Implemented as |
+| - | -------- | -------------- |
+| Q1 | The **scoring interval** (minutes) and the **point step** (points between dogs in a cross) are two different hunt settings. Only a dog's highest cross within each interval, counted from the day's start time, is scored. The point step is normally 5 but is set per hunt. | `HuntEntity.huntInterval` is the scoring interval in minutes and `HuntEntity.pointStep` (default 5) the point step. The server buckets crosses with the hunt's interval and ignores the value sent with a cross (it is only used when no hunt exists, in unit tests). The hunt form has both fields; the score entry page prefills the point step from the hunt and shows the scoring interval. |
+| Q4 | A **scratch** flags the dog; the dog keeps its points and stays in the standings, and every report indicates that the dog was scratched. | `scratched` is returned in every standings and cross-info result; the dashboard, the dog list and the score entry page show a "Scratched" badge, and every printed sheet marks the dog's name (or number) with "(scratched)". |
+
+Also confirmed: **dual stake** hunts must score all-age and derby dogs separately within one cross. That is
+what `getCrossInfo` does (two point ladders); it stays and is covered by `testGetCrossInfo`.
+
+## 3. Questions still open (need a decision, code unchanged)
 
 | # | Question | Where it matters |
 | - | -------- | ---------------- |
-| Q1 | Is the scoring interval really the same number as the point step between dogs? The score entry page sends one `interval` that is used for both (points step in the UI, bucket length in minutes on the server), while ranking tie-breaks use the hunt's `huntInterval`. If the rule is, for example, 5 points between dogs but a 30-minute scoring interval, the model needs two settings. | `ScoreDto.interval`, `HuntEntity.huntInterval`, `DailyScore.addScore`, `DogService.getTopScoringDogsByDay` |
 | Q2 | Is endurance 10 % **per day number** (day 3 adds 30 %), or a flat 10 % each day? The code does the former and the tests assert it. | `DogService.calculateTotalPoints`, daily reports |
 | Q3 | Should the tie-break favour the **later** last cross (as coded and tested) or the earlier one? | ranking methods in `DogService` |
-| Q4 | What should a **scratch** do to scoring? Today it only flags the dog: scratched dogs still take points in later crosses and still appear in standings and reports. Options: block new crosses after the scratch time, keep points earned before it, mark the dog on reports. | `DogService.createScore`, `scratchDog`, reports |
 | Q5 | Does a scratch belong to a **day**? The entity has a time but no day, so "scratches on day 2" cannot be answered and a scratch at 09:10 on day 3 is indistinguishable from day 1. | `Entity/Scratch.java`, scratch sheet |
 | Q6 | Are hunts always **four days**? The day count is hard-coded in the UI (day selector, endurance per day) and nothing on the hunt records it. | `HuntEntity`, score entry, reports |
 | Q7 | Can a cross have more than **seven** dogs? The entry page has seven rows; the server has no limit. | `ScoreEntry.jsx` |
@@ -45,7 +53,7 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
 | Q9 | Should a dog that is **not registered** ever be allowed in a cross? Until now it was silently dropped; it is now rejected (see Fixed F3). If judges legitimately record unknown numbers, the entry page needs a "register on the spot" path instead. | `DogService.createScore` |
 | Q10 | How is a day's **start time corrected** after the first cross set it? There is no way today; the field is now read-only once set (Fixed F5). A "change start time" action would have to re-bucket the day's crosses. | `Days`, score entry |
 
-## 3. Fixed in iteration 6 so far
+## 4. Fixed in iteration 6 so far
 
 | # | Defect | Fix |
 | - | ------ | --- |
@@ -57,8 +65,10 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
 | F6 | Deleting a scratch left the dog flagged as scratched. | Deleting the last scratch of a dog clears the flag. |
 | F7 | `Score.equals` compared boxed `Long` ids with `==` (wrong above 127); `DogEntity.hashCode` used the mutable score list and disagreed with `equals`; `JudgeEntity.equals` threw on a missing PIN and had no `hashCode`. | Identity-based `equals`/`hashCode` on the key fields only. |
 | F8 | `getCrossInfo` checked `stakeRange` twice instead of `stakeTypeRange`. | Checks both arrays. |
+| F9 | One number served as both the point step and the scoring interval (Q1). | Separate `pointStep` on the hunt; buckets always use the hunt's interval. |
+| F10 | Scratched dogs were indistinguishable in standings and reports (Q4). | `scratched` flag in every result; badges in the UI and "(scratched)" on printed sheets. |
 
-## 4. Still to do (defects and rough edges that do not need a rules decision)
+## 5. Still to do (defects and rough edges that do not need a rules decision)
 
 - `GET /dogs` recalculates and **saves** every dog's points on each read. Points should be computed when
   scores change and read without side effects (or computed in the query).
@@ -77,7 +87,7 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
 - There is no way to **edit** a score (only delete and re-enter) and no way to edit a scratch.
 - `JudgeEntity.number = 0` is accepted by the server (the UI requires ≥ 1).
 
-## 5. User-flow notes (to smooth out)
+## 6. User-flow notes (to smooth out)
 
 - **First run**: the empty dashboard sends the user to "Create a hunt", but after creating it nothing
   suggests adding judges before dogs, or dogs before scores. A short checklist on the dashboard

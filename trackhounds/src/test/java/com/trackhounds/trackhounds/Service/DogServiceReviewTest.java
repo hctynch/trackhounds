@@ -178,6 +178,45 @@ class DogServiceReviewTest {
   }
 
   @Test
+  @Transactional
+  void theHuntsScoringIntervalDecidesTheBucketsNotTheCross() {
+    registerDogs(1);
+    // The hunt's interval is 5 minutes. A cross claiming a 60-minute interval must not
+    // merge 07:12 and 07:24 into one bucket: they are in buckets 2 and 4.
+    dogService.createScore(new ScoreDto(1, "07:00:00", 1, "07:12:00", new int[] { 1 }, new int[] { 35 }, 60));
+    dogService.createScore(new ScoreDto(1, "07:00:00", 1, "07:24:00", new int[] { 1 }, new int[] { 30 }, 60));
+    DogEntity dog = dogService.getDogByNumber(1);
+    assertAll(
+        () -> assertEquals(2, dog.getScores().get(0).getHighestScores().size()),
+        () -> assertEquals(65, dog.getScores().get(0).getDailyScore()));
+  }
+
+  @Test
+  @Transactional
+  void standingsAndCrossInfoCarryTheScratchedFlag() {
+    registerDogs(1, 2);
+    dogService.createScore(cross(1, "07:00:00", "07:10:00", new int[] { 1, 2 }, new int[] { 35, 30 }));
+    Scratch scratch = new Scratch();
+    scratch.setDogNumber(2);
+    scratch.setJudgeNumber(1);
+    scratch.setTime(LocalTime.of(8, 0));
+    scratch.setReason("Withdrawn");
+    dogService.scratchDog(scratch);
+
+    Map<String, Object> dayRow = dogService.getDogScoresByDay(1).stream()
+        .filter(row -> row.get("dogNumber").equals(2)).findFirst().orElseThrow();
+    Map<String, Object> overallRow = dogService.getTopScoringDogsOverall(10).stream()
+        .filter(row -> row.get("dogNumber").equals(2)).findFirst().orElseThrow();
+    Map<String, Object> crossRow = dogService.getCrossInfo(new int[] { 2 }, 35, 5, StakeType.ALL_AGE).get(0);
+    assertAll(
+        () -> assertEquals(true, dayRow.get("scratched")),
+        () -> assertEquals(true, overallRow.get("scratched")),
+        () -> assertEquals(true, crossRow.get("scratched")),
+        () -> assertEquals(5, huntRepository.findAll().get(0).getPointStep()));
+  }
+
+  @Test
+  @Transactional
   void scoreEqualityComparesIdValuesNotReferences() {
     Score a = new Score(35, LocalTime.of(7, 0), true, 1, 1, 1);
     Score b = new Score(30, LocalTime.of(8, 0), false, 1, 2, 1);
@@ -192,6 +231,7 @@ class DogServiceReviewTest {
   }
 
   @Test
+  @Transactional
   void judgeEqualityDoesNotNeedAPin() {
     JudgeEntity withPin = new JudgeEntity(4, "1234", "Ann");
     JudgeEntity withoutPin = new JudgeEntity(4, null, "Ann");

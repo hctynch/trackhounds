@@ -1,4 +1,5 @@
 import DogService from '../../services/DogService';
+import { dogNumberLabel } from './format';
 
 const columns = ['Dog', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Total'];
 const columnGroups = [
@@ -17,6 +18,7 @@ const ComprehensiveDogScoresReport = {
       (Array.isArray(dogs) ? dogs : []).forEach((dog) => {
         byDog[dog.number] = {
           dogNumber: dog.number,
+          scratched: dog.scratched,
           sd: { 1: 0, 2: 0, 3: 0, 4: 0 },
           endurance: { 1: 0, 2: 0, 3: 0, 4: 0 },
           total: 0,
@@ -41,7 +43,7 @@ const ComprehensiveDogScoresReport = {
         columns,
         columnGroups,
         data: Object.values(byDog).map((entry) => [
-          entry.dogNumber.toString(),
+          dogNumberLabel(entry),
           ...[1, 2, 3, 4].map((day) => entry.sd[day].toString()),
           ...[1, 2, 3, 4].map((day) => entry.endurance[day].toString()),
           entry.total.toString(),

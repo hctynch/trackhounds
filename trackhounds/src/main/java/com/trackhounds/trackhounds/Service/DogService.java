@@ -217,6 +217,7 @@ public class DogService {
         DogEntity dog = dogRetrieval.get();
         dogInfo.put("dogNumber", dog.getNumber());
         dogInfo.put("stake", dog.getStake());
+        dogInfo.put("scratched", dog.isScratched());
         dogInfo.put("points", startingPoints - (interval * i));
         crossInfo.add(dogInfo);
       }
@@ -262,6 +263,7 @@ public class DogService {
         DogEntity dog = dogRetrieval.get();
         dogInfo.put("dogNumber", dog.getNumber());
         dogInfo.put("stake", dog.getStake());
+        dogInfo.put("scratched", dog.isScratched());
         if (dog.getStake() == StakeType.ALL_AGE) {
           dogInfo.put("points", sp1);
           sp1 -= interval;
@@ -406,6 +408,10 @@ public class DogService {
     if (day.getStartTime() == null)
       day.setStartTime(startTime);
     day = daysRepository.save(day);
+    // The scoring interval (minutes) is a property of the hunt, not of the cross.
+    // The value sent with the cross is only used when no hunt exists (unit tests).
+    List<HuntEntity> hunts = huntRepository.findAll();
+    int scoringInterval = hunts.isEmpty() ? score.getInterval() : hunts.get(0).getHuntInterval();
     for (int i = 0; i < score.getDogNumbers().length; i++) {
       Optional<DogEntity> dogRetrieval = dogRepository.findById(score.getDogNumbers()[i]);
       if (dogRetrieval.isEmpty())
@@ -428,7 +434,7 @@ public class DogService {
       dailyScore.setDay(day);
       Score s = new Score(score.getScores()[i], crossTime, false, score.getJudge(), dog.getNumber(), day.getDay());
       s = scoreRepository.save(s);
-      dailyScore.addScore(s, startTime, score.getInterval());
+      dailyScore.addScore(s, startTime, scoringInterval);
       scoreRepository.save(s);
       dailyScore = dailyScoreRepository.save(dailyScore);
       dog.getScores().set(score.getDay() - 1, dailyScore);
@@ -554,6 +560,7 @@ public class DogService {
       Map<String, Object> dogScore = new HashMap<>();
       dogScore.put("dogNumber", dog.getNumber());
       dogScore.put("dogName", dog.getName());
+      dogScore.put("scratched", dog.isScratched());
       dogScore.put("owner", dog.getOwner());
       dogScore.put("sire", dog.getSire()); // Add sire
       dogScore.put("dam", dog.getDam()); // Add dam
@@ -663,6 +670,7 @@ public class DogService {
       Map<String, Object> dogScore = new HashMap<>();
       dogScore.put("dogNumber", dog.getNumber());
       dogScore.put("dogName", dog.getName());
+      dogScore.put("scratched", dog.isScratched());
       dogScore.put("sire", dog.getSire());
       dogScore.put("dam", dog.getDam());
       dogScore.put("owner", dog.getOwner());
@@ -794,6 +802,7 @@ public class DogService {
         Map<String, Object> dogScore = new HashMap<>();
         dogScore.put("dogNumber", dog.getNumber());
         dogScore.put("dogName", dog.getName());
+      dogScore.put("scratched", dog.isScratched());
         dogScore.put("owner", dog.getOwner());
         dogScore.put("sire", dog.getSire());
         dogScore.put("dam", dog.getDam());

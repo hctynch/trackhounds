@@ -22,7 +22,13 @@ function ScoreEntry() {
   const [dogs, setDogs] = useState(Array(ROWS).fill(''));
   const [customPoints, setCustomPoints] = useState(Array(ROWS).fill(null));
   const [startingPoints, setStartingPoints] = useState(35);
+  // Point step between dogs: the hunt's setting, editable for a one-off cross.
   const [interval, setInterval] = useState(5);
+  const scoringInterval = hunt?.huntInterval ?? 0;
+
+  useEffect(() => {
+    if (hunt && typeof hunt.pointStep === 'number') setInterval(hunt.pointStep);
+  }, [hunt]);
   const [startTime, setStartTime] = useState('');
   // Once the first cross of a day has been saved, the day's start time is fixed on the server.
   const [dayStarted, setDayStarted] = useState(false);
@@ -72,7 +78,7 @@ function ScoreEntry() {
           if (dog && dog.toString().trim() !== '') {
             const info = infoByDog[Number(dog)];
             if (info && !info.error) {
-              nextStakes[index] = info.stake;
+              nextStakes[index] = info.scratched ? `${info.stake}:scratched` : info.stake;
               if (nextPoints[index] === null) nextPoints[index] = info.points;
             } else {
               nextErrors[index] = info?.error || 'Not registered in this hunt';
@@ -163,6 +169,7 @@ function ScoreEntry() {
       debounceTimerRef.current = null;
     }
     setStartingPoints(35);
+    setInterval(hunt?.pointStep ?? 5);
     setCustomPoints(Array(ROWS).fill(null));
     setCrossTime('');
     setJudge('');
@@ -170,7 +177,6 @@ function ScoreEntry() {
     setDogErrors(Array(ROWS).fill(false));
     setDogStakes(Array(ROWS).fill(null));
     setError({});
-    if (!huntExists) setInterval(5);
     setTimeout(() => {
       resetFlagRef.current = false;
       inputRefs.current.crossTime?.focus();
@@ -196,7 +202,8 @@ function ScoreEntry() {
       crossTime,
       dogNumbers: filled.map(Number),
       scores,
-      interval,
+      // Buckets use the hunt's scoring interval; the server reads it from the hunt.
+      interval: scoringInterval,
     });
     setSaving(false);
     if (result) {
@@ -287,12 +294,15 @@ function ScoreEntry() {
                   <Input id={id} type="number" numeric min={0} value={startingPoints} onChange={(e) => setStartingPoints(Number(e.target.value))} onKeyDown={(e) => handleKeyDown(e, 'startingPoints')} ref={setRef('startingPoints')} />
                 )}
               </Field>
-              <Field label="Interval">
+              <Field label="Point step">
                 {({ id }) => (
                   <Input id={id} type="number" numeric min={0} value={interval} onChange={(e) => setInterval(Number(e.target.value))} onKeyDown={(e) => handleKeyDown(e, 'interval')} ref={setRef('interval')} />
                 )}
               </Field>
             </div>
+            <p className="text-small text-ink-muted">
+              Scoring interval: <span className="tabular text-ink">{scoringInterval} min</span>. Only a dog&apos;s highest cross in each interval counts.
+            </p>
           </PanelBody>
         </Panel>
 
@@ -346,7 +356,15 @@ function ScoreEntry() {
                           {typeof dogError === 'string' ? dogError : 'Not registered in this hunt'}
                         </span>
                       ) : dogs[index] && dogStakes[index] ? (
-                        <StakeBadge stake={dogStakes[index]} />
+                        <span className="inline-flex items-center gap-2">
+                          <StakeBadge stake={String(dogStakes[index]).split(':')[0]} />
+                          {String(dogStakes[index]).endsWith(':scratched') && (
+                            <span className="inline-flex items-center gap-1 text-warning-700">
+                              <LuTriangleAlert size={14} aria-hidden />
+                              Scratched
+                            </span>
+                          )}
+                        </span>
                       ) : null}
                     </td>
                   </tr>

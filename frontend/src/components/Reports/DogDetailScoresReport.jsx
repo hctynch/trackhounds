@@ -42,8 +42,9 @@ const DogDetailScoresReport = {
       const dog = await DogService.getDogByNumber(dogNumber);
       const scores = day ? await DogService.getScoresByDogNumberAndDay(dogNumber, day) : await DogService.getScoresByDogNumber(dogNumber);
       const name = dog && dog.name ? ` ${dog.name}` : '';
+      const scratched = dog && dog.scratched ? ' (scratched)' : '';
       return {
-        title: `Dog ${dogNumber}${name}, ${day ? `day ${day}` : 'all days'}`,
+        title: `Dog ${dogNumber}${name}${scratched}, ${day ? `day ${day}` : 'all days'}`,
         columns,
         data: (Array.isArray(scores) ? scores : []).map((score) => [
           score.day.toString(),

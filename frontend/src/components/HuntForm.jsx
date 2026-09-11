@@ -8,7 +8,8 @@ const RANGE_STAKES = ['ALL_AGE', 'DERBY'];
 export const emptyHunt = {
   title: '',
   dates: '',
-  huntInterval: 0,
+  huntInterval: 5,
+  pointStep: 5,
   stake: 'ALL_AGE',
   stakeTypeRange: ['ALL_AGE', 'ALL_AGE', 'ALL_AGE', 'ALL_AGE'],
   stakeRange: [0, 0, 0, 0],
@@ -18,6 +19,7 @@ function validate(values) {
   const errors = {};
   if (!values.title || values.title.trim().length < 1) errors.title = 'Give the hunt a title.';
   if (Number(values.huntInterval) < 0) errors.interval = 'The interval cannot be negative.';
+  if (Number(values.pointStep) < 0) errors.pointStep = 'The point step cannot be negative.';
   values.stakeRange.forEach((start, index) => {
     if (Number(start) < 0) errors[`startingNumber${index + 1}`] = 'Starting numbers cannot be negative.';
   });
@@ -72,6 +74,7 @@ function HuntForm({ initial = emptyHunt, onSubmit, onCancel, submitLabel = 'Save
       dates: values.dates,
       stake: values.stake,
       huntInterval: Number(values.huntInterval),
+      pointStep: Number(values.pointStep),
       stakeTypeRange: values.stakeTypeRange,
       stakeRange: values.stakeRange.map(Number),
     };
@@ -95,16 +98,26 @@ function HuntForm({ initial = emptyHunt, onSubmit, onCancel, submitLabel = 'Save
               <Field label="Dates" hint="Free text, printed on every report.">
                 {({ id }) => <Input id={id} value={values.dates} onChange={set('dates')} placeholder="March 14 to 17, 2026" />}
               </Field>
-              <Field
-                label="Point interval"
-                hint="Points deducted for each following dog in a cross. Also the length of each scoring interval in minutes."
-                error={errors.interval}
-                className="max-w-xs"
-              >
-                {({ id, invalid }) => (
-                  <Input id={id} type="number" numeric min={0} invalid={invalid} value={values.huntInterval} onChange={set('huntInterval')} />
-                )}
-              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Scoring interval (minutes)"
+                  hint="Counted from the day's start time. Only a dog's highest cross in each interval is scored."
+                  error={errors.interval}
+                >
+                  {({ id, invalid }) => (
+                    <Input id={id} type="number" numeric min={0} invalid={invalid} value={values.huntInterval} onChange={set('huntInterval')} />
+                  )}
+                </Field>
+                <Field
+                  label="Point step"
+                  hint="Points deducted for each following dog in a cross. Normally 5."
+                  error={errors.pointStep}
+                >
+                  {({ id, invalid }) => (
+                    <Input id={id} type="number" numeric min={0} invalid={invalid} value={values.pointStep} onChange={set('pointStep')} />
+                  )}
+                </Field>
+              </div>
             </PanelBody>
           </Panel>
 
@@ -185,6 +198,7 @@ HuntForm.propTypes = {
     title: PropTypes.string,
     dates: PropTypes.string,
     huntInterval: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    pointStep: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     stake: PropTypes.string,
     stakeTypeRange: PropTypes.arrayOf(PropTypes.string),
     stakeRange: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string])),

@@ -45,7 +45,17 @@ public class HuntEntity {
     /**
      * The interval of the hunt.
      */
+    /**
+     * Scoring interval in minutes. Counted from the day's start time, only a
+     * dog's highest cross within each interval is scored.
+     */
     private int huntInterval;
+    /**
+     * Points deducted for each following dog in a cross (the first dog gets the
+     * first-dog points entered with the cross). Normally 5, but set per hunt.
+     */
+    @org.hibernate.annotations.ColumnDefault("5")
+    private int pointStep = 5;
     /**
      * The stake type range of the hunt.
      */
