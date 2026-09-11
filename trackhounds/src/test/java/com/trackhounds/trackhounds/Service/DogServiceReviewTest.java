@@ -217,6 +217,64 @@ class DogServiceReviewTest {
 
   @Test
   @Transactional
+  void changingTheStartTimeResortsTheDaysCrosses() {
+    registerDogs(1);
+    // Start 07:00, interval 5: 07:04 is bucket 0 and 07:06 is bucket 1, so both count.
+    dogService.createScore(cross(1, "07:00:00", "07:04:00", new int[] { 1 }, new int[] { 35 }));
+    dogService.createScore(cross(1, "07:00:00", "07:06:00", new int[] { 1 }, new int[] { 30 }));
+    assertEquals(65, dogService.getDogByNumber(1).getScores().get(0).getDailyScore());
+
+    // Move the start to 07:02: both crosses fall into bucket 0 and only the 35 counts.
+    dogService.changeStartTime(1, LocalTime.of(7, 2));
+    DogEntity dog = dogService.getDogByNumber(1);
+    assertAll(
+        () -> assertEquals(LocalTime.of(7, 2), dogService.getStartTime(1)),
+        () -> assertEquals(1, dog.getScores().get(0).getHighestScores().size()),
+        () -> assertEquals(35, dog.getScores().get(0).getDailyScore()),
+        () -> assertEquals(38, dog.getPoints()),
+        () -> assertEquals(2, scoreRepository.findByDayOrderByTimeAsc(1).size()),
+        () -> assertEquals(1, scoreRepository.findByDayOrderByTimeAsc(1).stream().filter(Score::isCounted).count()));
+
+    // A start time after the first cross is refused.
+    TrackHoundsAPIException failure = assertThrows(TrackHoundsAPIException.class,
+        () -> dogService.changeStartTime(1, LocalTime.of(7, 5)));
+    assertTrue(failure.getFields().get("startTime").contains("07:04"));
+  }
+
+  @Test
+  @Transactional
+  void scratchesRecordADayWithinTheHunt() {
+    registerDogs(1);
+    HuntEntity hunt = huntRepository.findAll().get(0);
+    hunt.setHuntDays(2);
+    huntRepository.save(hunt);
+
+    Scratch late = new Scratch();
+    late.setDogNumber(1);
+    late.setJudgeNumber(1);
+    late.setDay(3);
+    late.setTime(LocalTime.of(9, 0));
+    late.setReason("Injured");
+    TrackHoundsAPIException failure = assertThrows(TrackHoundsAPIException.class, () -> dogService.scratchDog(late));
+    assertEquals("Day must be between 1 and 2.", failure.getFields().get("day"));
+
+    late.setDay(2);
+    dogService.scratchDog(late);
+    assertEquals(2, scratchRepository.findAll().get(0).getDay());
+  }
+
+  @Test
+  @Transactional
+  void huntSettingsHaveSensibleDefaults() {
+    HuntEntity hunt = huntRepository.findAll().get(0);
+    assertAll(
+        () -> assertEquals(5, hunt.getPointStep()),
+        () -> assertEquals(35, hunt.getFirstDogPoints()),
+        () -> assertEquals(4, hunt.getHuntDays()));
+  }
+
+  @Test
+  @Transactional
   void scoreEqualityComparesIdValuesNotReferences() {
     Score a = new Score(35, LocalTime.of(7, 0), true, 1, 1, 1);
     Score b = new Score(30, LocalTime.of(8, 0), false, 1, 2, 1);

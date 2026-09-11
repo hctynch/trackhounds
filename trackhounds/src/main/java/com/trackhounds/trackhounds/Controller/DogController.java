@@ -133,6 +133,26 @@ public class DogController {
   }
 
   /**
+   * Correct a day's start time; the day's crosses are re-sorted into intervals.
+   *
+   * @param day  hunt day
+   * @param body {@code {"startTime": "HH:mm:ss"}}
+   * @return the new start time
+   */
+  @PutMapping("/day/{day}")
+  public LocalTime changeStartTime(@PathVariable("day") int day, @RequestBody Map<String, String> body) {
+    String value = body == null ? null : body.get("startTime");
+    LocalTime startTime;
+    try {
+      startTime = value == null || value.isBlank() ? null : LocalTime.parse(value);
+    } catch (Exception e) {
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields", Map.of("startTime", "Invalid start time."));
+    }
+    dogService.changeStartTime(day, startTime);
+    return dogService.getStartTime(day);
+  }
+
+  /**
    * Get all scratches
    * 
    * @return List of scratches

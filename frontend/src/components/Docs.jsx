@@ -57,16 +57,16 @@ function Docs() {
             <PanelBody>
               <ol className="list-decimal space-y-2 pl-5 text-body">
                 <li>
-                  <span className="font-medium">Create the hunt</span> from Home: title, dates, scoring interval, point step and stake.
+                  <span className="font-medium">Create the hunt</span> from Home: title, dates, number of days, scoring interval, first-dog points, point step and stake.
                 </li>
                 <li>
                   <span className="font-medium">Add judges</span>, then <span className="font-medium">add dogs</span>. Dogs take their stake from their number when the hunt defines number ranges.
                 </li>
                 <li>
-                  <span className="font-medium">Enter scores</span> one cross at a time: day, start and cross time, judge, then the dogs in crossing order. Points fill in from the first-dog points and the hunt&apos;s point step, and can be overridden.
+                  <span className="font-medium">Enter scores</span> one cross at a time: day, start and cross time, judge, then the dogs in crossing order. Points fill in from the hunt&apos;s first-dog points and point step, and can be overridden. A dog that is not registered can be registered on the spot or skipped; the other dogs keep their places. A wrong start time can be changed and the day&apos;s crosses are re-sorted.
                 </li>
                 <li>
-                  <span className="font-medium">Scratch</span> any dog withdrawn from the hunt from the scratch sheet.
+                  <span className="font-medium">Scratch</span> any dog withdrawn from the hunt from the scratch sheet, with the day, time, judge and reason. Scratched dogs stay in the standings and are marked on every report.
                 </li>
                 <li>
                   <span className="font-medium">Print reports</span> at the end of each day and at the end of the hunt. Standings on Home update as scores come in.

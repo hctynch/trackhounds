@@ -1,61 +1,96 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { LuTriangleAlert } from 'react-icons/lu';
+import { LuPlus, LuTriangleAlert } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
+import { dayOptions, stakeForNumber } from '../lib/hunt';
 import DogService from '../services/DogService';
-import { Alert, Button, CellInput, Field, Input, PageHeader, Panel, PanelBody, PanelFooter, PanelHeader, SegmentedControl, StakeBadge, useToast } from './ui';
+import {
+  Alert,
+  Button,
+  CellInput,
+  Dialog,
+  Field,
+  Input,
+  PageHeader,
+  Panel,
+  PanelBody,
+  PanelFooter,
+  PanelHeader,
+  STAKE_LABELS,
+  SegmentedControl,
+  StakeBadge,
+  useToast,
+} from './ui';
 
-const ROWS = 7;
-const DAYS = [1, 2, 3, 4].map((day) => ({ value: day, label: `Day ${day}` }));
+const MIN_ROWS = 7;
+const REGISTER_STAKES = ['ALL_AGE', 'DERBY'].map((value) => ({ value, label: STAKE_LABELS[value] }));
+
+const filled = (count, value) => Array.from({ length: count }, () => value);
 
 /**
- * The page scorekeepers live on. Everything is reachable with arrow keys and Enter, and the
- * points for each dog are worked out as numbers are typed so the judge can check them.
+ * The page scorekeepers live on. Everything is reachable with arrow keys and Enter, the points
+ * for each dog are worked out as numbers are typed so the judge can check them, and a dog that is
+ * not registered can be registered on the spot or skipped.
  */
 function ScoreEntry() {
   const toast = useToast();
   const { hunt, loading: huntLoading } = useHunt();
   const huntExists = Boolean(hunt);
   const huntType = hunt?.stake || 'ALL_AGE';
-
-  const [selectedDay, setSelectedDay] = useState(1);
-  const [dogs, setDogs] = useState(Array(ROWS).fill(''));
-  const [customPoints, setCustomPoints] = useState(Array(ROWS).fill(null));
-  const [startingPoints, setStartingPoints] = useState(35);
-  // Point step between dogs: the hunt's setting, editable for a one-off cross.
-  const [interval, setInterval] = useState(5);
   const scoringInterval = hunt?.huntInterval ?? 0;
 
-  useEffect(() => {
-    if (hunt && typeof hunt.pointStep === 'number') setInterval(hunt.pointStep);
-  }, [hunt]);
+  const [selectedDay, setSelectedDay] = useState(1);
+  const [rows, setRows] = useState(MIN_ROWS);
+  const [dogs, setDogs] = useState(filled(MIN_ROWS, ''));
+  const [customPoints, setCustomPoints] = useState(filled(MIN_ROWS, null));
+  const [dogErrors, setDogErrors] = useState(filled(MIN_ROWS, false));
+  const [dogStakes, setDogStakes] = useState(filled(MIN_ROWS, null));
+  const [skipped, setSkipped] = useState(filled(MIN_ROWS, false));
+  const [startingPoints, setStartingPoints] = useState(35);
+  const [interval, setInterval] = useState(5);
   const [startTime, setStartTime] = useState('');
-  // Once the first cross of a day has been saved, the day's start time is fixed on the server.
   const [dayStarted, setDayStarted] = useState(false);
   const [judge, setJudge] = useState('');
   const [crossTime, setCrossTime] = useState('');
   const [error, setError] = useState({});
-  const [dogErrors, setDogErrors] = useState(Array(ROWS).fill(false));
-  const [dogStakes, setDogStakes] = useState(Array(ROWS).fill(null));
   const [saving, setSaving] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  // Register-on-the-spot dialog
+  const [registering, setRegistering] = useState(null); // row index
+  const [registerValues, setRegisterValues] = useState({ name: '', owner: '', sire: '', dam: '', stake: 'ALL_AGE' });
+  const [registerErrors, setRegisterErrors] = useState({});
+  const [registerSaving, setRegisterSaving] = useState(false);
+
+  // Change-start-time dialog
+  const [changingStart, setChangingStart] = useState(false);
+  const [newStart, setNewStart] = useState('');
+  const [changeError, setChangeError] = useState('');
+  const [changeSaving, setChangeSaving] = useState(false);
+
   const inputRefs = useRef({});
   const debounceTimerRef = useRef(null);
   const resetFlagRef = useRef(false);
 
   useEffect(() => {
+    if (!hunt) return;
+    if (typeof hunt.pointStep === 'number') setInterval(hunt.pointStep);
+    if (typeof hunt.firstDogPoints === 'number') setStartingPoints(hunt.firstDogPoints);
+  }, [hunt]);
+
+  useEffect(() => {
     if (!huntExists) return;
     DogService.getStartTime(selectedDay).then((result) => {
+      setError((current) => ({ ...current, startTime: undefined }));
       if (result instanceof Error || !result) {
-        setError((current) => ({ ...current, startTime: undefined }));
         setStartTime('');
         setDayStarted(false);
       } else {
-        setError((current) => ({ ...current, startTime: undefined }));
         setStartTime(result);
         setDayStarted(true);
       }
     });
-  }, [selectedDay, huntExists]);
+  }, [selectedDay, huntExists, refreshTick]);
 
   const updateCrossInfo = useCallback(() => {
     if (!huntExists || resetFlagRef.current) return;
@@ -72,7 +107,7 @@ function ScoreEntry() {
           infoByDog[info.dogNumber] = info;
         });
         const nextPoints = [...customPoints];
-        const nextErrors = Array(ROWS).fill(false);
+        const nextErrors = filled(rows, false);
         const nextStakes = [...dogStakes];
         dogs.forEach((dog, index) => {
           if (dog && dog.toString().trim() !== '') {
@@ -81,7 +116,7 @@ function ScoreEntry() {
               nextStakes[index] = info.scratched ? `${info.stake}:scratched` : info.stake;
               if (nextPoints[index] === null) nextPoints[index] = info.points;
             } else {
-              nextErrors[index] = info?.error || 'Not registered in this hunt';
+              nextErrors[index] = `Dog ${dog} is not registered in this hunt.`;
               nextStakes[index] = null;
             }
           } else {
@@ -95,35 +130,54 @@ function ScoreEntry() {
         console.error('Error updating cross info:', err);
       }
     }, 400);
-  }, [dogs, startingPoints, interval, huntType, customPoints, huntExists, dogStakes]);
+  }, [dogs, startingPoints, interval, huntType, customPoints, huntExists, dogStakes, rows, refreshTick]);
 
   useEffect(() => {
     updateCrossInfo();
-  }, [dogs, startingPoints, interval, updateCrossInfo]);
+  }, [dogs, startingPoints, interval, refreshTick, updateCrossInfo]);
+
+  const setAt = (setter) => (index, value) => setter((current) => current.map((entry, i) => (i === index ? value : entry)));
+  const setDogAt = setAt(setDogs);
+  const setPointsAt = setAt(setCustomPoints);
+  const setErrorAt = setAt(setDogErrors);
+  const setStakeAt = setAt(setDogStakes);
+  const setSkippedAt = setAt(setSkipped);
 
   const handleDogChange = (index, value) => {
-    setDogs((current) => current.map((dog, i) => (i === index ? value : dog)));
+    setDogAt(index, value);
+    setSkippedAt(index, false);
     if (!value) {
-      setCustomPoints((current) => current.map((points, i) => (i === index ? null : points)));
-      setDogErrors((current) => current.map((entry, i) => (i === index ? false : entry)));
-      setDogStakes((current) => current.map((stake, i) => (i === index ? null : stake)));
+      setPointsAt(index, null);
+      setErrorAt(index, false);
+      setStakeAt(index, null);
     }
   };
 
-  const handleCustomPointsChange = (index, value) => {
-    setCustomPoints((current) => current.map((points, i) => (i === index ? (value === '' ? null : Number(value)) : points)));
-  };
+  const handleCustomPointsChange = (index, value) => setPointsAt(index, value === '' ? null : Number(value));
 
+  // Positions stand: a skipped row still occupies its place in the cross.
   const calculatePoints = (index) => {
     if (customPoints[index] !== null) return customPoints[index];
-    const filled = dogs.filter((dog) => dog && dog.trim() !== '');
-    const position = filled.findIndex((dog) => dog === dogs[index]);
+    const present = dogs.filter((dog) => dog && dog.trim() !== '');
+    const position = present.findIndex((dog) => dog === dogs[index]);
     if (dogs[index] && position !== -1) return Math.max(0, startingPoints - position * interval);
     return Math.max(0, startingPoints - index * interval);
   };
 
+  const addRow = () => {
+    const next = rows + 1;
+    setRows(next);
+    setDogs((current) => [...current, '']);
+    setCustomPoints((current) => [...current, null]);
+    setDogErrors((current) => [...current, false]);
+    setDogStakes((current) => [...current, null]);
+    setSkipped((current) => [...current, false]);
+    setTimeout(() => inputRefs.current[`dog-${next - 1}`]?.focus(), 0);
+  };
+
   // Arrow-key map between fields. Returns true when the key was handled.
   const handleKeyDown = (event, fieldId) => {
+    const last = rows - 1;
     const map = {
       'day-1': { ArrowRight: 'day-2', ArrowDown: 'startTime' },
       'day-2': { ArrowLeft: 'day-1', ArrowRight: 'day-3', ArrowDown: 'startTime' },
@@ -134,20 +188,20 @@ function ScoreEntry() {
       judge: { ArrowUp: 'crossTime', ArrowDown: 'startingPoints', ArrowRight: 'dog-0' },
       startingPoints: { ArrowUp: 'judge', ArrowRight: 'interval', ArrowDown: 'dog-0' },
       interval: { ArrowUp: 'judge', ArrowLeft: 'startingPoints', ArrowDown: 'dog-0' },
-      resetButton: { ArrowUp: `points-${ROWS - 1}`, ArrowLeft: 'submitButton' },
-      submitButton: { ArrowUp: `points-${ROWS - 1}`, ArrowRight: 'resetButton' },
+      resetButton: { ArrowUp: `points-${last}`, ArrowLeft: 'submitButton' },
+      submitButton: { ArrowUp: `points-${last}`, ArrowRight: 'resetButton' },
     };
-    for (let i = 0; i < ROWS; i += 1) {
+    for (let i = 0; i < rows; i += 1) {
       map[`dog-${i}`] = {
         ArrowUp: i === 0 ? 'interval' : `dog-${i - 1}`,
         ArrowRight: `points-${i}`,
-        ArrowDown: i === ROWS - 1 ? 'submitButton' : `dog-${i + 1}`,
+        ArrowDown: i === last ? 'submitButton' : `dog-${i + 1}`,
         Enter: 'submitButton',
       };
       map[`points-${i}`] = {
         ArrowUp: i === 0 ? 'interval' : `points-${i - 1}`,
         ArrowLeft: `dog-${i}`,
-        ArrowDown: i === ROWS - 1 ? 'submitButton' : `points-${i + 1}`,
+        ArrowDown: i === last ? 'submitButton' : `points-${i + 1}`,
         Enter: 'submitButton',
       };
     }
@@ -168,14 +222,15 @@ function ScoreEntry() {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
-    setStartingPoints(35);
+    setRows(MIN_ROWS);
+    setStartingPoints(hunt?.firstDogPoints ?? 35);
     setInterval(hunt?.pointStep ?? 5);
-    setCustomPoints(Array(ROWS).fill(null));
+    setCustomPoints(filled(MIN_ROWS, null));
     setCrossTime('');
-    setJudge('');
-    setDogs(Array(ROWS).fill(''));
-    setDogErrors(Array(ROWS).fill(false));
-    setDogStakes(Array(ROWS).fill(null));
+    setDogs(filled(MIN_ROWS, ''));
+    setDogErrors(filled(MIN_ROWS, false));
+    setDogStakes(filled(MIN_ROWS, null));
+    setSkipped(filled(MIN_ROWS, false));
     setError({});
     setTimeout(() => {
       resetFlagRef.current = false;
@@ -185,23 +240,24 @@ function ScoreEntry() {
 
   const handleSubmit = async () => {
     if (!huntExists) return;
-    const filled = dogs.filter((dog) => dog && Number(dog));
-    if (filled.length === 0) {
+    const unresolved = dogs.findIndex((dog, index) => dog && dogErrors[index] && !skipped[index]);
+    if (unresolved !== -1) {
+      setError((current) => ({ ...current, general: `Dog ${dogs[unresolved]} is not registered. Register it or skip it before saving.` }));
+      return;
+    }
+    const included = dogs.map((dog, index) => ({ dog, index })).filter(({ dog, index }) => dog && Number(dog) && !skipped[index]);
+    if (included.length === 0) {
       setError((current) => ({ ...current, general: 'Enter at least one dog number.' }));
       return;
     }
-    const scores = [];
-    dogs.forEach((dog, index) => {
-      if (dog && Number(dog)) scores.push(calculatePoints(index));
-    });
     setSaving(true);
     const result = await DogService.postCross({
       day: selectedDay,
       startTime,
       judge: Number(judge),
       crossTime,
-      dogNumbers: filled.map(Number),
-      scores,
+      dogNumbers: included.map(({ dog }) => Number(dog)),
+      scores: included.map(({ index }) => calculatePoints(index)),
       // Buckets use the hunt's scoring interval; the server reads it from the hunt.
       interval: scoringInterval,
     });
@@ -210,8 +266,64 @@ function ScoreEntry() {
       setError(result.fields || { general: result.message || 'The cross could not be saved.' });
       return;
     }
-    toast.success(`Cross at ${crossTime} saved for day ${selectedDay}.`);
+    const skippedCount = skipped.filter((entry, index) => entry && dogs[index]).length;
+    toast.success(`Cross at ${crossTime} saved for day ${selectedDay}${skippedCount ? `, ${skippedCount} dog skipped` : ''}.`);
+    setRefreshTick((tick) => tick + 1);
     resetForm();
+  };
+
+  // Register a dog straight from the cross.
+  const openRegister = (index) => {
+    const number = parseInt(dogs[index], 10);
+    setRegisterValues({ name: '', owner: '', sire: '', dam: '', stake: stakeForNumber(hunt, number) || 'ALL_AGE' });
+    setRegisterErrors({});
+    setRegistering(index);
+  };
+  const setRegisterValue = (field) => (event) => setRegisterValues((current) => ({ ...current, [field]: event.target.value }));
+  const saveRegistration = async (event) => {
+    event.preventDefault();
+    const found = {};
+    if (!registerValues.name.trim()) found.name = 'Give the dog a name.';
+    if (!registerValues.owner.trim()) found.owner = 'Enter the owner.';
+    setRegisterErrors(found);
+    if (Object.keys(found).length > 0) return;
+    const number = parseInt(dogs[registering], 10);
+    setRegisterSaving(true);
+    const result = await DogService.createDogs([{ number, ...registerValues, name: registerValues.name.trim(), owner: registerValues.owner.trim() }]);
+    setRegisterSaving(false);
+    if (result && result.fields) {
+      setRegisterErrors({ name: Object.values(result.fields).join(' ') });
+      return;
+    }
+    if (result && result.message) {
+      setRegisterErrors({ name: result.message });
+      return;
+    }
+    toast.success(`Dog ${number} registered.`);
+    setErrorAt(registering, false);
+    setSkippedAt(registering, false);
+    setRegistering(null);
+    setRefreshTick((tick) => tick + 1);
+  };
+
+  const openChangeStart = () => {
+    setNewStart(startTime);
+    setChangeError('');
+    setChangingStart(true);
+  };
+  const saveStartTime = async (event) => {
+    event.preventDefault();
+    setChangeSaving(true);
+    const result = await DogService.changeStartTime(selectedDay, newStart);
+    setChangeSaving(false);
+    if (typeof result === 'string') {
+      setStartTime(result);
+      setChangingStart(false);
+      toast.success(`Day ${selectedDay} now starts at ${result}. Crosses were re-sorted into scoring intervals.`);
+      setRefreshTick((tick) => tick + 1);
+      return;
+    }
+    setChangeError(result?.fields?.startTime || result?.fields?.day || result?.message || 'The start time could not be changed.');
   };
 
   const setRef = (key) => (el) => {
@@ -247,7 +359,7 @@ function ScoreEntry() {
             <Field label="Day">
               <SegmentedControl
                 label="Day"
-                options={DAYS}
+                options={dayOptions(hunt)}
                 value={selectedDay}
                 onChange={setSelectedDay}
                 optionRef={(value, el) => {
@@ -258,7 +370,16 @@ function ScoreEntry() {
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field
-                label="Start time"
+                label={
+                  <span className="flex items-center justify-between gap-2">
+                    Start time
+                    {dayStarted && (
+                      <button type="button" onClick={openChangeStart} className="text-tiny font-medium text-pine-700 hover:underline">
+                        Change
+                      </button>
+                    )}
+                  </span>
+                }
                 required={!dayStarted}
                 error={error.startTime}
                 hint={!error.startTime ? (dayStarted ? `Fixed by the first cross of day ${selectedDay}.` : 'The first cross of the day sets it.') : undefined}
@@ -307,7 +428,15 @@ function ScoreEntry() {
         </Panel>
 
         <Panel>
-          <PanelHeader title="Dogs in the cross" description="In crossing order. Points fill in automatically and can be changed." />
+          <PanelHeader
+            title="Dogs in the cross"
+            description="In crossing order. Points fill in automatically and can be changed."
+            actions={
+              <Button size="sm" icon={LuPlus} onClick={addRow}>
+                Add dog
+              </Button>
+            }
+          />
           <table className="w-full border-collapse text-body">
             <thead>
               <tr className="border-b border-line-strong text-small font-medium text-ink-muted">
@@ -318,10 +447,12 @@ function ScoreEntry() {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: ROWS }, (_, index) => {
-                const dogError = error[`dogNumbers${index}`] || dogErrors[index];
+              {Array.from({ length: rows }, (_, index) => {
+                const unknown = dogs[index] && dogErrors[index];
+                const serverError = error[`dogNumbers${index}`];
+                const isSkipped = skipped[index];
                 return (
-                  <tr key={index} className="border-b border-line last:border-b-0">
+                  <tr key={index} className={`border-b border-line last:border-b-0 ${isSkipped ? 'bg-sunken' : ''}`}>
                     <td className="px-4 py-1.5 text-right font-serif text-[16px] text-ink-faint tabular">{index + 1}</td>
                     <td className="px-3 py-1.5">
                       <CellInput
@@ -329,11 +460,11 @@ function ScoreEntry() {
                         inputMode="numeric"
                         aria-label={`Dog ${index + 1} number`}
                         value={dogs[index]}
-                        invalid={Boolean(dogError)}
+                        invalid={Boolean(serverError || (unknown && !isSkipped))}
                         onChange={(e) => handleDogChange(index, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, `dog-${index}`)}
                         ref={setRef(`dog-${index}`)}
-                        className="tabular"
+                        className={`tabular ${isSkipped ? 'line-through text-ink-faint' : ''}`}
                       />
                     </td>
                     <td className="px-3 py-1.5">
@@ -344,16 +475,34 @@ function ScoreEntry() {
                         aria-label={`Dog ${index + 1} points`}
                         value={customPoints[index] !== null ? customPoints[index] : calculatePoints(index)}
                         invalid={Boolean(error[`scores${index}`])}
+                        disabled={isSkipped}
                         onChange={(e) => handleCustomPointsChange(index, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, `points-${index}`)}
                         ref={setRef(`points-${index}`)}
                       />
                     </td>
                     <td className="px-3 py-1.5 text-small">
-                      {dogError ? (
-                        <span className="inline-flex items-center gap-1.5 text-warning-700">
-                          <LuTriangleAlert size={14} aria-hidden />
-                          {typeof dogError === 'string' ? dogError : 'Not registered in this hunt'}
+                      {isSkipped ? (
+                        <span className="inline-flex flex-wrap items-center gap-2 text-ink-muted">
+                          Skipped, not scored
+                          <button type="button" onClick={() => setSkippedAt(index, false)} className="font-medium text-pine-700 hover:underline">
+                            Include
+                          </button>
+                        </span>
+                      ) : unknown || serverError ? (
+                        <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-warning-700">
+                          <span className="inline-flex items-center gap-1.5">
+                            <LuTriangleAlert size={14} aria-hidden />
+                            {serverError || dogErrors[index]}
+                          </span>
+                          <span className="inline-flex gap-2">
+                            <Button size="sm" variant="primary" onClick={() => openRegister(index)}>
+                              Register dog {dogs[index]}
+                            </Button>
+                            <Button size="sm" onClick={() => setSkippedAt(index, true)}>
+                              Skip
+                            </Button>
+                          </span>
                         </span>
                       ) : dogs[index] && dogStakes[index] ? (
                         <span className="inline-flex items-center gap-2">
@@ -382,6 +531,72 @@ function ScoreEntry() {
           </PanelFooter>
         </Panel>
       </div>
+
+      <Dialog
+        open={registering !== null}
+        onClose={() => setRegistering(null)}
+        title={registering !== null ? `Register dog ${dogs[registering]}` : ''}
+        description="The dog is added to this hunt and stays in the cross."
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setRegistering(null)} disabled={registerSaving}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" form="register-dog-form" loading={registerSaving}>
+              Register dog
+            </Button>
+          </>
+        }
+      >
+        {registering !== null && (
+          <form id="register-dog-form" onSubmit={saveRegistration} noValidate className="flex flex-col gap-4">
+            <Field label="Name" required error={registerErrors.name}>
+              {({ id, invalid }) => <Input id={id} invalid={invalid} value={registerValues.name} onChange={setRegisterValue('name')} autoFocus />}
+            </Field>
+            <Field label="Owner" required error={registerErrors.owner}>
+              {({ id, invalid }) => <Input id={id} invalid={invalid} value={registerValues.owner} onChange={setRegisterValue('owner')} />}
+            </Field>
+            <Field label="Stake" hint={stakeForNumber(hunt, parseInt(dogs[registering], 10)) ? 'From the hunt’s number ranges.' : undefined}>
+              <SegmentedControl
+                label="Stake"
+                options={REGISTER_STAKES}
+                value={registerValues.stake}
+                onChange={(stake) => setRegisterValues((current) => ({ ...current, stake }))}
+                className="self-start"
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Sire">{({ id }) => <Input id={id} value={registerValues.sire} onChange={setRegisterValue('sire')} />}</Field>
+              <Field label="Dam">{({ id }) => <Input id={id} value={registerValues.dam} onChange={setRegisterValue('dam')} />}</Field>
+            </div>
+          </form>
+        )}
+      </Dialog>
+
+      <Dialog
+        open={changingStart}
+        onClose={() => setChangingStart(false)}
+        title={`Change the start time of day ${selectedDay}`}
+        description="Every cross of the day is re-sorted into scoring intervals from the new time. The new time cannot be later than the first cross."
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setChangingStart(false)} disabled={changeSaving}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" form="change-start-form" loading={changeSaving}>
+              Change start time
+            </Button>
+          </>
+        }
+      >
+        <form id="change-start-form" onSubmit={saveStartTime} noValidate>
+          <Field label="New start time" required error={changeError}>
+            {({ id, invalid }) => <Input id={id} type="time" invalid={invalid} value={newStart} onChange={(e) => setNewStart(e.target.value)} className="tabular" autoFocus />}
+          </Field>
+        </form>
+      </Dialog>
     </>
   );
 }

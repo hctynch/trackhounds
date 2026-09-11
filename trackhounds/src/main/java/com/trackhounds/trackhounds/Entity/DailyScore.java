@@ -146,6 +146,47 @@ public class DailyScore {
    * @param score Score to remove
    * @return The removed score
    */
+  /**
+   * Re-sort every cross of this day into intervals measured from a new start
+   * time. Used when the day's start time is corrected. The scores themselves are
+   * untouched; only the bucket numbers, which crosses count, and the last-cross
+   * bookkeeping change.
+   *
+   * @param startTime new start time of the day
+   * @param interval  scoring interval in minutes
+   */
+  public void rebucket(LocalTime startTime, int interval) {
+    zeroInterval = interval == 0;
+    highestScores.clear();
+    lastCross = LocalTime.of(0, 0);
+    associatedPoints = 0;
+    java.util.Map<Integer, TimeBucketScore> best = new java.util.LinkedHashMap<>();
+    for (TimeBucketScore timeBucketScore : timeBucketScores) {
+      Score score = timeBucketScore.getScore();
+      int bucket = interval == 0 ? 0
+          : (int) java.time.Duration.between(startTime, score.getTime()).toMinutes() / interval;
+      timeBucketScore.setTimeBucket(bucket);
+      score.setCounted(false);
+      if (interval == 0) {
+        best.put(best.size(), timeBucketScore);
+      } else {
+        TimeBucketScore current = best.get(bucket);
+        if (current == null || score.getPoints() > current.getScore().getPoints()) {
+          best.put(bucket, timeBucketScore);
+        }
+      }
+    }
+    for (TimeBucketScore winner : best.values()) {
+      Score score = winner.getScore();
+      score.setCounted(true);
+      highestScores.add(new HighestScore(null, winner.getTimeBucket(), score, this));
+      if (score.getTime().isAfter(lastCross)) {
+        lastCross = score.getTime();
+        associatedPoints = score.getPoints();
+      }
+    }
+  }
+
   public Score removeScore(Score score) {
     TimeBucketScore timeBucketScore = timeBucketScores.stream()
         .filter(tbs -> tbs.getScore().equals(score))

@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
+import { MAX_DAYS } from '../lib/hunt';
 import { Alert, Button, Field, Input, Panel, PanelBody, PanelFooter, PanelHeader, STAKE_LABELS, SegmentedControl, Select } from './ui';
 
 const STAKES = ['ALL_AGE', 'DERBY', 'DUAL'].map((value) => ({ value, label: STAKE_LABELS[value] }));
@@ -10,6 +11,8 @@ export const emptyHunt = {
   dates: '',
   huntInterval: 5,
   pointStep: 5,
+  firstDogPoints: 35,
+  huntDays: 4,
   stake: 'ALL_AGE',
   stakeTypeRange: ['ALL_AGE', 'ALL_AGE', 'ALL_AGE', 'ALL_AGE'],
   stakeRange: [0, 0, 0, 0],
@@ -20,6 +23,8 @@ function validate(values) {
   if (!values.title || values.title.trim().length < 1) errors.title = 'Give the hunt a title.';
   if (Number(values.huntInterval) < 0) errors.interval = 'The interval cannot be negative.';
   if (Number(values.pointStep) < 0) errors.pointStep = 'The point step cannot be negative.';
+  if (Number(values.firstDogPoints) < 0) errors.firstDogPoints = 'The first-dog points cannot be negative.';
+  if (Number(values.huntDays) < 1 || Number(values.huntDays) > MAX_DAYS) errors.huntDays = `A hunt has between 1 and ${MAX_DAYS} days.`;
   values.stakeRange.forEach((start, index) => {
     if (Number(start) < 0) errors[`startingNumber${index + 1}`] = 'Starting numbers cannot be negative.';
   });
@@ -75,6 +80,8 @@ function HuntForm({ initial = emptyHunt, onSubmit, onCancel, submitLabel = 'Save
       stake: values.stake,
       huntInterval: Number(values.huntInterval),
       pointStep: Number(values.pointStep),
+      firstDogPoints: Number(values.firstDogPoints),
+      huntDays: Number(values.huntDays),
       stakeTypeRange: values.stakeTypeRange,
       stakeRange: values.stakeRange.map(Number),
     };
@@ -95,10 +102,23 @@ function HuntForm({ initial = emptyHunt, onSubmit, onCancel, submitLabel = 'Save
                   <Input id={id} invalid={invalid} value={values.title} onChange={set('title')} placeholder="Spring Trial 2026" autoFocus />
                 )}
               </Field>
-              <Field label="Dates" hint="Free text, printed on every report.">
-                {({ id }) => <Input id={id} value={values.dates} onChange={set('dates')} placeholder="March 14 to 17, 2026" />}
-              </Field>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
+                <Field label="Dates" hint="Free text, printed on every report.">
+                  {({ id }) => <Input id={id} value={values.dates} onChange={set('dates')} placeholder="March 14 to 17, 2026" />}
+                </Field>
+                <Field label="Days" error={errors.huntDays}>
+                  {({ id, invalid }) => (
+                    <Select id={id} invalid={invalid} value={values.huntDays} onChange={set('huntDays')}>
+                      {Array.from({ length: MAX_DAYS }, (_, index) => index + 1).map((count) => (
+                        <option key={count} value={count}>
+                          {count} {count === 1 ? 'day' : 'days'}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
                 <Field
                   label="Scoring interval (minutes)"
                   hint="Counted from the day's start time. Only a dog's highest cross in each interval is scored."
@@ -109,8 +129,17 @@ function HuntForm({ initial = emptyHunt, onSubmit, onCancel, submitLabel = 'Save
                   )}
                 </Field>
                 <Field
+                  label="First-dog points"
+                  hint="Points for the first dog across. Normally 35."
+                  error={errors.firstDogPoints}
+                >
+                  {({ id, invalid }) => (
+                    <Input id={id} type="number" numeric min={0} invalid={invalid} value={values.firstDogPoints} onChange={set('firstDogPoints')} />
+                  )}
+                </Field>
+                <Field
                   label="Point step"
-                  hint="Points deducted for each following dog in a cross. Normally 5."
+                  hint="Points deducted for each following dog. Normally 5."
                   error={errors.pointStep}
                 >
                   {({ id, invalid }) => (
@@ -199,6 +228,8 @@ HuntForm.propTypes = {
     dates: PropTypes.string,
     huntInterval: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     pointStep: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    firstDogPoints: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    huntDays: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     stake: PropTypes.string,
     stakeTypeRange: PropTypes.arrayOf(PropTypes.string),
     stakeRange: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string])),

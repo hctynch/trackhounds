@@ -22,6 +22,8 @@ function EditHunt() {
             dates: hunt.dates || '',
             huntInterval: hunt.huntInterval ?? 0,
             pointStep: hunt.pointStep ?? 5,
+            firstDogPoints: hunt.firstDogPoints ?? 35,
+            huntDays: hunt.huntDays ?? 4,
             stake: hunt.stake || 'ALL_AGE',
             stakeTypeRange: hunt.stakeTypeRange || emptyHunt.stakeTypeRange,
             stakeRange: hunt.stakeRange || emptyHunt.stakeRange,

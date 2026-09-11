@@ -12,10 +12,10 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
 ## 1. How scoring works today (as implemented)
 
 - A **cross** is entered with a day, a start time, a cross time, a judge and the dogs in crossing order.
-  The UI proposes points for each dog as `firstDogPoints - position * interval` (35, 30, 25, ...); the
+  The UI proposes points for each dog as `firstDogPoints - position * pointStep` (35, 30, 25, ...), both set per hunt; the
   judge can overwrite any value. The points sent to the server are what is stored.
 - Each dog has one `DailyScore` per hunt day. A day's crosses are placed in **time buckets** of
-  `interval` minutes counted from the day's start time (`bucket = minutesSinceStart / interval`).
+  `huntInterval` minutes (the hunt's scoring interval) counted from the day's start time (`bucket = minutesSinceStart / interval`).
   Within one bucket only the dog's **highest** cross counts (`HighestScore`); the others are stored but
   marked `counted = false`. With `interval = 0` every cross counts.
 - **Speed and drive** for a day (`dailyScore`) is the sum of the counted crosses of that day.
@@ -28,7 +28,7 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
   first-dog points among themselves and derby dogs among themselves (`DogService.getCrossInfo`).
 - Dogs take their stake from the hunt's **number ranges** when registered through the UI; the stake is
   stored on the dog and never re-derived.
-- A **scratch** records the dog, the time, the judge and a reason and sets `dog.scratched = true`.
+- A **scratch** records the dog, the day, the time, the judge and a reason, sets `dog.scratched = true`, and the dog is marked as scratched in standings and on reports.
 
 ## 2. Decisions taken (answered by the author on 2026-09-10)
 
@@ -36,22 +36,25 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
 | - | -------- | -------------- |
 | Q1 | The **scoring interval** (minutes) and the **point step** (points between dogs in a cross) are two different hunt settings. Only a dog's highest cross within each interval, counted from the day's start time, is scored. The point step is normally 5 but is set per hunt. | `HuntEntity.huntInterval` is the scoring interval in minutes and `HuntEntity.pointStep` (default 5) the point step. The server buckets crosses with the hunt's interval and ignores the value sent with a cross (it is only used when no hunt exists, in unit tests). The hunt form has both fields; the score entry page prefills the point step from the hunt and shows the scoring interval. |
 | Q4 | A **scratch** flags the dog; the dog keeps its points and stays in the standings, and every report indicates that the dog was scratched. | `scratched` is returned in every standings and cross-info result; the dashboard, the dog list and the score entry page show a "Scratched" badge, and every printed sheet marks the dog's name (or number) with "(scratched)". |
+| Q2 | Endurance is 10 % of the day's speed and drive **per day number** (day 3 adds 30 %). | As coded and tested; no change. |
+| Q3 | Ties are broken in favour of the **later** last cross. | As coded and tested; no change. |
+| Q5 | A scratch **records the day** it happened on. | `Scratch.day` (default 1 for existing rows), validated against the hunt's day count; day selector on the scratch sheet and a Day column on the sheet and the scratch report. |
+| Q6 | Hunts have **1 to 4 days, set per hunt**. | `HuntEntity.huntDays` (default 4); the hunt form has a day selector and every day list (dashboard, score entry, scores, scratch sheet, report options) only offers those days. |
+| Q7 | A cross can have **more than seven dogs**; rows are added as needed. | Score entry starts with seven rows and has an "Add dog" button; the keyboard map grows with the rows. |
+| Q8 | Changing the hunt's number ranges does **not** re-derive registered dogs' stakes. | As coded; no change. |
+| Q9 | A dog that is not registered is shown with an explicit message and two choices: **register it on the spot** or **skip it**. | Score entry shows "Dog N is not registered" with "Register dog N" (a small dialog; the stake is pre-filled from the number ranges) and "Skip" (the row is excluded from the cross; the other dogs keep their places). The server still rejects unknown dogs, so a skipped row is never sent. |
+| Q10 | A day's start time **can be changed** and the day's crosses are re-sorted into intervals. | "Change" next to the start time opens a dialog; `PUT /dogs/day/{day}` re-buckets every cross of the day (`DailyScore.rebucket`) and recalculates points. The new time cannot be later than the day's first cross. |
+| Q11 | The **first-dog points** are set per hunt. | `HuntEntity.firstDogPoints` (default 35); the hunt form has the field and score entry prefills it. |
+| Q12 | Scores are **not edited in place**; delete and re-enter. | No change. |
+| Q13 | The judge **member PIN** is a reference number only. | Kept as an optional field. |
+| Q14 | Scratch reasons are a **fixed list plus "Other"** with free text. | `SCRATCH_REASONS` in `frontend/src/lib/hunt.js`: injured, withdrawn by owner, not found, disqualified, other. Adjust the list there. |
 
 Also confirmed: **dual stake** hunts must score all-age and derby dogs separately within one cross. That is
 what `getCrossInfo` does (two point ladders); it stays and is covered by `testGetCrossInfo`.
 
-## 3. Questions still open (need a decision, code unchanged)
+## 3. Questions still open
 
-| # | Question | Where it matters |
-| - | -------- | ---------------- |
-| Q2 | Is endurance 10 % **per day number** (day 3 adds 30 %), or a flat 10 % each day? The code does the former and the tests assert it. | `DogService.calculateTotalPoints`, daily reports |
-| Q3 | Should the tie-break favour the **later** last cross (as coded and tested) or the earlier one? | ranking methods in `DogService` |
-| Q5 | Does a scratch belong to a **day**? The entity has a time but no day, so "scratches on day 2" cannot be answered and a scratch at 09:10 on day 3 is indistinguishable from day 1. | `Entity/Scratch.java`, scratch sheet |
-| Q6 | Are hunts always **four days**? The day count is hard-coded in the UI (day selector, endurance per day) and nothing on the hunt records it. | `HuntEntity`, score entry, reports |
-| Q7 | Can a cross have more than **seven** dogs? The entry page has seven rows; the server has no limit. | `ScoreEntry.jsx` |
-| Q8 | When the hunt's **number ranges** change after dogs are registered, should dog stakes be re-derived? Today they keep the stake they were registered with. | `HuntService.editHunt`, `AddDogs.jsx` |
-| Q9 | Should a dog that is **not registered** ever be allowed in a cross? Until now it was silently dropped; it is now rejected (see Fixed F3). If judges legitimately record unknown numbers, the entry page needs a "register on the spot" path instead. | `DogService.createScore` |
-| Q10 | How is a day's **start time corrected** after the first cross set it? There is no way today; the field is now read-only once set (Fixed F5). A "change start time" action would have to re-bucket the day's crosses. | `Days`, score entry |
+None at the moment. New questions go here with the code location they affect.
 
 ## 4. Fixed in iteration 6 so far
 
@@ -67,6 +70,9 @@ what `getCrossInfo` does (two point ladders); it stays and is covered by `testGe
 | F8 | `getCrossInfo` checked `stakeRange` twice instead of `stakeTypeRange`. | Checks both arrays. |
 | F9 | One number served as both the point step and the scoring interval (Q1). | Separate `pointStep` on the hunt; buckets always use the hunt's interval. |
 | F10 | Scratched dogs were indistinguishable in standings and reports (Q4). | `scratched` flag in every result; badges in the UI and "(scratched)" on printed sheets. |
+| F11 | The day count, first-dog points and scratch day were hard-coded or missing (Q5, Q6, Q11). | Hunt settings `huntDays` and `firstDogPoints`; `Scratch.day`; every day list follows the hunt. |
+| F12 | A wrong day start time could not be corrected (Q10). | `changeStartTime` re-buckets the day and recalculates points; dialog on the score entry page. |
+| F13 | Unknown dogs in a cross had no path but "fix the number" (Q9); crosses were limited to seven rows (Q7). | Register-on-the-spot dialog and Skip on the row; rows can be added. |
 
 ## 5. Still to do (defects and rough edges that do not need a rules decision)
 

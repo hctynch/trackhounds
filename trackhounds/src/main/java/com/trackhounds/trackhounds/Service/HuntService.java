@@ -48,6 +48,7 @@ public class HuntService {
         if (hunt.getPointStep() < 0) {
             errs.put("pointStep", "The point step cannot be negative.");
         }
+        validateDaysAndPoints(hunt, errs);
         int[] stakeRange = hunt.getStakeRange();
         for (int i = 1; i < 4; i++) {
             if (stakeRange[i] < stakeRange[i - 1])
@@ -64,6 +65,18 @@ public class HuntService {
     /**
      * Private method used to clear everything neccessary from old hunts.
      */
+    /** Maximum number of days a hunt can have. */
+    public static final int MAX_DAYS = 4;
+
+    private void validateDaysAndPoints(HuntEntity hunt, Map<String, String> errs) {
+        if (hunt.getHuntDays() < 1 || hunt.getHuntDays() > MAX_DAYS) {
+            errs.put("huntDays", "A hunt has between 1 and " + MAX_DAYS + " days.");
+        }
+        if (hunt.getFirstDogPoints() < 0) {
+            errs.put("firstDogPoints", "The first-dog points cannot be negative.");
+        }
+    }
+
     private void clearOldHunt() {
         huntRepository.deleteAll();
         dogService.clear();
@@ -103,6 +116,7 @@ public class HuntService {
         if (entity.getPointStep() < 0) {
             errs.put("pointStep", "The point step cannot be negative.");
         }
+        validateDaysAndPoints(entity, errs);
         int[] stakeRange = entity.getStakeRange();
         for (int i = 1; i < 4; i++) {
             if (stakeRange[i] < stakeRange[i - 1])
@@ -116,6 +130,8 @@ public class HuntService {
         hunt.setStake(entity.getStake());
         hunt.setHuntInterval(entity.getHuntInterval());
         hunt.setPointStep(entity.getPointStep());
+        hunt.setFirstDogPoints(entity.getFirstDogPoints());
+        hunt.setHuntDays(entity.getHuntDays());
         hunt.setStakeRange(entity.getStakeRange());
         hunt.setStakeTypeRange(entity.getStakeTypeRange());
         return huntRepository.save(hunt);

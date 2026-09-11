@@ -56,6 +56,12 @@ public class HuntEntity {
      */
     @org.hibernate.annotations.ColumnDefault("5")
     private int pointStep = 5;
+    /** Points the first dog of a cross receives by default. Set per hunt, normally 35. */
+    @org.hibernate.annotations.ColumnDefault("35")
+    private int firstDogPoints = 35;
+    /** Number of hunt days (1 to 4). Day selectors and reports only offer these days. */
+    @org.hibernate.annotations.ColumnDefault("4")
+    private int huntDays = 4;
     /**
      * The stake type range of the hunt.
      */

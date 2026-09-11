@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { LuPencil, LuPlus, LuTrophy } from 'react-icons/lu';
 import { Link, useNavigate } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
+import { dayOptions } from '../lib/hunt';
 import DogService from '../services/DogService';
 import JudgeService from '../services/JudgeService';
 import { Badge, Button, DataTable, EmptyState, PageHeader, Panel, PanelHeader, STAKE_LABELS, SegmentedControl } from './ui';
@@ -17,7 +18,6 @@ function DogName({ dog }) {
 
 DogName.propTypes = { dog: (props, propName) => (props[propName] && typeof props[propName] === 'object' ? null : new Error('dog is required')) };
 
-const DAYS = [1, 2, 3, 4].map((day) => ({ value: day, label: `Day ${day}` }));
 
 function Rank({ rank }) {
   return (
@@ -172,7 +172,7 @@ function Home() {
           <PanelHeader
             title="Daily standings"
             description="Speed and drive for the day, plus endurance"
-            actions={<SegmentedControl size="sm" label="Day" options={DAYS} value={day} onChange={setDay} />}
+            actions={<SegmentedControl size="sm" label="Day" options={dayOptions(hunt)} value={day} onChange={setDay} />}
           />
           <DataTable
             columns={dailyColumns}

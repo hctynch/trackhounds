@@ -89,6 +89,21 @@ class DogService {
     }
   }
 
+  /**
+   * Correct a day's start time; the day's crosses are re-sorted into intervals.
+   * @param {number} day
+   * @param {string} startTime HH:mm or HH:mm:ss
+   * @returns {Promise<string|Object>} the new start time, or an error body with fields
+   */
+  async changeStartTime(day, startTime) {
+    try {
+      const response = await this.api.put(`/day/${day}`, { startTime });
+      return response.data;
+    } catch (error) {
+      return error.response?.data || { message: 'The start time could not be changed.' };
+    }
+  }
+
   async getScratches() {
     try {
       const response = await this.api.get('/scratches');

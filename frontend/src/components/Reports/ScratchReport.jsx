@@ -1,6 +1,6 @@
 import DogService from '../../services/DogService';
 
-const columns = ['Dog', 'Name', 'Time', 'Judge', 'Reason'];
+const columns = ['Day', 'Dog', 'Name', 'Time', 'Judge', 'Reason'];
 
 const ScratchReport = {
   title: 'Scratches',
@@ -13,6 +13,7 @@ const ScratchReport = {
         title: 'Scratches',
         columns,
         data: (Array.isArray(scratches) ? scratches : []).map((scratch) => [
+          String(scratch.day ?? 1),
           scratch.dogNumber.toString(),
           scratch.dogName || '',
           scratch.time || '',

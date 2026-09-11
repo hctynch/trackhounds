@@ -329,10 +329,13 @@ Done so far:
   copy-paste check in `getCrossInfo`. Covered by `DogServiceReviewTest`.
 - The by-day results now include `endurance` and `dayTotal`, so the UI stops recomputing scoring maths.
 
+Decisions: on 2026-09-10 the author answered all fourteen rule and flow questions (see the review, section 2)
+and every answer is implemented and tested (interval vs. point step, scratches flagged on reports, per-hunt
+day count and first-dog points, scratch day and reason list, growable crosses, register-or-skip for unknown
+dogs, correctable start times with re-bucketing). 75 backend tests pass.
+
 Next:
 
-- Answer the ten questions in the review (Q1 interval vs. point step and Q4 scratches matter most)
-  and implement the answers with tests.
 - Work through section 4 (side-effect-free points, simpler score model) before iteration 8 freezes the
   schema with migrations.
 - Smooth the flows in section 5, starting with the first-run checklist and the score entry page.

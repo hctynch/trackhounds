@@ -1,4 +1,6 @@
 import PropTypes from 'prop-types';
+import { useHunt } from '../../hooks/useHunt';
+import { huntDays } from '../../lib/hunt';
 import { Field, Input, Select } from '../ui';
 
 /** Shared controls for report options so every report's toolbar looks and behaves the same. */
@@ -9,12 +11,13 @@ export function OptionsRow({ children }) {
 OptionsRow.propTypes = { children: PropTypes.node };
 
 export function DaySelect({ value, onChange, allowAll = false }) {
+  const { hunt } = useHunt();
   return (
     <Field label="Day" className="w-32">
       {({ id }) => (
         <Select id={id} value={value} onChange={(event) => onChange(event.target.value)}>
           {allowAll && <option value="all">All days</option>}
-          {[1, 2, 3, 4].map((day) => (
+          {huntDays(hunt).map((day) => (
             <option key={day} value={day}>
               Day {day}
             </option>

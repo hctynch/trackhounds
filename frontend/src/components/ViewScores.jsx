@@ -1,19 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LuClipboardList, LuTrash2 } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
+import { useHunt } from '../hooks/useHunt';
+import { huntDays } from '../lib/hunt';
 import DogService from '../services/DogService';
 import { Alert, ConfirmDialog, DataTable, EmptyState, Field, IconButton, Input, PageHeader, Panel, PanelBody, SearchInput, Select, useToast } from './ui';
 
-const DAY_OPTIONS = [
-  { value: 'all', label: 'All days' },
-  { value: '1', label: 'Day 1' },
-  { value: '2', label: 'Day 2' },
-  { value: '3', label: 'Day 3' },
-  { value: '4', label: 'Day 4' },
-];
 
 function ViewScores() {
   const toast = useToast();
+  const { hunt } = useHunt();
+  const DAY_OPTIONS = [{ value: 'all', label: 'All days' }, ...huntDays(hunt).map((d) => ({ value: String(d), label: `Day ${d}` }))];
   const [search, setSearch] = useState('');
   const [day, setDay] = useState('all');
   const [filterType, setFilterType] = useState('all');

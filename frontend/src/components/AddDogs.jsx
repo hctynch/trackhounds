@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LuPlus } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
+import { stakeForNumber } from '../lib/hunt';
 import DogService from '../services/DogService';
 import { Alert, Button, CellInput, Field, Input, PageHeader, Panel, PanelBody, PanelFooter, PanelHeader, STAKE_LABELS, useToast } from './ui';
 
@@ -43,21 +44,12 @@ function AddDogs() {
     setHighlighted(-1);
   };
 
-  const stakeForNumber = (number) => {
-    if (!hunt?.stakeRange || !hunt?.stakeTypeRange) return null;
-    for (let i = 0; i < hunt.stakeRange.length; i += 1) {
-      const isLast = i === hunt.stakeRange.length - 1;
-      if (number >= hunt.stakeRange[i] && (isLast || number < hunt.stakeRange[i + 1])) return hunt.stakeTypeRange[i];
-    }
-    return null;
-  };
-
   const handleChange = (index, field, value) => {
     setSubmitted(false);
     setDogs((current) => {
       const next = current.map((dog, i) => (i === index ? { ...dog, [field]: value } : dog));
       if (field === 'number') {
-        const stake = stakeForNumber(parseInt(value, 10));
+        const stake = stakeForNumber(hunt, parseInt(value, 10));
         if (stake) next[index].stake = stake;
       }
       return next;

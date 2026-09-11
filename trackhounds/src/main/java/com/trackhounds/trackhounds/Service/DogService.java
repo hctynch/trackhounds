@@ -486,6 +486,42 @@ public class DogService {
   }
 
   /**
+   * Correct a day's start time after crosses have been entered. Every cross of
+   * that day is re-sorted into scoring intervals from the new time and the
+   * dogs' points are recalculated.
+   *
+   * @param day       hunt day
+   * @param startTime new start time
+   * @throws TrackHoundsAPIException if the day has not started or a cross of
+   *                                 that day is earlier than the new start time
+   */
+  public void changeStartTime(int day, LocalTime startTime) {
+    Days days = daysRepository.findById(day).orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST,
+        "Day has not started.", Map.of("day", "No cross has been entered for this day yet.")));
+    if (startTime == null)
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields", Map.of("startTime", "Start time cannot be empty."));
+    List<Score> scores = scoreRepository.findByDayOrderByTimeAsc(day);
+    if (!scores.isEmpty() && scores.get(0).getTime().isBefore(startTime)) {
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields", Map.of("startTime",
+          String.format("The first cross of day %d was at %s; the start time cannot be later than that.", day,
+              scores.get(0).getTime())));
+    }
+    days.setStartTime(startTime);
+    daysRepository.save(days);
+    List<HuntEntity> hunts = huntRepository.findAll();
+    int scoringInterval = hunts.isEmpty() ? 0 : hunts.get(0).getHuntInterval();
+    for (DailyScore dailyScore : dailyScoreRepository.findAllByDayDay(day)) {
+      dailyScore.rebucket(startTime, scoringInterval);
+      dailyScoreRepository.save(dailyScore);
+      DogEntity dog = dailyScore.getDog();
+      if (dog != null) {
+        dog.setPoints(calculateTotalPoints(dog));
+        dogRepository.save(dog);
+      }
+    }
+  }
+
+  /**
    * Scratch a dog
    * 
    * @param dogNumber Dog number
@@ -497,6 +533,9 @@ public class DogService {
       errs.put("reason", "Reason cannot be empty.");
     if (scratch.getTime() == null)
       errs.put("time", "Time cannot be empty.");
+    int dayCount = huntRepository.findAll().stream().findFirst().map(HuntEntity::getHuntDays).orElse(4);
+    if (scratch.getDay() < 1 || scratch.getDay() > dayCount)
+      errs.put("day", String.format("Day must be between 1 and %d.", dayCount));
     Optional<DogEntity> dogRetrieval = dogRepository.findById(scratch.getDogNumber());
     if (dogRetrieval.isEmpty())
       errs.put("dogNumber", "Dog does not exist.");
