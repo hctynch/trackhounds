@@ -140,7 +140,8 @@ opens the in-app guide, including where this installation keeps its data.
 #### Home
 
 The dashboard for the current hunt: how many dogs and judges are registered, the stake and point interval, and the
-overall and daily standings (speed and drive plus endurance). `Edit hunt` and `New hunt` live in the page header.
+overall and daily standings (speed and drive plus endurance). A dual hunt adds a `Both stakes / All age / Derby`
+switch, and dogs are tagged with their stake whenever the list mixes stakes. `Edit hunt` and `New hunt` live in the page header.
 Creating a new hunt clears the current one.
 
 #### Dogs

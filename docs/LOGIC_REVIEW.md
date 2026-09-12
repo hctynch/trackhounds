@@ -111,6 +111,11 @@ None at the moment. New questions go here with the code location they affect.
 - **Reports**: done. Scratched dogs are marked on every sheet (F10) and the Scratches report lists them;
   the Judge summary shows crosses and dog placings per judge and day; the Hunt summary is the one-page
   front sheet (F20). Day columns follow the hunt's day count (Q6).
+- **Stakes in a dual hunt** (2026-09-12): done. All age and derby are two competitions, so the dashboard
+  offers "Both stakes / All age / Derby" views of the standings (per-stake rankings from the server) and
+  tags every dog with its stake when both are listed together; the score list shows the dog's name and
+  stake and can be filtered by stake; the "All dogs" rankings sheets add a Stake column. In a single-stake
+  hunt the tag appears only on a dog whose stake differs from the hunt's (registered outside the ranges).
 - **Judges**: the member PIN is kept as a reference only (Q13); the dialog says so.
 - **Dogs**: done. Add dogs has Import CSV (`number, name, stake, sire, dam, owner`, header optional,
   unreadable rows listed and skipped, rows land in the table for checking before saving) and a per-row

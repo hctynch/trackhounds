@@ -3,11 +3,16 @@ import { useEffect, useState } from 'react';
 import { LuCircle, LuCircleCheck, LuPencil, LuPlus, LuTrophy } from 'react-icons/lu';
 import { Link, useNavigate } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
-import { dayOptions } from '../lib/hunt';
+import { dayOptions, isDualHunt, showsStake, STAKE_VIEWS } from '../lib/hunt';
 import DataService from '../services/DataService';
 import DogService from '../services/DogService';
 import JudgeService from '../services/JudgeService';
-import { Badge, Button, DataTable, Dialog, EmptyState, PageHeader, Panel, PanelHeader, STAKE_LABELS, SegmentedControl, useToast } from './ui';
+import { Badge, Button, DataTable, Dialog, EmptyState, PageHeader, Panel, PanelHeader, STAKE_LABELS, SegmentedControl, StakeBadge, useToast } from './ui';
+
+/** The top ten for one stake view: every dog, or one stake of a dual hunt. */
+const fetchOverall = (stakeView) => (stakeView === 'ALL' ? DogService.getTop10ScoringDogsOverall() : DogService.getTop10ScoringDogsByStakeType(stakeView));
+const fetchDaily = (day, stakeView) =>
+  stakeView === 'ALL' ? DogService.getTop10ScoringDogsByDay(day) : DogService.getTop10ScoringDogsByDayAndStakeType(day, stakeView);
 
 /** The setup steps of a hunt, shown until every one is done. */
 function SetupChecklist({ judges, dogs, scored }) {
@@ -56,16 +61,21 @@ SetupChecklist.propTypes = {
   scored: PropTypes.bool.isRequired,
 };
 
-function DogName({ dog }) {
+/** A dog's name with its stake tag (when the stake is not obvious from the list) and a scratched mark. */
+function DogName({ dog, tagged = false }) {
   return (
     <span className="inline-flex items-center gap-2">
       <span className="font-medium">{dog.dogName}</span>
+      {tagged && <StakeBadge stake={dog.stake} />}
       {dog.scratched && <Badge tone="warning">Scratched</Badge>}
     </span>
   );
 }
 
-DogName.propTypes = { dog: (props, propName) => (props[propName] && typeof props[propName] === 'object' ? null : new Error('dog is required')) };
+DogName.propTypes = {
+  dog: (props, propName) => (props[propName] && typeof props[propName] === 'object' ? null : new Error('dog is required')),
+  tagged: PropTypes.bool,
+};
 
 
 function Rank({ rank }) {
@@ -95,9 +105,12 @@ function Home() {
   const { hunt, loading } = useHunt();
   const [dogTotal, setDogTotal] = useState(0);
   const [judgeTotal, setJudgeTotal] = useState(0);
+  const [scored, setScored] = useState(false);
   const [overall, setOverall] = useState([]);
   const [daily, setDaily] = useState([]);
   const [day, setDay] = useState(1);
+  const [stakeView, setStakeView] = useState('ALL');
+  const dual = isDualHunt(hunt);
   const [confirmNewHunt, setConfirmNewHunt] = useState(false);
   const [archiveFirst, setArchiveFirst] = useState(true);
   const [archiving, setArchiving] = useState(false);
@@ -118,6 +131,11 @@ function Home() {
     navigate('/hunt/create');
   };
 
+  // Only a dual hunt has stake views; a hunt of one stake always shows every dog.
+  useEffect(() => {
+    if (!dual) setStakeView('ALL');
+  }, [dual]);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -129,7 +147,7 @@ function Home() {
       if (cancelled) return;
       setDogTotal(typeof dogs === 'number' ? dogs : 0);
       setJudgeTotal(typeof judges === 'number' ? judges : 0);
-      setOverall(Array.isArray(top) ? top : []);
+      setScored(Array.isArray(top) && top.length > 0);
     }
     load();
     return () => {
@@ -139,13 +157,23 @@ function Home() {
 
   useEffect(() => {
     let cancelled = false;
-    DogService.getTop10ScoringDogsByDay(day).then((data) => {
+    fetchOverall(stakeView).then((data) => {
+      if (!cancelled) setOverall(Array.isArray(data) ? data : []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [stakeView, hunt]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchDaily(day, stakeView).then((data) => {
       if (!cancelled) setDaily(Array.isArray(data) ? data : []);
     });
     return () => {
       cancelled = true;
     };
-  }, [day, hunt]);
+  }, [day, stakeView, hunt]);
 
   if (!loading && !hunt) {
     return (
@@ -167,10 +195,15 @@ function Home() {
     );
   }
 
+  // A tag says which competition a dog is in when the list does not already: both stakes of a
+  // dual hunt together, or a dog whose stake differs from the hunt's.
+  const tagged = (row) => showsStake(hunt, row.stake) && (stakeView === 'ALL' || row.stake !== stakeView);
+  const stakeNoun = stakeView === 'ALL' ? '' : ` ${STAKE_LABELS[stakeView].toLowerCase()} dogs`;
+
   const overallColumns = [
     { key: 'rank', header: '', width: '3rem', align: 'right', render: (row, index) => <Rank rank={index + 1} /> },
     { key: 'dogNumber', header: 'Dog', numeric: true, width: '4.5rem' },
-    { key: 'dogName', header: 'Name', render: (row) => <DogName dog={row} /> },
+    { key: 'dogName', header: 'Name', render: (row) => <DogName dog={row} tagged={tagged(row)} /> },
     { key: 'owner', header: 'Owner', cellClassName: 'text-ink-muted' },
     { key: 'totalPoints', header: 'Points', numeric: true, cellClassName: 'font-semibold', width: '5.5rem' },
   ];
@@ -183,7 +216,7 @@ function Home() {
   const dailyColumns = [
     { key: 'rank', header: '', width: '3rem', align: 'right', render: (row, index) => <Rank rank={index + 1} /> },
     { key: 'dogNumber', header: 'Dog', numeric: true, width: '4.5rem' },
-    { key: 'dogName', header: 'Name', render: (row) => <DogName dog={row} /> },
+    { key: 'dogName', header: 'Name', render: (row) => <DogName dog={row} tagged={tagged(row)} /> },
     { key: 'totalPoints', header: 'S&D', numeric: true, width: '4.5rem' },
     { key: 'endurance', header: 'Endurance', numeric: true, width: '6rem' },
     { key: 'total', header: 'Total', numeric: true, cellClassName: 'font-semibold', width: '5rem' },
@@ -234,9 +267,7 @@ function Home() {
         </label>
       </Dialog>
 
-      {(judgeTotal === 0 || dogTotal === 0 || overall.length === 0) && (
-        <SetupChecklist judges={judgeTotal} dogs={dogTotal} scored={overall.length > 0} />
-      )}
+      {(judgeTotal === 0 || dogTotal === 0 || !scored) && <SetupChecklist judges={judgeTotal} dogs={dogTotal} scored={scored} />}
 
       <Panel className="mb-6 grid grid-cols-2 divide-x divide-line md:grid-cols-5">
         <Fact label="Dogs registered" value={dogTotal} />
@@ -246,24 +277,35 @@ function Home() {
         <Fact label="Point step" value={hunt?.pointStep ?? 5} />
       </Panel>
 
+      {dual && (
+        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <SegmentedControl size="sm" label="Stake" options={STAKE_VIEWS} value={stakeView} onChange={setStakeView} />
+          <p className="text-small text-ink-muted">All age and derby dogs are placed separately in a dual hunt. Both stakes lists them together, each tagged with its stake.</p>
+        </div>
+      )}
+
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel>
-          <PanelHeader title="Overall standings" description="Top ten across all days, including endurance" />
+          <PanelHeader title="Overall standings" description={`Top ten${stakeNoun} across all days, including endurance`} />
           <DataTable
             columns={overallColumns}
             rows={overall}
             rowKey={(row) => row.dogNumber}
             empty={
-              <EmptyState
-                compact
-                title="No scores yet"
-                description="Standings appear as soon as the first cross is entered."
-                action={
-                  <Link to="/score-entry/enter" className="text-small font-medium text-pine-700 hover:underline">
-                    Enter scores
-                  </Link>
-                }
-              />
+              stakeView === 'ALL' ? (
+                <EmptyState
+                  compact
+                  title="No scores yet"
+                  description="Standings appear as soon as the first cross is entered."
+                  action={
+                    <Link to="/score-entry/enter" className="text-small font-medium text-pine-700 hover:underline">
+                      Enter scores
+                    </Link>
+                  }
+                />
+              ) : (
+                <EmptyState compact title={`No${stakeNoun} have scored yet`} description="Standings for this stake appear as soon as one of its dogs is in a cross." />
+              )
             }
           />
         </Panel>
@@ -271,14 +313,14 @@ function Home() {
         <Panel>
           <PanelHeader
             title="Daily standings"
-            description="Speed and drive for the day, plus endurance"
+            description={`Speed and drive${stakeNoun ? ` of${stakeNoun}` : ''} for the day, plus endurance`}
             actions={<SegmentedControl size="sm" label="Day" options={dayOptions(hunt)} value={day} onChange={setDay} />}
           />
           <DataTable
             columns={dailyColumns}
             rows={dailyRows}
             rowKey={(row) => row.dogNumber}
-            empty={<EmptyState compact title={`No scores for day ${day}`} description="Enter crosses for this day to see its standings." />}
+            empty={<EmptyState compact title={`No${stakeNoun || ' scores'} for day ${day}`} description="Enter crosses for this day to see its standings." />}
           />
         </Panel>
       </div>

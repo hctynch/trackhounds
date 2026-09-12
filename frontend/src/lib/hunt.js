@@ -23,5 +23,28 @@ export function stakeForNumber(hunt, number) {
   return null;
 }
 
+/** True when the hunt places all-age and derby dogs as two separate competitions. */
+export function isDualHunt(hunt) {
+  return hunt?.stake === 'DUAL';
+}
+
+/**
+ * Whether a dog's stake is worth showing next to its name: always in a dual hunt, and in a
+ * single-stake hunt only when the dog's stake differs from the hunt's (a dog registered outside
+ * the number ranges). Showing "All age" on every row of an all-age hunt would say nothing.
+ */
+export function showsStake(hunt, stake) {
+  if (!stake) return false;
+  if (!hunt?.stake) return true;
+  return hunt.stake === 'DUAL' || stake !== hunt.stake;
+}
+
+/** The stake views offered on standings and score lists of a dual hunt. */
+export const STAKE_VIEWS = [
+  { value: 'ALL', label: 'Both stakes' },
+  { value: 'ALL_AGE', label: 'All age' },
+  { value: 'DERBY', label: 'Derby' },
+];
+
 /** Reasons offered on the scratch sheet; "Other" takes free text. */
 export const SCRATCH_REASONS = ['Injured', 'Withdrawn by owner', 'Not found', 'Disqualified', 'Other'];

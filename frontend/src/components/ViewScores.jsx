@@ -2,19 +2,22 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LuClipboardList, LuTrash2 } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
-import { huntDays } from '../lib/hunt';
+import { huntDays, isDualHunt, showsStake, STAKE_VIEWS } from '../lib/hunt';
 import DogService from '../services/DogService';
-import { Alert, ConfirmDialog, DataTable, EmptyState, Field, IconButton, Input, PageHeader, Panel, PanelBody, SearchInput, Select, useToast } from './ui';
+import { Alert, Badge, ConfirmDialog, DataTable, EmptyState, Field, IconButton, Input, PageHeader, Panel, PanelBody, SearchInput, Select, STAKE_LABELS, StakeBadge, useToast } from './ui';
 
 
 function ViewScores() {
   const toast = useToast();
   const { hunt } = useHunt();
+  const dual = isDualHunt(hunt);
   const DAY_OPTIONS = [{ value: 'all', label: 'All days' }, ...huntDays(hunt).map((d) => ({ value: String(d), label: `Day ${d}` }))];
   const [search, setSearch] = useState('');
   const [day, setDay] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [filterValue, setFilterValue] = useState('');
+  const [stakeView, setStakeView] = useState('ALL');
+  const [dogsByNumber, setDogsByNumber] = useState({});
   const [scores, setScores] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -62,6 +65,26 @@ function ViewScores() {
     fetchScores();
   }, [fetchScores]);
 
+  // A score row only carries the dog's number; the name and stake come from the dog list.
+  useEffect(() => {
+    let cancelled = false;
+    DogService.getDogs().then((dogs) => {
+      if (cancelled) return;
+      const byNumber = {};
+      (Array.isArray(dogs) ? dogs : []).forEach((dog) => {
+        byNumber[String(dog.number)] = dog;
+      });
+      setDogsByNumber(byNumber);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hunt]);
+
+  useEffect(() => {
+    if (!dual) setStakeView('ALL');
+  }, [dual]);
+
   const confirmDelete = async () => {
     setDeleting(true);
     const response = await DogService.deleteCross(pendingDelete.dogNumber, pendingDelete.id);
@@ -75,10 +98,16 @@ function ViewScores() {
     setPendingDelete(null);
   };
 
-  const visible = useMemo(
-    () => (search ? scores.filter((score) => score.dogNumber?.toString().includes(search.trim())) : scores),
-    [scores, search],
-  );
+  const dogOf = (score) => dogsByNumber[String(score.dogNumber)];
+
+  const visible = useMemo(() => {
+    const needle = search.trim();
+    return scores.filter((score) => {
+      if (needle && !score.dogNumber?.toString().includes(needle)) return false;
+      if (stakeView !== 'ALL' && dogsByNumber[String(score.dogNumber)]?.stake !== stakeView) return false;
+      return true;
+    });
+  }, [scores, search, stakeView, dogsByNumber]);
 
   const fieldError = (name) => error?.fields?.[name];
 
@@ -87,6 +116,21 @@ function ViewScores() {
     { key: 'time', header: 'Cross time', width: '7rem', cellClassName: 'tabular' },
     { key: 'judgeNumber', header: 'Judge', numeric: true, width: '5rem' },
     { key: 'dogNumber', header: 'Dog', numeric: true, width: '5rem', cellClassName: 'font-semibold' },
+    {
+      key: 'dogName',
+      header: 'Name',
+      render: (score) => {
+        const dog = dogOf(score);
+        if (!dog) return <span className="text-ink-faint">Not registered</span>;
+        return (
+          <span className="inline-flex items-center gap-2">
+            <span>{dog.name}</span>
+            {showsStake(hunt, dog.stake) && (stakeView === 'ALL' || dog.stake !== stakeView) && <StakeBadge stake={dog.stake} />}
+            {dog.scratched && <Badge tone="warning">Scratched</Badge>}
+          </span>
+        );
+      },
+    },
     { key: 'points', header: 'Points', numeric: true, width: '5rem', cellClassName: 'font-semibold' },
     {
       key: 'counted',
@@ -104,7 +148,9 @@ function ViewScores() {
 
   const summary = loading
     ? 'Loading'
-    : `${visible.length} ${visible.length === 1 ? 'score' : 'scores'}${filterType !== 'all' ? `, ${filterType} ${filterValue || '?'}` : ''}${day !== 'all' ? `, day ${day}` : ''}`;
+    : `${visible.length} ${visible.length === 1 ? 'score' : 'scores'}${filterType !== 'all' ? `, ${filterType} ${filterValue || '?'}` : ''}${day !== 'all' ? `, day ${day}` : ''}${
+        stakeView !== 'ALL' ? `, ${STAKE_LABELS[stakeView].toLowerCase()}` : ''
+      }`;
 
   return (
     <>
@@ -154,6 +200,19 @@ function ViewScores() {
               </Select>
             )}
           </Field>
+          {dual && (
+            <Field label="Stake" className="w-40">
+              {({ id }) => (
+                <Select id={id} value={stakeView} onChange={(event) => setStakeView(event.target.value)}>
+                  {STAKE_VIEWS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          )}
           <p className="ml-auto pb-2 text-small text-ink-muted">{summary}</p>
         </PanelBody>
       </Panel>
@@ -169,8 +228,8 @@ function ViewScores() {
               <p className="text-center text-small text-ink-muted">Loading scores</p>
             ) : filterType !== 'all' && !filterValue ? (
               <EmptyState compact title={`Enter a ${filterType} number`} description="Scores appear as soon as a number is entered." />
-            ) : filterType !== 'all' || day !== 'all' || search ? (
-              <EmptyState compact title="No scores match" description="Change the day or the number, or clear the search." />
+            ) : filterType !== 'all' || day !== 'all' || search || stakeView !== 'ALL' ? (
+              <EmptyState compact title="No scores match" description="Change the day, stake or number, or clear the search." />
             ) : (
               <EmptyState
                 icon={LuClipboardList}

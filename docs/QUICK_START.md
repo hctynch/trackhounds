@@ -82,7 +82,8 @@ is kept for the next cross, and the day's last three crosses are listed under th
 ### 7. End of the day
 
 **Reports → Daily speed and drive** for the day, then **Print**. Home shows the daily and overall
-standings as scores come in.
+standings as scores come in. In a dual hunt, switch Home between **Both stakes**, **All age** and
+**Derby**: each stake is placed on its own, and with both listed together every dog carries its stake tag.
 
 ## End of the hunt
 

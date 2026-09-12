@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import DogService from '../../services/DogService';
-import { dogLabel } from './format';
+import { addStakeColumn, dogLabel, loadedHuntIsDual } from './format';
 import { configShape, DaySelect, LimitInput, OptionsRow, StakeSelect } from './OptionControls';
 
 export const DailySpeedAndDriveLimitSelector = ({ onChange, config }) => {
@@ -41,21 +41,15 @@ const SpeedAndDriveD = {
     const stakeLabel = stakeType === 'ALL' ? 'all dogs' : stakeType === 'ALL_AGE' ? 'all age' : 'derby';
     const title = `Day ${day} speed and drive, ${stakeLabel}`;
     try {
-      const dogScores =
-        stakeType === 'ALL' ? await DogService.getTopScoringDogsByDay(day, limit) : await DogService.getTopScoringDogsByDayAndStakeType(day, stakeType, limit);
-      return {
-        title,
-        columns,
-        data: (Array.isArray(dogScores) ? dogScores : []).map((dog, index) => [
-          (index + 1).toString(),
-          dog.totalPoints.toString(),
-          dog.dogNumber.toString(),
-          dogLabel(dog),
-          dog.sire || '',
-          dog.dam || '',
-          dog.owner || '',
-        ]),
-      };
+      const [dogScores, dual] = await Promise.all([
+        stakeType === 'ALL' ? DogService.getTopScoringDogsByDay(day, limit) : DogService.getTopScoringDogsByDayAndStakeType(day, stakeType, limit),
+        loadedHuntIsDual(),
+      ]);
+      const rows = (Array.isArray(dogScores) ? dogScores : []).map((dog, index) => [
+        dog,
+        [(index + 1).toString(), dog.totalPoints.toString(), dog.dogNumber.toString(), dogLabel(dog), dog.sire || '', dog.dam || '', dog.owner || ''],
+      ]);
+      return { title, ...addStakeColumn(columns, rows, stakeType === 'ALL' && dual) };
     } catch (error) {
       console.error('Error fetching daily speed and drive report:', error);
       return { title, columns, data: [] };

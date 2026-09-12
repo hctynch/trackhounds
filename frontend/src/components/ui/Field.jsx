@@ -93,7 +93,7 @@ export const CellInput = forwardRef(function CellInput({ invalid = false, classN
       aria-invalid={invalid || undefined}
       className={`h-8 w-full rounded-sm border bg-surface px-2 text-body text-ink placeholder:text-ink-faint transition-colors ${
         invalid ? 'border-danger-600' : 'border-line hover:border-pine-300 focus-visible:border-pine-500'
-      } ${numeric ? 'input-number' : ''} ${className}`}
+      } ${numeric ? 'input-number text-right' : ''} ${className}`}
       {...props}
     />
   );

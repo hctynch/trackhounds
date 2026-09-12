@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import DogService from '../../services/DogService';
-import { dogLabel } from './format';
+import { addStakeColumn, dogLabel, loadedHuntIsDual } from './format';
 import { configShape, LimitInput, OptionsRow, StakeSelect } from './OptionControls';
 
 export const OverallTopDogsLimitSelector = ({ onChange, config }) => {
@@ -43,16 +43,16 @@ const SpeedAndDriveO = {
     const stakeLabel = stakeType === 'ALL' ? 'all dogs' : stakeType === 'ALL_AGE' ? 'all age' : 'derby';
     const title = `Overall speed and drive, ${stakeLabel}`;
     try {
-      const dogScores = stakeType === 'ALL' ? await DogService.getTopScoringDogsOverall(limit) : await DogService.getTopScoringDogsByStakeType(stakeType, limit);
-      return {
-        title,
-        columns,
-        data: (Array.isArray(dogScores) ? dogScores : []).map((dog, index) => {
-          const days = [1, 2, 3, 4].map((day) => scoreForDay(dog, day));
-          const total = days.reduce((sum, value) => sum + value, 0);
-          return [(index + 1).toString(), total.toString(), ...days.map(String), dog.dogNumber.toString(), dogLabel(dog), dog.owner || ''];
-        }),
-      };
+      const [dogScores, dual] = await Promise.all([
+        stakeType === 'ALL' ? DogService.getTopScoringDogsOverall(limit) : DogService.getTopScoringDogsByStakeType(stakeType, limit),
+        loadedHuntIsDual(),
+      ]);
+      const rows = (Array.isArray(dogScores) ? dogScores : []).map((dog, index) => {
+        const days = [1, 2, 3, 4].map((day) => scoreForDay(dog, day));
+        const total = days.reduce((sum, value) => sum + value, 0);
+        return [dog, [(index + 1).toString(), total.toString(), ...days.map(String), dog.dogNumber.toString(), dogLabel(dog), dog.owner || '']];
+      });
+      return { title, ...addStakeColumn(columns, rows, stakeType === 'ALL' && dual) };
     } catch (error) {
       console.error('Error fetching overall speed and drive report:', error);
       return { title, columns, data: [] };

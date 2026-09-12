@@ -134,9 +134,10 @@
 }
 
 /* Number inputs: no spinner buttons, right-aligned figures. */
+/* Numeric inputs: tabular figures and no spinner. Text stays left-aligned like every other
+   field; table cells that want right-aligned numbers add `text-right` themselves. */
 @utility input-number {
   font-variant-numeric: tabular-nums;
-  text-align: right;
   -moz-appearance: textfield;
   appearance: textfield;
 }

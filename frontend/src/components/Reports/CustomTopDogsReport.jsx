@@ -1,5 +1,5 @@
 import DogService from '../../services/DogService';
-import { dogLabel } from './format';
+import { addStakeColumn, dogLabel, loadedHuntIsDual } from './format';
 
 const columns = ['Place', 'Score', 'Dog', 'Name', 'Sire', 'Dam', 'Owner'];
 
@@ -14,20 +14,15 @@ const CustomTopDogsReport = {
     const stakeLabel = stakeType === 'ALL' ? 'all dogs' : stakeType === 'ALL_AGE' ? 'all age' : 'derby';
     const title = `Top ${limit} overall, ${stakeLabel}`;
     try {
-      const topDogs = stakeType === 'ALL' ? await DogService.getTopScoringDogsOverall(limit) : await DogService.getTopScoringDogsByStakeType(stakeType, limit);
-      return {
-        title,
-        columns,
-        data: (Array.isArray(topDogs) ? topDogs : []).map((dog, index) => [
-          (index + 1).toString(),
-          dog.totalPoints.toString(),
-          dog.dogNumber.toString(),
-          dogLabel(dog),
-          dog.sire || '',
-          dog.dam || '',
-          dog.owner || '',
-        ]),
-      };
+      const [topDogs, dual] = await Promise.all([
+        stakeType === 'ALL' ? DogService.getTopScoringDogsOverall(limit) : DogService.getTopScoringDogsByStakeType(stakeType, limit),
+        loadedHuntIsDual(),
+      ]);
+      const rows = (Array.isArray(topDogs) ? topDogs : []).map((dog, index) => [
+        dog,
+        [(index + 1).toString(), dog.totalPoints.toString(), dog.dogNumber.toString(), dogLabel(dog), dog.sire || '', dog.dam || '', dog.owner || ''],
+      ]);
+      return { title, ...addStakeColumn(columns, rows, stakeType === 'ALL' && dual) };
     } catch (error) {
       console.error('Error fetching top dogs report data:', error);
       return { title, columns, data: [] };

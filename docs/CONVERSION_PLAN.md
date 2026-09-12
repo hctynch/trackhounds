@@ -6,7 +6,8 @@ the next iterations are**. Keep it up to date: when an iteration finishes, move 
 note anything that was learned.
 
 - Status legend: ✅ done · 🔄 in progress · ⏳ planned · 💡 idea / needs a decision
-- Last updated: 2026-09-10 (iterations 1-3 and 5 done, 4 and 6 in progress; all on `main`)
+- Last updated: 2026-09-12 (iterations 1-3 and 5-7 done, 4 waiting on a second PC, 11 started, 8-10 planned;
+  all on `main`)
 
 ---
 
@@ -386,7 +387,7 @@ query stay single-hunt).
 Not done, by choice: a JSON export format (the database file is the portable format and needs no
 second serializer) and `hunt_id` multi-hunt (nothing in the UI needs two hunts open at once).
 
-### ⏳ Iteration 8: schema migrations
+### ⏳ Iteration 8: schema migrations (next engineering step after iteration 11)
 
 `spring.jpa.hibernate.ddl-auto=update` is fine while every user starts from an empty file, but it cannot
 rename or drop columns and SQLite has limited `ALTER TABLE`. Before the first schema change ships to
@@ -418,6 +419,121 @@ Revisit after real-world use of the Edge app-mode window. Options, in order of e
 - macOS `.dmg` / Linux `.deb` with the same jpackage setup if there is demand (the launcher already has
   the code paths).
 - Automated smoke test in CI: start the jar with `--server`, call `/actuator/health` and `/app/info`.
+
+### 🔄 Iteration 11: stakes made visible, and a report builder
+
+Context from the author (2026-09-12), after using the app: the judge number sat at the right edge of
+its input box; on the dashboard and in the score list it was not clear which stake a dog belongs to
+("separate scoreboards or tags beside the number or name"); and the reports should let users
+compose their own sheets with the columns they want. The first two are done; the third is planned
+below and needs the decisions at the end.
+
+Done 2026-09-12:
+
+- **Numeric inputs read like every other field.** The `input-number` utility (used by `Input numeric`)
+  right-aligned its text, a table habit that looked wrong in a dialog. It now only sets tabular figures
+  and hides the spinner; `CellInput numeric` (the points column of the cross table) adds `text-right`
+  itself so it still lines up with its right-aligned header.
+- **Stake tags and stake views.** Helpers `isDualHunt`, `showsStake` and `STAKE_VIEWS` in
+  `frontend/src/lib/hunt.js`. The rule for a tag: always in a dual hunt; in a single-stake hunt only on a
+  dog whose stake differs from the hunt's (registered outside the number ranges), because "All age" on
+  every row of an all-age hunt says nothing.
+  - Home: a dual hunt gets a "Both stakes / All age / Derby" control above the standings that switches
+    both panels to the per-stake rankings (the existing `/dogs/scores/stake/...` and
+    `/dogs/scores/day/{d}/stake/...` endpoints, which already carry `stake` in every row). In "Both
+    stakes" every dog carries its stake tag next to its name. The setup checklist keys off an unfiltered
+    call so a stake view with no scored dogs does not bring the checklist back.
+  - Scores: a Name column (name, stake tag, scratched mark) joined from `GET /dogs`, because a score row
+    only holds the dog's number, and a Stake filter in dual hunts. The row count line names the stake.
+  - Sheets: the four rankings that can list "All dogs" (Daily speed and drive, Overall speed and drive,
+    Top dogs overall, Daily top dogs) add a Stake column after the name when the hunt is dual
+    (`addStakeColumn` in `Reports/format.js`). Per-stake sheets are unchanged.
+- Verified with `npm run lint` (no errors) and a production build; screenshots of the dual-hunt
+  dashboard and score list from the built jar are in `docs/screenshots/` (`home-dual.png`, `scores-dual.png`).
+
+Noticed on the way, left for the builder below:
+
+- "All dogs, all days" hard-codes four day columns whatever `huntDays` says (decision Q6) and its
+  column-group borders are index arithmetic on that count, so it cannot take a Stake column either.
+- `Reports/TopDogsReport.jsx`, `DogScoresByDayReport.jsx`, `TopDogsByStakeTypeReport.jsx` and
+  `TopDogsByDayAndStakeTypeReport.jsx` are no longer in the catalogue; the last three survive only because
+  `Reports.jsx` imports their option selectors.
+
+**Plan: the report builder**
+
+Goal: a scorekeeper composes a printable sheet from the hunt's data without code: what the rows are,
+which columns in which order, the filters, a name. The sheet then lives in the Reports catalogue and
+prints like the built-in ones. The built-in sheets stay, and most of them become definitions over the
+same machinery so there is one code path to keep correct.
+
+1. **Datasets (the rows).** Four, each served by the backend as flat rows with every column filled in,
+   so the UI never recomputes scoring maths (the rule since F4):
+   - `dogs`: one row per registered dog: place, number, name, stake, owner, sire, dam, scratched,
+     speed and drive per day, endurance per day, day total per day, overall speed and drive, overall
+     endurance, overall total, last cross day and time. Ranked by the server's rule (points, then the
+     tie-break) either overall or for one day, so "top N" keeps the tie-break order.
+   - `scores`: one row per dog placing in a cross: day, time, judge number and name, dog number and name,
+     stake, owner, points, counted, interval number.
+   - `scratches`: day, dog number and name, stake, owner, time, judge number and name, reason.
+   - `judges`: number, name, member PIN, crosses and dogs scored per day and in total, scratches
+     recorded (what `getJudgeSummary` already returns).
+   Endpoint `GET /reports/datasets/{dogs|scores|scratches|judges}?day=&stake=&limit=` in `ReportService`;
+   the parameters are the filters that need the server (a day's ranking, top N in tie-break order), the
+   rest is filtered in the browser. Day columns follow `huntDays`. `ReportServiceTest` covers each dataset,
+   the day count and the dual-stake ranking.
+2. **Definition (what is saved).**
+   ```json
+   {
+     "id": "club-daily-sheet", "name": "Club daily sheet", "dataset": "dogs",
+     "columns": [{ "key": "place" }, { "key": "dayTotal", "label": "Total" }, { "key": "number" },
+                 { "key": "name" }, { "key": "stake" }, { "key": "owner" }],
+     "filters": { "day": "ask", "stake": "ask", "limit": 10, "includeScratched": true, "splitByStake": false },
+     "sort": { "key": "rank" },
+     "title": "Day {day} placings, {stake}"
+   }
+   ```
+   A filter is a fixed value or `"ask"`, in which case the sheet shows that control when it is opened
+   (day, stake, number of dogs), exactly like today's option rows. `splitByStake` prints a dual hunt as
+   two sections (all age, then derby) with the sheet's existing section support. Column labels can be
+   renamed. Sort defaults to the dataset's natural order (ranking for dogs, day and time for scores) and
+   can be any column.
+3. **Storage.** One JSON file per definition in `<data>/reports/`, through `GET|PUT|DELETE
+   /reports/custom[/{id}]`. A hunt is a database file (iteration 7) but a sheet layout belongs to the
+   club, not to a hunt: it must survive "New hunt" and opening a past hunt, and it is inside the one-folder
+   backup. Export and import of a definition file (share a layout with another club) then costs nothing.
+4. **UI.** The catalogue gets a "Custom" group with the saved sheets and a "New report" entry; each custom
+   sheet has Edit, Duplicate and Delete. Routes `/reports/builder` and `/reports/builder/{id}`; printing
+   stays at `/reports/{id}`. The builder has three parts: settings (name, dataset, each filter with a
+   "fixed / ask when opening" choice, sort, split by stake), a column picker (the dataset's columns as a
+   checkbox list in print order, move up and down, optional label) and a live preview rendered by the
+   unchanged `ReportGenerator` from the current hunt's data. No drag and drop in the first cut. Every
+   built-in sheet gets a "Customise" action that opens the builder pre-filled, so users start from
+   something that already looks right.
+5. **Built-ins as definitions (second step).** Daily speed and drive, Overall speed and drive, Top dogs
+   overall, Daily top dogs, All dogs all days, Scratches, Judge summary, Scores for one dog and Scores by
+   one judge are each one dataset plus columns plus filters. They move into a read-only list of
+   definitions (`Reports/builtin.js`); the ten report modules and the nine selector components go. Hunt
+   summary stays hand-written (facts plus sections from several datasets). The column-group header of
+   All dogs all days becomes a `group` attribute on columns so the border maths stops depending on
+   exactly four days.
+
+Sequence: (a) datasets and tests; (b) definition model, storage endpoints, tests; (c) builder page and
+catalogue group; (d) built-ins as definitions, old modules deleted; (e) docs, screenshots, a Quick start
+row.
+
+Done when: a scorekeeper can build "Day N placings with owner and stake, top 15, ask for the day"
+without code, print it, and find it again after restarting the app and after opening a past hunt; every
+built-in sheet prints as it does today; day columns follow the hunt's day count everywhere.
+
+💡 Decisions needed before (b):
+
+1. Storage: JSON files in the data folder (recommended, above) or a table in the hunt database, where a
+   layout would travel with a past-hunt file and be lost on "New hunt" unless copied.
+2. Re-express the built-in sheets as definitions (recommended: it is what makes "Customise" possible and
+   removes ten near-identical modules) or keep them as code and only add custom sheets beside them.
+3. Are four datasets enough for the first version? A `crosses` dataset (one row per cross with its dogs in
+   order, the judge's card transcribed) is the likely fifth.
+4. Column reordering with up and down buttons first; drag and drop only if that proves too slow to use.
 
 ### 💡 Ideas / parking lot
 

@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import DogService from '../../services/DogService';
-import { dogLabel } from './format';
+import { addStakeColumn, dogLabel, loadedHuntIsDual } from './format';
 import { configShape, DaySelect, LimitInput, OptionsRow, StakeSelect } from './OptionControls';
 
 export const DailyCustomLimitSelector = ({ onChange, config }) => {
@@ -41,12 +41,13 @@ const DailyCustomTopDogsReport = {
     const stakeLabel = stakeType === 'ALL' ? 'all dogs' : stakeType === 'ALL_AGE' ? 'all age' : 'derby';
     const title = `Day ${day} top ${limit}, ${stakeLabel}`;
     try {
-      const topDogs =
-        stakeType === 'ALL' ? await DogService.getTopScoringDogsByDay(day, limit) : await DogService.getTopScoringDogsByDayAndStakeType(day, stakeType, limit);
-      return {
-        title,
-        columns,
-        data: (Array.isArray(topDogs) ? topDogs : []).map((dog, index) => [
+      const [topDogs, dual] = await Promise.all([
+        stakeType === 'ALL' ? DogService.getTopScoringDogsByDay(day, limit) : DogService.getTopScoringDogsByDayAndStakeType(day, stakeType, limit),
+        loadedHuntIsDual(),
+      ]);
+      const rows = (Array.isArray(topDogs) ? topDogs : []).map((dog, index) => [
+        dog,
+        [
           (index + 1).toString(),
           (dog.dayTotal ?? dog.totalPoints + Math.floor((dog.totalPoints * day) / 10)).toString(),
           dog.totalPoints.toString(),
@@ -55,8 +56,9 @@ const DailyCustomTopDogsReport = {
           dog.sire || '',
           dog.dam || '',
           dog.owner || '',
-        ]),
-      };
+        ],
+      ]);
+      return { title, ...addStakeColumn(columns, rows, stakeType === 'ALL' && dual) };
     } catch (error) {
       console.error('Error fetching daily top dogs report data:', error);
       return { title, columns, data: [] };
