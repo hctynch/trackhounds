@@ -19,7 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
  * The migration is exercised against a database built exactly like the ones
  * written by the 3.0 release candidates.
  */
-class LegacySchemaMigrationTest {
+public class LegacySchemaMigrationTest {
 
   @TempDir
   Path temp;
@@ -32,7 +32,32 @@ class LegacySchemaMigrationTest {
       "create table score (id integer, counted boolean not null, day integer not null, dog_number integer not null, judge_number integer not null, points integer not null, time time(6), primary key (id))",
       "create table scratch (id integer, dog_name varchar(255), dog_number integer not null, judge_number integer not null, reason varchar(255), time time(6), day integer default 1 not null, primary key (id))",
       "create table time_bucket_score (id integer, time_bucket integer not null, daily_score_id bigint, score_id bigint, primary key (id))",
+      "create table hunt_entity (id integer, dates varchar(255), hunt_interval integer not null, stake tinyint check (stake between 0 and 2), stake_range blob, stake_type_range blob, title varchar(255), primary key (id))",
+      "create table judge_entity (number integer not null, member_pin varchar(255), name varchar(255), primary key (number))",
   };
+
+  /**
+   * Write a small database in the release-candidate layout: dog 12 with one
+   * counted and one uncounted score, dog 2 without scores, one scratch, one
+   * judge and the hunt "Legacy hunt". Shared with the restore tests.
+   */
+  public static void writeLegacyDatabase(Path database) throws Exception {
+    try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + database); Statement statement = connection.createStatement()) {
+      for (String ddl : LEGACY_SCHEMA) {
+        statement.executeUpdate(ddl);
+      }
+      statement.executeUpdate("insert into hunt_entity (id, dates, hunt_interval, stake, title) values (1, '2026', 5, 0, 'Legacy hunt')");
+      statement.executeUpdate("insert into judge_entity (number, member_pin, name) values (1, '', 'Judge')");
+      statement.executeUpdate("insert into dogs (number, name, points, scratched, stake) values (1, 'Rex', 38, 0, 0)");
+      statement.executeUpdate("insert into dogs (number, name, points, scratched, stake) values (2, 'Bo', 0, 0, 0)");
+      statement.executeUpdate("insert into days (day, start_time) values (1, 25200000)");
+      statement.executeUpdate("insert into daily_score (id, associated_points, daily_score, zero_interval, day_day, dog_number, score_order) values (7, 35, 35, 0, 1, 1, 0)");
+      statement.executeUpdate("insert into score (id, counted, day, dog_number, judge_number, points, time) values (3, 1, 1, 1, 1, 35, 25800000)");
+      statement.executeUpdate("insert into time_bucket_score (id, time_bucket, daily_score_id, score_id) values (1, 2, 7, 3)");
+      statement.executeUpdate("insert into highest_score (id, time_bucket, daily_score_id, score_id) values (1, 2, 7, 3)");
+      statement.executeUpdate("insert into scratch (id, dog_number, judge_number, reason) values (1, 2, 1, 'Injured')");
+    }
+  }
 
   @Test
   void upgradesAReleaseCandidateDatabase() throws Exception {
@@ -74,6 +99,13 @@ class LegacySchemaMigrationTest {
         statement.executeUpdate("insert into dogs (number, name, points, scratched, stake) values ('00', 'Double zero', 0, 0, 0)");
         assertEquals("3", query(statement, "select count(*) from dogs"));
         assertEquals("Double zero", query(statement, "select name from dogs where number = '00'"));
+      }
+
+      // The columns later versions added are present with their defaults.
+      assertEquals("integer", LegacySchemaMigration.columnType(connection, "hunt_entity", "point_step").toLowerCase());
+      try (Statement statement = connection.createStatement()) {
+        statement.executeUpdate("insert into hunt_entity (id, dates, hunt_interval, stake, title) values (1, '2026', 5, 0, 'Old')");
+        assertEquals("5|35|4", query(statement, "select point_step || '|' || first_dog_points || '|' || hunt_days from hunt_entity"));
       }
 
       // Idempotent: a second run finds nothing to do.

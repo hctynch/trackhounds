@@ -101,13 +101,15 @@ standings as scores come in.
 
 ### 9. Keep a copy of the data
 
-Close TrackHounds and copy `trackhounds.db` from the data folder (`%LOCALAPPDATA%\TrackHounds`, also
-reachable from the tray icon menu) somewhere safe. Copying it back restores the hunt.
+**Backups** → **Save a backup** writes a copy to the backups folder inside the data folder; **Download a
+copy** saves one to a USB stick or another folder. Do this at the end of every day. A backup can be
+restored from the same page, and a safety copy of the current data is taken before any restore.
 
 ### 10. Start the next hunt
 
-Home → **New hunt**. This clears the dogs, judges, scores and scratches of the current hunt, so print
-what you need first.
+Home → **New hunt**. Leave **Save this hunt to past hunts first** checked: the finished hunt is kept
+on the Backups page under past hunts, where it can be opened again later. The new hunt then starts
+empty (dogs, judges, scores and scratches).
 
 ## Fixing mistakes
 
@@ -119,6 +121,8 @@ what you need first.
 | Scratched by mistake   | **Scratch sheet** → remove the scratch.                                                                 |
 | Wrong hunt settings    | Home → **Edit hunt**. Changing number ranges does not change the stake of dogs already registered.      |
 | Wrong dog details      | **All dogs** → edit the dog (name, stake, owner, sire, dam).                                            |
+| Something went badly   | **Backups** → restore the last backup, or the safety copy taken before a restore.                       |
+| Need last year's hunt  | **Backups** → past hunts → **Open**. The current hunt is saved to past hunts first.                     |
 
 ## How points are worked out
 

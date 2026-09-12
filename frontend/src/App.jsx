@@ -2,6 +2,7 @@ import { HashRouter, Route, Routes } from 'react-router-dom';
 import AddDogs from './components/AddDogs';
 import AppLifecycle from './components/AppLifecycle';
 import CreateHunt from './components/CreateHunt';
+import DataPage from './components/DataPage';
 import Docs from './components/Docs';
 import Dogs from './components/Dogs';
 import EditDog from './components/EditDog';
@@ -36,6 +37,7 @@ function App() {
               <Route path="/scratch-sheet/view" element={<ScratchSheet />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/reports/:reportId" element={<Reports />} />
+              <Route path="/data" element={<DataPage />} />
               <Route path="/docs" element={<Docs />} />
             </Routes>
           </AppShell>

@@ -359,15 +359,32 @@ Next:
 - Nothing blocks closing the iteration. Section 5 of the review lists small API rough edges (`400` vs
   `404`, route naming, `Days` not linked to the hunt) to take when the API is next touched (iteration 7).
 
-### ⏳ Iteration 7: data safety and hunt management
+### ✅ Iteration 7: data safety and hunt management
 
-- In-app **Backup** (copy `trackhounds.db` to a chosen file; use SQLite's online backup API so the app
-  need not be closed) and **Restore**.
-- **Export / import a hunt** as a single file (JSON or a copy of the database) so a hunt can be moved
-  between computers or archived.
-- Optional: multiple hunts. Cheapest model with SQLite: one database file per hunt plus a "hunt library"
-  screen; alternative: add a `hunt_id` to all tables. Needs a decision.
-- "Open data folder" and "Show log file" from the UI (currently tray menu only).
+Done 2026-09-11. One design carries all four bullets: **a hunt is a database file**, so a backup, an
+exported hunt and an archived hunt are the same kind of file, and "multiple hunts" is a library of
+such files rather than a `hunt_id` on every table (the cheaper model named below; the schema and every
+query stay single-hunt).
+
+- `DataService` / `GET|POST /data/**`: backups are written with `VACUUM INTO` while the app runs
+  (consistent copy, no close needed) to `<data>/backups/`, or streamed as a download
+  (`GET /data/backups/download`). Restore goes through SQLite's **online backup API into the live
+  connection** (`SQLiteConnection.getDatabase().restore`), so nothing restarts; the uploaded or chosen
+  file is checked (SQLite header, `hunt_entity` and `dogs` tables, a hunt row), upgraded on a temp copy
+  by `LegacySchemaMigration` (which now also adds the columns later versions introduced), and the current
+  database is saved to `backups/trackhounds-before-restore-*.db` first.
+- **Past hunts** live in `<data>/hunts/<title-slug>-<stamp>.db`: save the current hunt, open one
+  (the current hunt is archived first), delete, import a file. The "New hunt" dialog offers to save the
+  current hunt there before clearing it (checked by default).
+- UI: a **Backups** page (`/data`, in the rail) with the backups table, restore from file, past hunts and
+  the folder locations; **Open data folder** / **Show log file** buttons on the Docs page and folder
+  buttons on the Backups page (`POST /app/open/{data|backups|hunts|log}`, desktop mode only).
+- Tests: `DataServiceTest` (backup readable on its own, restore + safety copy + undo, rejects non-
+  TrackHounds files without touching anything, upgrades an RC-era file, archive/open/delete/import,
+  path traversal refused). 95 backend tests pass.
+
+Not done, by choice: a JSON export format (the database file is the portable format and needs no
+second serializer) and `hunt_id` multi-hunt (nothing in the UI needs two hunts open at once).
 
 ### ⏳ Iteration 8: schema migrations
 

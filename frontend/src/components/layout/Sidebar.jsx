@@ -4,6 +4,7 @@ import {
   LuBookOpen,
   LuChevronDown,
   LuClipboardList,
+  LuDatabase,
   LuDog,
   LuFileText,
   LuFlag,
@@ -35,6 +36,7 @@ const navigation = [
   },
   { label: 'Scratch sheet', to: '/scratch-sheet/view', icon: LuFlag },
   { label: 'Reports', to: '/reports', icon: LuFileText },
+  { label: 'Backups', to: '/data', icon: LuDatabase },
 ];
 
 const itemBase =

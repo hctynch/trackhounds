@@ -97,15 +97,21 @@ Everything TrackHounds stores lives in one folder:
 
 ```
 %LOCALAPPDATA%\TrackHounds        (for example C:\Users\<you>\AppData\Local\TrackHounds)
-├── trackhounds.db                the database (all hunts, dogs, judges, scores, scratches)
+├── trackhounds.db                the database (the current hunt: dogs, judges, scores, scratches)
+├── backups\                      backups saved from the Backups page (and safety copies taken before a restore)
+├── hunts\                        past hunts saved from the Backups page
 ├── logs\trackhounds.log          log files, useful when reporting a problem
 └── browser-profile\              private browser profile used for the application window
 ```
 
-- **Backup**: close TrackHounds and copy `trackhounds.db` somewhere safe.
-- **Restore**: close TrackHounds and copy the file back.
-- **Start over**: close TrackHounds and delete (or rename) `trackhounds.db`; an empty database is created on the next start.
-- The tray icon menu has an `Open data folder` shortcut. The `Docs` page inside the application also shows the folder.
+- **Backup**: the `Backups` page saves a copy to `backups\` or downloads one to a folder of your choice, while
+  TrackHounds is running. Every file is a complete copy of the current hunt.
+- **Restore**: choose a backup on the `Backups` page (or upload any TrackHounds `.db` file). The current data is saved
+  to `backups\` first, so a restore can be undone.
+- **Past hunts**: save a finished hunt to `hunts\` before starting the next one (the `New hunt` dialog offers this), and
+  open it again later from the same page. A hunt file from another computer can be imported the same way.
+- **Start over**: create a new hunt, or close TrackHounds and delete (or rename) `trackhounds.db`.
+- The tray icon menu and the `Docs` page open the data folder; the `Docs` page also opens the log file.
 
 ### Upgrading from version 2
 
@@ -163,6 +169,14 @@ The judges of the hunt. Adding and editing happens in a small dialog; scores are
 #### Scratch sheet
 
 Dogs withdrawn from the hunt, with the time, the judge and the reason, and the form to record a new scratch.
+
+#### Backups
+
+Backups, restores and past hunts, all while the application runs. `Save a backup` writes a copy to the backups folder,
+`Download a copy` saves one wherever you choose, and any backup or uploaded file can be restored (a safety copy is taken
+first). `Save current hunt` keeps a finished hunt in the past-hunts library, from where it can be opened again or deleted.
+
+![Backups and past hunts](docs/screenshots/backups.png)
 
 #### Reports
 

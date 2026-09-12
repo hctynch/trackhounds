@@ -4,9 +4,10 @@ import { LuCircle, LuCircleCheck, LuPencil, LuPlus, LuTrophy } from 'react-icons
 import { Link, useNavigate } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
 import { dayOptions } from '../lib/hunt';
+import DataService from '../services/DataService';
 import DogService from '../services/DogService';
 import JudgeService from '../services/JudgeService';
-import { Badge, Button, ConfirmDialog, DataTable, EmptyState, PageHeader, Panel, PanelHeader, STAKE_LABELS, SegmentedControl } from './ui';
+import { Badge, Button, DataTable, Dialog, EmptyState, PageHeader, Panel, PanelHeader, STAKE_LABELS, SegmentedControl, useToast } from './ui';
 
 /** The setup steps of a hunt, shown until every one is done. */
 function SetupChecklist({ judges, dogs, scored }) {
@@ -98,6 +99,24 @@ function Home() {
   const [daily, setDaily] = useState([]);
   const [day, setDay] = useState(1);
   const [confirmNewHunt, setConfirmNewHunt] = useState(false);
+  const [archiveFirst, setArchiveFirst] = useState(true);
+  const [archiving, setArchiving] = useState(false);
+  const toast = useToast();
+
+  const startNewHunt = async () => {
+    if (archiveFirst) {
+      setArchiving(true);
+      const result = await DataService.archiveCurrentHunt();
+      setArchiving(false);
+      if (!result || !result.file) {
+        toast.error(result?.message || 'The hunt could not be saved to past hunts.');
+        return;
+      }
+      toast.success(`"${hunt?.title}" saved to past hunts.`);
+    }
+    setConfirmNewHunt(false);
+    navigate('/hunt/create');
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -187,15 +206,33 @@ function Home() {
         }
       />
 
-      <ConfirmDialog
+      <Dialog
         open={confirmNewHunt}
         onClose={() => setConfirmNewHunt(false)}
-        onConfirm={() => navigate('/hunt/create')}
-        danger
+        size="sm"
         title={`Replace "${hunt?.title}"?`}
-        description="TrackHounds keeps one hunt at a time. Creating a new hunt deletes this hunt's dogs, judges, scores and scratches. Print any reports you still need first."
-        confirmLabel="Continue to new hunt"
-      />
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmNewHunt(false)} disabled={archiving}>
+              Cancel
+            </Button>
+            <Button variant={archiveFirst ? 'primary' : 'danger'} onClick={startNewHunt} loading={archiving}>
+              {archiveFirst ? 'Save and continue' : 'Continue without saving'}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-body text-ink-muted">
+          TrackHounds keeps one hunt at a time. Creating a new hunt replaces this hunt&apos;s dogs, judges, scores and scratches.
+        </p>
+        <label className="mt-4 flex items-start gap-3 rounded-md border border-line bg-sunken px-3.5 py-3 text-body">
+          <input type="checkbox" className="mt-1" checked={archiveFirst} onChange={(event) => setArchiveFirst(event.target.checked)} />
+          <span>
+            <span className="font-medium">Save this hunt to past hunts first</span>
+            <span className="mt-0.5 block text-small text-ink-muted">It can be opened again later from the Backups page. Uncheck only if you no longer need it.</span>
+          </span>
+        </label>
+      </Dialog>
 
       {(judgeTotal === 0 || dogTotal === 0 || overall.length === 0) && (
         <SetupChecklist judges={judgeTotal} dogs={dogTotal} scored={overall.length > 0} />

@@ -36,6 +36,10 @@ import org.springframework.stereotype.Component;
  * </ul>
  * A copy of the database is written to {@code backups/} before anything is
  * changed. Runs once; a database that is already current is left alone.
+ * <p>
+ * Columns that later versions added to existing tables are created here as
+ * well (with their defaults), so a restored older file is complete even when
+ * Hibernate's schema update does not run again.
  */
 @Component("legacySchemaMigration")
 public class LegacySchemaMigration implements InitializingBean {
@@ -81,7 +85,7 @@ public class LegacySchemaMigration implements InitializingBean {
     boolean legacyScores = tableExists(connection, "time_bucket_score");
     boolean legacyNumbers = columnType(connection, "dogs", "number").toLowerCase(Locale.ROOT).contains("int");
     if (!legacyScores && !legacyNumbers) {
-      return false;
+      return addMissingColumns(connection);
     }
     LOG.info("Upgrading the database layout (scores on the daily score: {}, text dog numbers: {})", legacyScores, legacyNumbers);
     backup(connection, databaseFile, backupDir);
@@ -106,8 +110,38 @@ public class LegacySchemaMigration implements InitializingBean {
       retypeColumnToText(connection, "score", "dog_number");
       retypeColumnToText(connection, "scratch", "dog_number");
     }
+    addMissingColumns(connection);
     LOG.info("Database layout upgraded");
     return true;
+  }
+
+  /** Columns added after the first release, with the defaults their entities use. */
+  private static final String[][] LATER_COLUMNS = {
+      { "hunt_entity", "point_step", "integer default 5 not null" },
+      { "hunt_entity", "first_dog_points", "integer default 35 not null" },
+      { "hunt_entity", "hunt_days", "integer default 4 not null" },
+      { "scratch", "day", "integer default 1 not null" },
+      { "score", "time_bucket", "integer default 0 not null" },
+      { "score", "daily_score_id", "bigint" },
+  };
+
+  /**
+   * Add the columns of {@link #LATER_COLUMNS} that are missing.
+   *
+   * @return {@code true} if a column was added
+   */
+  static boolean addMissingColumns(Connection connection) throws SQLException {
+    boolean changed = false;
+    for (String[] column : LATER_COLUMNS) {
+      if (tableExists(connection, column[0]) && !columnExists(connection, column[0], column[1])) {
+        try (Statement statement = connection.createStatement()) {
+          statement.executeUpdate("alter table " + column[0] + " add column " + column[1] + " " + column[2]);
+        }
+        LOG.info("Added column {}.{}", column[0], column[1]);
+        changed = true;
+      }
+    }
+    return changed;
   }
 
   private static void backup(Connection connection, Path databaseFile, Path backupDir) throws SQLException, IOException {
@@ -176,17 +210,17 @@ public class LegacySchemaMigration implements InitializingBean {
     }
   }
 
-  static boolean tableExists(Connection connection, String table) throws SQLException {
+  public static boolean tableExists(Connection connection, String table) throws SQLException {
     try (ResultSet tables = connection.getMetaData().getTables(null, null, table, null)) {
       return tables.next();
     }
   }
 
-  static boolean columnExists(Connection connection, String table, String column) throws SQLException {
+  public static boolean columnExists(Connection connection, String table, String column) throws SQLException {
     return !columnType(connection, table, column).isEmpty();
   }
 
-  static String columnType(Connection connection, String table, String column) throws SQLException {
+  public static String columnType(Connection connection, String table, String column) throws SQLException {
     try (Statement statement = connection.createStatement();
         ResultSet columns = statement.executeQuery("pragma table_info(" + table + ")")) {
       while (columns.next()) {

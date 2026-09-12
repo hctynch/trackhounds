@@ -1,8 +1,10 @@
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
-import { LuBug, LuDownload, LuExternalLink, LuFolderOpen, LuLifeBuoy, LuRefreshCw } from 'react-icons/lu';
+import { LuBug, LuDownload, LuExternalLink, LuFileText, LuFolderOpen, LuLifeBuoy, LuRefreshCw } from 'react-icons/lu';
+import { Link } from 'react-router-dom';
 import { getAppInfo } from '../config';
-import { PageHeader, Panel, PanelBody, PanelHeader } from './ui';
+import DataService from '../services/DataService';
+import { Button, PageHeader, Panel, PanelBody, PanelHeader, useToast } from './ui';
 
 const RELEASES_URL = 'https://github.com/hctynch/trackhounds/releases/latest';
 const ISSUES_URL = 'https://github.com/hctynch/trackhounds/issues';
@@ -39,7 +41,13 @@ function QuickStartPhase({ title, children }) {
 QuickStartPhase.propTypes = { title: PropTypes.string.isRequired, children: PropTypes.node };
 
 function Docs() {
+  const toast = useToast();
   const [appInfo, setAppInfo] = useState(null);
+
+  const openFolder = async (target) => {
+    const result = await DataService.openFolder(target);
+    if (result?.message && !result.opened) toast.error(result.message);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +104,7 @@ function Docs() {
                   <span className="font-medium">Print the final sheets</span>: Hunt summary (one page with settings, entries, placings and scratches), Overall speed and drive, All dogs all days, Scratches and Judge summary.
                 </li>
                 <li>
-                  <span className="font-medium">Keep a copy of the data</span>: close TrackHounds and copy <Code>trackhounds.db</Code> from the data folder somewhere safe.
+                  <span className="font-medium">Save a backup</span> on the <Link to="/data" className="font-medium text-pine-700 hover:underline">Backups</Link> page, or download a copy to another drive. The same page keeps finished hunts as past hunts, so a hunt can be opened again later.
                 </li>
                 <li>
                   <span className="font-medium">Start the next hunt</span> with New hunt on Home. It clears the dogs, judges, scores and scratches of the current one, so print first.
@@ -188,12 +196,22 @@ function Docs() {
                 <dt className="text-ink-muted">Data folder</dt>
                 <dd className="break-all font-mono text-[13px]">{dataDir}</dd>
               </dl>
+              {appInfo?.canOpenFolders && (
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" icon={LuFolderOpen} onClick={() => openFolder('data')}>
+                    Open data folder
+                  </Button>
+                  <Button size="sm" icon={LuFileText} onClick={() => openFolder('log')}>
+                    Show log file
+                  </Button>
+                </div>
+              )}
               <div className="flex gap-3 rounded-md bg-brass-100 px-3.5 py-3 text-small text-brass-700">
                 <LuFolderOpen size={18} className="mt-px shrink-0" aria-hidden />
                 <div>
-                  <p className="font-medium">Back up by copying one file</p>
+                  <p className="font-medium">Back up without closing TrackHounds</p>
                   <p className="mt-0.5">
-                    All hunt data lives in <Code>trackhounds.db</Code> inside the data folder. Close TrackHounds, copy the file somewhere safe, and copy it back to restore. The tray icon menu opens the data folder.
+                    All hunt data lives in <Code>trackhounds.db</Code> inside the data folder. The <Link to="/data" className="font-medium underline">Backups</Link> page saves, downloads and restores copies while TrackHounds runs, and keeps past hunts.
                   </p>
                 </div>
               </div>
