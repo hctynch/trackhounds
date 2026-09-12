@@ -262,6 +262,24 @@
 				<version>3.1.0</version>
 				<executions>
 					<execution>
+						<!--
+						  The UI bundle is hashed (index-<hash>.js), and copy-frontend-dist only adds files, so without
+						  "mvn clean" every build left the previous bundles behind inside the jar. Clear the target
+						  folder before the copy (generate-resources runs before process-resources).
+						-->
+						<id>clear-ui-output</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<skip>${skipFrontend}</skip>
+							<target>
+								<delete dir="${project.build.outputDirectory}/static" quiet="true"/>
+							</target>
+						</configuration>
+					</execution>
+					<execution>
 						<!-- jpackage marks its launcher read-only, which "mvn clean" cannot delete on Windows. -->
 						<id>unlock-app-image</id>
 						<phase>pre-clean</phase>

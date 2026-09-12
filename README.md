@@ -77,8 +77,7 @@ guide is on the `Docs and help` page inside the application.
 3. **Start TrackHounds**
 
    - Open TrackHounds from the shortcut. The application window opens and a TrackHounds icon appears in the system tray (next to the clock).
-   - The window is shown with Microsoft Edge in "app mode" (no tabs or address bar). If Edge is not available the page opens in your default browser.
-   - Preview: a window owned by TrackHounds itself (JavaFX, no browser involved) can be switched on by starting with `--trackhounds.desktop.window=javafx`. It is planned to become the default once printing from it has been checked.
+   - The window is TrackHounds' own (no browser involved). Should it fail to open, TrackHounds falls back to Microsoft Edge in "app mode" and then to your default browser; `--trackhounds.desktop.window=browser` forces that.
 
 4. **Close TrackHounds**
 
@@ -95,7 +94,8 @@ Everything TrackHounds stores lives in one folder:
 ├── backups\                      backups saved from the Backups page (and safety copies taken before a restore or a database upgrade)
 ├── hunts\                        past hunts saved from the Backups page
 ├── logs\trackhounds.log          log files, useful when reporting a problem
-└── browser-profile\              private browser profile used for the application window
+├── javafx-cache\                 native libraries of the application window, unpacked on first start
+└── browser-profile\              private browser profile, only used when the window falls back to Edge or Chrome
 ```
 
 - **Backup**: the `Backups` page saves a copy to `backups\` or downloads one to a folder of your choice, while

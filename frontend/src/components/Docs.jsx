@@ -175,7 +175,7 @@ function Docs() {
                 </p>
                 <ul className="mt-1.5 list-disc space-y-1 pl-5 text-small text-ink-muted">
                   <li>Right-click the TrackHounds icon in the system tray (next to the clock) and choose Open TrackHounds.</li>
-                  <li>TrackHounds shows its window with Microsoft Edge, which is part of Windows. Without Edge the page opens in the default browser.</li>
+                  <li>TrackHounds has its own window. If that window cannot open, the page is shown with Microsoft Edge or, without Edge, in the default browser; the tray icon then closes TrackHounds.</li>
                   <li>Any browser on this computer can open the address shown under This installation.</li>
                 </ul>
               </div>

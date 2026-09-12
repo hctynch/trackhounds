@@ -6,8 +6,8 @@ the next iterations are**. Keep it up to date: when an iteration finishes, move 
 note anything that was learned.
 
 - Status legend: ✅ done · 🔄 in progress · ⏳ planned · 💡 idea / needs a decision
-- Last updated: 2026-09-12 (iterations 1-3 and 5-8 done, 4 waiting on a second PC, 11 in progress, 9-10
-  planned; all on `main`)
+- Last updated: 2026-09-12 (iterations 1-3 and 5-9 done, 4 waiting on a second PC, 10 partly done by
+  decision, 11 in progress; all on `main`)
 
 ---
 
@@ -41,7 +41,8 @@ TrackHounds.exe (jpackage launcher + private JRE)
     │   └── serves the compiled React UI from the jar at http://127.0.0.1:<port>/
     ├── SQLite database  %LOCALAPPDATA%\TrackHounds\trackhounds.db   (Hibernate community dialect)
     └── Desktop launcher: single-instance lock, system tray icon, application window
-                          (Edge/Chrome "app mode" window; default browser as fallback)
+                          (JavaFX WebView since iteration 9; Edge/Chrome "app mode" and the
+                          default browser as fallbacks)
 ```
 
 ### Key decisions (and why)
@@ -58,11 +59,14 @@ TrackHounds.exe (jpackage launcher + private JRE)
    rely on the browser's print engine (`react-to-print`, CSS `@media print`). A native rewrite is a large,
    risky project that would change nothing for users. The UI is compiled at build time (Maven downloads a
    private Node; developers only need a JDK) and served from the jar, so **Node is not needed at runtime**.
-4. **Application window = Edge/Chrome in `--app` mode with a private profile.** Edge is part of Windows
-   10/11, gives a chrome-less window that looks like a native app, supports modern CSS (Tailwind 4) and
-   prints reports properly. JavaFX WebView was rejected for now: its WebKit build lacks `window.print()`
-   and has uncertain Tailwind 4 support. Embedding WebView2 (JNI) was rejected for now because of native
-   packaging risk. Both remain options for a later iteration (see 9).
+4. **Application window = JavaFX WebView (since iteration 9; Edge/Chrome `--app` mode before).** Edge
+   app mode was the first choice because Edge is part of Windows 10/11, gives a chrome-less window,
+   supports Tailwind 4 and prints reports properly; JavaFX WebView had been set aside because its WebKit
+   lacks `window.print()` and Tailwind 4 support was unproven. Iteration 9 proved both points in JavaFX
+   26 (rendering identical, printing through a bridge and the JavaFX print API, checked by the author on
+   real sheets), so the window is now owned by the process and needs no browser. The Edge/Chrome and
+   default-browser paths remain as automatic fallbacks. WebView2 (JNI) stays rejected for its native
+   packaging risk.
 5. **Process lifetime is tracked by the pages, not by processes.** Edge on Windows hands the window over to
    a new browser process and exits immediately, and Java cannot read other processes' command lines on
    Windows, so watching the launched process is useless. Instead every UI page keeps a Server-Sent Events
@@ -421,7 +425,21 @@ comparison test is the replacement, and it is the stricter check. Also checked, 
 offline: Flyway core has no network code; telemetry is a plugin interface whose only implementation in the
 community jar is a no-op, and the URLs inside the jar are documentation links in error messages.
 
-### 🔄 Iteration 9: window technology review
+### ✅ Iteration 9: window technology review
+
+**Closed 2026-09-12.** The author printed the sheets from the JavaFX window and found no difference
+from Edge, which was the last exit criterion. `trackhounds.desktop.window` now defaults to `javafx`; the
+Edge/Chrome app-mode and default-browser paths stay as automatic fallbacks (and as the `browser` value)
+rather than being deleted, because they cost nothing and keep the app usable on a machine where JavaFX
+cannot start. The app image was rebuilt with JavaFX inside (`target/dist/TrackHounds`, about 217 MB on
+disk before the installer compresses it; the jar grew by about 47 MB) and starts the JavaFX window from
+the bundled runtime. The README and the Docs page describe the new window. The record of the decision
+and the spike follows.
+
+Noticed while checking that jar: it carried four stale UI bundles (`index-<hash>.js`) from earlier builds,
+because `copy-frontend-dist` only adds files and nothing cleared `target/classes/static` between builds
+without `mvn clean`. An antrun step (`clear-ui-output`, `generate-resources` phase) now empties that folder
+before the copy, so the jar holds exactly the current bundle.
 
 **Decision (author, 2026-09-12): move the application window to JavaFX WebView** (option 3 below). The
 recommendation on the table was to keep Edge app mode and finish its messaging, because the two risks of
@@ -667,8 +685,11 @@ every page from the JavaFX window and quits.
 ## 5. Known limitations
 
 - Unsigned installer: SmartScreen shows a warning on first run.
-- The application window depends on Microsoft Edge or Google Chrome being installed; otherwise the UI
-  opens in the default browser and the app is closed from the tray icon.
+- The application window is a JavaFX WebView and needs no browser. Only if JavaFX cannot start (which
+  has not been seen on Windows) does the UI open in Edge or Chrome app mode, or in the default browser,
+  where the app is closed from the tray icon.
+- Time fields in the JavaFX window are plain text boxes (WebKit has no time picker); they show an
+  `HH:MM` placeholder and a badly formed time is reported when the cross is saved.
 - One writer at a time (SQLite): fine for a single operator; not designed for several scorers entering
   data at once from different computers.
 - Data from version 2 (Docker volume) is not migrated.

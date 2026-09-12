@@ -56,12 +56,12 @@ public class TrackhoundsProperties {
         private boolean enabled = true;
 
         /**
-         * Which window shows the UI: {@code browser} (Microsoft Edge or Google
-         * Chrome in app mode, the default until the JavaFX window is proven) or
-         * {@code javafx} (a JavaFX WebView owned by this process; iteration 9).
-         * When JavaFX cannot start, the browser window is used.
+         * Which window shows the UI: {@code javafx} (a JavaFX WebView owned by
+         * this process, the default since iteration 9) or {@code browser}
+         * (Microsoft Edge or Google Chrome in app mode, or the default browser).
+         * When JavaFX cannot start, the browser window is used automatically.
          */
-        private String window = "browser";
+        private String window = "javafx";
 
         /** Port tried first before falling back to a random free port. */
         private int preferredPort = 8080;
