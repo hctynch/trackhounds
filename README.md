@@ -91,7 +91,7 @@ Everything TrackHounds stores lives in one folder:
 ```
 %LOCALAPPDATA%\TrackHounds        (for example C:\Users\<you>\AppData\Local\TrackHounds)
 ├── trackhounds.db                the database (the current hunt: dogs, judges, scores, scratches)
-├── backups\                      backups saved from the Backups page (and safety copies taken before a restore)
+├── backups\                      backups saved from the Backups page (and safety copies taken before a restore or a database upgrade)
 ├── hunts\                        past hunts saved from the Backups page
 ├── logs\trackhounds.log          log files, useful when reporting a problem
 └── browser-profile\              private browser profile used for the application window
@@ -143,7 +143,7 @@ Creating a new hunt clears the current one.
   removing asks for confirmation. Editing can change the dog's number; its scores and scratches move with it.
 - **Add dogs**: register several dogs at once. Arrow keys move between cells, and sire and dam suggest names already
   typed on the page. Dogs take their stake from the hunt's number ranges. `Import CSV` reads an entry list with the
-  columns `number, name, stake, sire, dam, owner` ([template](docs/dogs-template.csv)) into the table.
+  columns `number, name, stake, sire, dam, owner` ([template](frontend/public/dogs-template.csv), also `Download template` on the page) into the table.
 
 ![Registering dogs](docs/screenshots/add-dogs.png)
 

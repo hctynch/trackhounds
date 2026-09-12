@@ -38,6 +38,11 @@ jobs:
         run: ./mvnw -B clean verify
         working-directory: trackhounds
 
+      # Starts the built jar twice against an empty data folder: endpoints answer, the UI and the
+      # CSV template are served, the schema is created on the first start and found current on the second.
+      - name: Smoke test the jar
+        run: bash .github/scripts/smoke.sh trackhounds/target/trackhounds-*.jar
+
       - name: Upload JaCoCo Coverage to Codecov
         uses: codecov/codecov-action@v4
         with:

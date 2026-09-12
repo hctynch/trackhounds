@@ -6,8 +6,8 @@ the next iterations are**. Keep it up to date: when an iteration finishes, move 
 note anything that was learned.
 
 - Status legend: ✅ done · 🔄 in progress · ⏳ planned · 💡 idea / needs a decision
-- Last updated: 2026-09-12 (iterations 1-3 and 5-7 done, 4 waiting on a second PC, 11 started, 8-10 planned;
-  all on `main`)
+- Last updated: 2026-09-12 (iterations 1-3 and 5-8 done, 4 waiting on a second PC, 11 in progress, 9-10
+  planned; all on `main`)
 
 ---
 
@@ -49,8 +49,9 @@ TrackHounds.exe (jpackage launcher + private JRE)
 1. **Keep Spring Boot.** It is Java, the services/repositories/tests were already written against it, and
    the cost (about 2-3 s start-up, ~200 MB RAM) is acceptable for a desktop tool. Rewriting on a lighter
    stack would have re-implemented working, tested scoring logic for no user-visible benefit.
-2. **SQLite through `sqlite-jdbc` + `hibernate-community-dialects`.** The JPA model needed no changes;
-   the schema is created by Hibernate (`ddl-auto=update`) on first start. Hikari's pool is limited to **one
+2. **SQLite through `sqlite-jdbc` + `hibernate-community-dialects`.** The JPA model needed no changes.
+   Until iteration 8 the schema was created by Hibernate (`ddl-auto=update`); since then it comes from
+   Flyway scripts in `db/migration` and Hibernate only maps to it (`ddl-auto=none`). Hikari's pool is limited to **one
    connection** because SQLite allows a single writer; this serialises requests and avoids "database is
    locked" errors. WAL journal mode and a 10 s busy timeout are set as connection properties.
 3. **Keep the React UI instead of rewriting it in Swing/JavaFX.** The UI has ~30 components and the reports
@@ -351,7 +352,7 @@ iteration 8.
 Also done (2026-09-11): the last flow notes. Two server-computed reports, a one-page **Hunt summary** and
 a **Judge summary** (`ReportService`, `GET /reports/*`); the report sheet can now render fact grids and
 several titled sections; **Import CSV** on Add dogs (parser in `frontend/src/lib/csv.js`, template in
-`docs/dogs-template.csv`); a dog's **number can be changed** (`PUT /dogs/{number}/number`, key rewritten
+`frontend/public/dogs-template.csv`); a dog's **number can be changed** (`PUT /dogs/{number}/number`, key rewritten
 in place with its scores and scratches); and a **quick start guide** on the Docs page and in
 [QUICK_START.md](QUICK_START.md). 87 backend tests pass.
 
@@ -387,15 +388,38 @@ query stay single-hunt).
 Not done, by choice: a JSON export format (the database file is the portable format and needs no
 second serializer) and `hunt_id` multi-hunt (nothing in the UI needs two hunts open at once).
 
-### ⏳ Iteration 8: schema migrations (next engineering step after iteration 11)
+### ✅ Iteration 8: schema migrations
 
-`spring.jpa.hibernate.ddl-auto=update` is fine while every user starts from an empty file, but it cannot
-rename or drop columns and SQLite has limited `ALTER TABLE`. Before the first schema change ships to
-users with existing data:
+Why: `ddl-auto=update` is fine while every user starts from an empty file, but it cannot rename or drop
+columns and SQLite has limited `ALTER TABLE`, so it had to go before the first schema change reaches users
+with data. Done 2026-09-12:
 
-- Add Flyway (`flyway-core` + `flyway-database-sqlite` is not needed; Flyway supports SQLite in core),
-  generate `V1__baseline.sql` from the current Hibernate schema, switch to `ddl-auto=validate`.
-- Add a start-up backup of the database before migrations run.
+- `flyway-core` (version managed by Boot; SQLite support is part of core) with `V1__baseline.sql`, the
+  schema exactly as Hibernate created it for 3.0. `spring.jpa.hibernate.ddl-auto=none`: Hibernate never
+  changes the tables again. A schema change is now a `V<n>__*.sql` script; `V1` is never edited.
+- `Config/DatabaseMigration` runs before the `EntityManagerFactory` (the hook the legacy migration used)
+  and does, in order: the release-candidate rewrite (`LegacySchemaMigration`, now a plain utility), a
+  `VACUUM INTO` copy to `backups/trackhounds-before-upgrade-<stamp>.db` when Flyway has something pending
+  on an existing database, then `migrate` with `baselineOnMigrate` at version 1. So a 3.0 database (no
+  history table) is baselined on its first start, an empty file gets V1, a release-candidate file is
+  rewritten and then baselined, and a current file is left alone. Flyway is driven from that class rather
+  than through Boot's auto-configuration (`spring.flyway.enabled=false`) because the auto-configuration
+  cannot be ordered after the rewrite and the backup.
+- Restores (`DataService.prepare`) run the same upgrade on the temporary copy, so a backup or a past hunt
+  from any earlier version loads.
+- Tests: `DatabaseMigrationTest` (empty file; 3.0 file baselined with one copy taken and none on a second
+  run; release-candidate file rewritten then baselined with one copy; reset; URL parsing) and
+  `SchemaMatchesEntitiesTest`, which exports the entities' schema with Hibernate into a scratch file and
+  compares every table and column, with nullability and defaults, against the database the scripts built.
+  The test profile runs the real path: `trackhounds.database.reset-on-start=true` wipes the file, then the
+  scripts build it. 101 backend tests pass.
+
+Learned: Hibernate's `validate` cannot be used on SQLite. `SQLiteDialect` declares every identity key as
+`integer` (SQLite only auto-numbers an `integer primary key`) while the validator expects `bigint` for a
+`Long` id, so it fails on `daily_score.id` in a schema the dialect itself produced. `none` plus the
+comparison test is the replacement, and it is the stricter check. Also checked, because the app must stay
+offline: Flyway core has no network code; telemetry is a plugin interface whose only implementation in the
+community jar is a no-op, and the URLs inside the jar are documentation links in error messages.
 
 ### ⏳ Iteration 9: window technology review
 
@@ -418,7 +442,10 @@ Revisit after real-world use of the Edge app-mode window. Options, in order of e
 - Code signing (certificate cost) to remove the SmartScreen warning, if the budget allows.
 - macOS `.dmg` / Linux `.deb` with the same jpackage setup if there is demand (the launcher already has
   the code paths).
-- Automated smoke test in CI: start the jar with `--server`, call `/actuator/health` and `/app/info`.
+- ✅ Automated smoke test in CI (2026-09-12): `.github/scripts/smoke.sh`, run by `Build and Test` after
+  `mvnw verify`, starts the jar with `--server` against an empty folder, checks `/actuator/health`,
+  `/app/info`, the UI, the CSV template, `GET /hunt` (404) and `GET /dogs`, confirms V1 was applied, then
+  starts it again and confirms the schema is found current with no backup taken. Runs locally too.
 
 ### 🔄 Iteration 11: stakes made visible, and a report builder
 
@@ -448,8 +475,14 @@ Done 2026-09-12:
   - Sheets: the four rankings that can list "All dogs" (Daily speed and drive, Overall speed and drive,
     Top dogs overall, Daily top dogs) add a Stake column after the name when the hunt is dual
     (`addStakeColumn` in `Reports/format.js`). Per-stake sheets are unchanged.
+- Score entry: the "Last crosses of day N" list tags each dog with its stake (same rule), so the two point
+  ladders of a dual cross can be checked at a glance; the dog list is reloaded after every save and
+  registration so a dog registered from the cross is tagged at once.
+- Add dogs: a **Download template** button beside Import CSV. The template moved from `docs/` to
+  `frontend/public/dogs-template.csv` so it ships inside the app and downloads without a connection.
 - Verified with `npm run lint` (no errors) and a production build; screenshots of the dual-hunt
-  dashboard and score list from the built jar are in `docs/screenshots/` (`home-dual.png`, `scores-dual.png`).
+  dashboard, score list and score entry from the built jar are in `docs/screenshots/` (`home-dual.png`,
+  `scores-dual.png`, `score-entry-dual.png`).
 
 Noticed on the way, left for the builder below:
 

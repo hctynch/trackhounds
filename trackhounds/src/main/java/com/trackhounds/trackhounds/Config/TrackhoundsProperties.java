@@ -30,6 +30,22 @@ public class TrackhoundsProperties {
     /** Desktop launcher settings. */
     private Desktop desktop = new Desktop();
 
+    /** Database maintenance settings. */
+    private Database database = new Database();
+
+    /**
+     * Settings for the database file and its schema migrations.
+     */
+    @Getter
+    @Setter
+    public static class Database {
+        /**
+         * Drop every table before the migrations run, so each start begins from
+         * the migration scripts. For the tests only; never for user data.
+         */
+        private boolean resetOnStart = false;
+    }
+
     /**
      * Settings for the desktop launcher (tray icon and application window).
      */

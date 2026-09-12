@@ -84,6 +84,9 @@ public class TrackhoundsApplication {
 		String lower = detail.toLowerCase();
 		if (lower.contains("port") && lower.contains("in use")) {
 			hint = "Another program is using the port TrackHounds needs. Close it and start TrackHounds again.";
+		} else if (lower.contains("schema-validation") || lower.contains("migration") || lower.contains("flyway")) {
+			hint = "The database could not be brought up to date for this version of TrackHounds. A copy was saved "
+					+ "to the backups folder before the change; the log says which step failed.";
 		} else if (lower.contains("sqlite") || lower.contains("database") || lower.contains("malformed")) {
 			hint = "The database file could not be opened. Restore a backup of trackhounds.db, or move the file "
 					+ "aside to start with an empty database.";

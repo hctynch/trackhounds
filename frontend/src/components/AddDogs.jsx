@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { LuFileUp, LuPlus } from 'react-icons/lu';
+import { LuFileDown, LuFileUp, LuPlus } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
 import { dogsFromCsv } from '../lib/csv';
@@ -242,6 +242,12 @@ function AddDogs() {
             actions={
               <>
                 <input ref={fileRef} type="file" accept=".csv,text/csv,text/plain" className="sr-only" tabIndex={-1} aria-hidden onChange={importCsv} />
+                {/* The template ships with the app (frontend/public), so it downloads without an internet connection. */}
+                <a href="dogs-template.csv" download="dogs-template.csv" className="inline-flex">
+                  <Button size="sm" icon={LuFileDown} tabIndex={-1} title="Download an example CSV with the columns number, name, stake, sire, dam and owner">
+                    Download template
+                  </Button>
+                </a>
                 <Button size="sm" icon={LuFileUp} onClick={() => fileRef.current?.click()} title="Read dogs from a CSV file with the columns number, name, stake, sire, dam and owner">
                   Import CSV
                 </Button>

@@ -45,9 +45,9 @@ is only a reference and is never checked.
   page, so a litter is quick to enter. The owner at the top applies to every row without one.
 - **Import CSV.** Click **Import CSV** and pick a file with the columns
   `number, name, stake, sire, dam, owner` (a header row is optional, extra columns are ignored, stake may
-  be left blank to use the hunt's number ranges). [dogs-template.csv](dogs-template.csv) is a starting
-  point. Rows that cannot be read are listed and skipped; the rest land in the table for checking before
-  you save.
+  be left blank to use the hunt's number ranges). **Download template** on the same page saves an example
+  file to start from. Rows that cannot be read are listed and skipped; the rest land in the table for
+  checking before you save.
 
 Dog numbers are digits only and leading zeros count: **0 and 00 are two different dogs**.
 

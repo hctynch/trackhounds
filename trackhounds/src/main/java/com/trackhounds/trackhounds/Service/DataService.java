@@ -31,6 +31,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import org.flywaydb.core.api.FlywayException;
+
+import com.trackhounds.trackhounds.Config.DatabaseMigration;
 import com.trackhounds.trackhounds.Config.LegacySchemaMigration;
 import com.trackhounds.trackhounds.Config.TrackhoundsProperties;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
@@ -326,22 +329,29 @@ public class DataService {
       }
     }
     Files.copy(source, prepared, StandardCopyOption.REPLACE_EXISTING);
-    try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + prepared)) {
-      if (!LegacySchemaMigration.tableExists(connection, "hunt_entity") || !LegacySchemaMigration.tableExists(connection, "dogs")) {
-        throw notADatabase(label);
+    String url = "jdbc:sqlite:" + prepared;
+    try {
+      try (Connection connection = DriverManager.getConnection(url)) {
+        if (!LegacySchemaMigration.tableExists(connection, "hunt_entity") || !LegacySchemaMigration.tableExists(connection, "dogs")) {
+          throw notADatabase(label);
+        }
       }
-      LegacySchemaMigration.migrate(connection, null, null);
-      try (Statement statement = connection.createStatement()) {
-        statement.execute("pragma wal_checkpoint(TRUNCATE)");
-        statement.execute("pragma journal_mode=DELETE");
+      // Legacy rewrite plus the versioned migrations, so a backup from any earlier version loads.
+      DatabaseMigration.upgrade(url, null);
+      try (Connection connection = DriverManager.getConnection(url)) {
+        try (Statement statement = connection.createStatement()) {
+          statement.execute("pragma wal_checkpoint(TRUNCATE)");
+          statement.execute("pragma journal_mode=DELETE");
+        }
+        Map<String, Object> hunt = readHunt(connection);
+        if (hunt == null) {
+          throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, String.format("%s has no hunt in it.", label),
+              Map.of("file", "The file is a TrackHounds database without a hunt."));
+        }
+        return hunt;
       }
-      Map<String, Object> hunt = readHunt(connection);
-      if (hunt == null) {
-        throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, String.format("%s has no hunt in it.", label),
-            Map.of("file", "The file is a TrackHounds database without a hunt."));
-      }
-      return hunt;
-    } catch (SQLException e) {
+    } catch (SQLException | FlywayException e) {
+      LOG.warn("{} could not be prepared for restore: {}", label, e.getMessage());
       throw notADatabase(label);
     }
   }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { LuPlus, LuTriangleAlert } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
-import { dayOptions, stakeForNumber } from '../lib/hunt';
+import { dayOptions, showsStake, stakeForNumber } from '../lib/hunt';
 import DogService from '../services/DogService';
 import {
   Alert,
@@ -57,6 +57,19 @@ function ScoreEntry() {
   const [saving, setSaving] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
   const [recent, setRecent] = useState([]); // last crosses of the selected day, newest first
+  const [dogsByNumber, setDogsByNumber] = useState({}); // registered dogs, for the stake tags on recent crosses
+
+  // Reloaded after every save and registration, so a dog registered from the cross has its tag at once.
+  useEffect(() => {
+    if (!huntExists) return;
+    DogService.getDogs().then((list) => {
+      const byNumber = {};
+      (Array.isArray(list) ? list : []).forEach((dog) => {
+        byNumber[String(dog.number)] = dog;
+      });
+      setDogsByNumber(byNumber);
+    });
+  }, [huntExists, refreshTick]);
 
   useEffect(() => {
     if (!huntExists) return;
@@ -571,7 +584,11 @@ function ScoreEntry() {
         <Panel className="mt-6">
           <PanelHeader
             title={`Last crosses of day ${selectedDay}`}
-            description="Newest first, so the sheet can be checked against what was saved."
+            description={
+              huntType === 'DUAL'
+                ? 'Newest first, each dog tagged with its stake, so the two point ladders of a cross can be checked at a glance.'
+                : 'Newest first, so the sheet can be checked against what was saved.'
+            }
             actions={
               <Link to="/score-entry/view" className="text-small font-medium text-pine-700 hover:underline">
                 All scores
@@ -583,12 +600,21 @@ function ScoreEntry() {
               <li key={group.key} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-5 py-2.5 text-body">
                 <span className="w-16 tabular font-medium">{group.time.slice(0, 5)}</span>
                 <span className="w-20 text-ink-muted">Judge {group.judge}</span>
-                <span className="flex flex-wrap gap-x-3 tabular">
-                  {group.dogs.map((score) => (
-                    <span key={score.id} className={score.counted ? '' : 'text-ink-faint'} title={score.counted ? 'Counted' : 'Not counted: a higher cross in the same interval'}>
-                      {score.dogNumber} <span className="text-ink-muted">({score.points})</span>
-                    </span>
-                  ))}
+                <span className="flex flex-wrap gap-x-3 gap-y-1 tabular">
+                  {group.dogs.map((score) => {
+                    const dog = dogsByNumber[String(score.dogNumber)];
+                    return (
+                      <span
+                        key={score.id}
+                        className={`inline-flex items-center gap-1 ${score.counted ? '' : 'text-ink-faint'}`}
+                        title={`${dog ? `${dog.name}. ` : ''}${score.counted ? 'Counted' : 'Not counted: a higher cross in the same interval'}`}
+                      >
+                        {score.dogNumber}
+                        {dog && showsStake(hunt, dog.stake) && <StakeBadge stake={dog.stake} />}
+                        <span className="text-ink-muted">({score.points})</span>
+                      </span>
+                    );
+                  })}
                 </span>
               </li>
             ))}

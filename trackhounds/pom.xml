@@ -74,6 +74,12 @@
 			<groupId>org.hibernate.orm</groupId>
 			<artifactId>hibernate-community-dialects</artifactId>
 		</dependency>
+		<!-- Versioned schema migrations (db/migration). SQLite support is part of flyway-core;
+		     DatabaseMigration runs it, Boot's Flyway auto-configuration is switched off. -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>com.google.code.gson</groupId>

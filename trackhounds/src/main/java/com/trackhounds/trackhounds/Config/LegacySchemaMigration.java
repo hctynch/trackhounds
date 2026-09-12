@@ -14,18 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import javax.sql.DataSource;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.boot.autoconfigure.orm.jpa.EntityManagerFactoryDependsOnPostProcessor;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 
 /**
- * Upgrades databases written by TrackHounds 3.0 release candidates before
- * Hibernate touches the schema:
+ * Upgrades databases written by TrackHounds 3.0 release candidates, before
+ * the versioned migrations run ({@link DatabaseMigration}):
  * <ul>
  * <li>scores used to be linked to their day through two join tables
  * ({@code time_bucket_score}, {@code highest_score}); the link and the interval
@@ -37,37 +31,15 @@ import org.springframework.stereotype.Component;
  * A copy of the database is written to {@code backups/} before anything is
  * changed. Runs once; a database that is already current is left alone.
  * <p>
- * Columns that later versions added to existing tables are created here as
- * well (with their defaults), so a restored older file is complete even when
- * Hibernate's schema update does not run again.
+ * Columns that 3.0 added to existing tables are created here as well (with
+ * their defaults), so a release-candidate file is complete before Flyway
+ * baselines it at version 1. Everything after 3.0 is a Flyway script.
  */
-@Component("legacySchemaMigration")
-public class LegacySchemaMigration implements InitializingBean {
+public final class LegacySchemaMigration {
 
   private static final Logger LOG = LoggerFactory.getLogger(LegacySchemaMigration.class);
 
-  private final DataSource dataSource;
-  private final TrackhoundsProperties properties;
-
-  public LegacySchemaMigration(DataSource dataSource, TrackhoundsProperties properties) {
-    this.dataSource = dataSource;
-    this.properties = properties;
-  }
-
-  /** Makes Hibernate's schema update wait for this migration. */
-  @Configuration
-  static class RunBeforeHibernate extends EntityManagerFactoryDependsOnPostProcessor {
-    RunBeforeHibernate() {
-      super("legacySchemaMigration");
-    }
-  }
-
-  @Override
-  public void afterPropertiesSet() throws Exception {
-    try (Connection connection = dataSource.getConnection()) {
-      Path dataDir = properties.getDataDir();
-      migrate(connection, dataDir == null ? null : dataDir.resolve("trackhounds.db"), dataDir == null ? null : dataDir.resolve("backups"));
-    }
+  private LegacySchemaMigration() {
   }
 
   /**
@@ -80,7 +52,7 @@ public class LegacySchemaMigration implements InitializingBean {
    */
   public static boolean migrate(Connection connection, Path databaseFile, Path backupDir) throws SQLException, IOException {
     if (!tableExists(connection, "dogs")) {
-      return false; // fresh database: Hibernate creates the current schema
+      return false; // empty database: the Flyway scripts create the current schema
     }
     boolean legacyScores = tableExists(connection, "time_bucket_score");
     boolean legacyNumbers = columnType(connection, "dogs", "number").toLowerCase(Locale.ROOT).contains("int");
