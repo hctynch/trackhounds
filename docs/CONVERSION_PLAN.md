@@ -418,6 +418,16 @@ with data. Done 2026-09-12:
   The test profile runs the real path: `trackhounds.database.reset-on-start=true` wipes the file, then the
   scripts build it. 101 backend tests pass.
 
+Learned from the first CI run (2026-09-12, after the push): `SchemaMatchesEntitiesTest` compared the
+entities with the *shared* test database, and `DataServiceTest` restores a release-candidate file into
+that database. Surefire's default run order differs between Windows and Linux, so the test passed here and
+failed in CI. Two fixes: the comparison test now builds its own scripts database in a temp file; and the
+legacy rewrite showed a real gap, an upgraded release-candidate file kept `not null` on `dog_number` and a
+default on the added `time_bucket`, so it was not the V1 shape. `LegacySchemaMigration.rebuildToBaseline`
+now recreates every table from `V1__baseline.sql` and copies the rows by column name, and
+`DatabaseMigrationTest` asserts that an upgraded old file has exactly the fresh schema. The suite is run in
+both orders locally (`-Dsurefire.runOrder=reversealphabetical`) before pushing.
+
 Learned: Hibernate's `validate` cannot be used on SQLite. `SQLiteDialect` declares every identity key as
 `integer` (SQLite only auto-numbers an `integer primary key`) while the validator expects `bigint` for a
 `Long` id, so it fails on `daily_score.id` in a schema the dialect itself produced. `none` plus the

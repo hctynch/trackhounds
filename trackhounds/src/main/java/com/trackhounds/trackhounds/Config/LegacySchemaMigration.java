@@ -1,6 +1,8 @@
 package com.trackhounds.trackhounds.Config;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -11,8 +13,12 @@ import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,8 +89,89 @@ public final class LegacySchemaMigration {
       retypeColumnToText(connection, "scratch", "dog_number");
     }
     addMissingColumns(connection);
+    rebuildToBaseline(connection);
     LOG.info("Database layout upgraded");
     return true;
+  }
+
+  /** The class-path script every database is measured against. */
+  static final String BASELINE_SCRIPT = "/db/migration/V1__baseline.sql";
+
+  /**
+   * Rebuild every table so that it matches {@code V1__baseline.sql} exactly.
+   * The steps above keep attributes the release candidates had ({@code not
+   * null} on {@code dog_number}, and a column added with {@code alter table}
+   * must carry a default), which a fresh database does not have. Later scripts
+   * are written against one shape, so the rewritten file gets that shape too:
+   * each table is created again from the baseline definition and its rows are
+   * copied over by column name (ids included).
+   */
+  static void rebuildToBaseline(Connection connection) throws SQLException, IOException {
+    for (Map.Entry<String, String> table : baselineTables().entrySet()) {
+      String name = table.getKey();
+      if (!tableExists(connection, name)) {
+        continue;
+      }
+      List<String> existing = columnNames(connection, name);
+      List<String> common = new ArrayList<>();
+      for (String column : columnNamesOf(table.getValue())) {
+        if (existing.stream().anyMatch(column::equalsIgnoreCase)) {
+          common.add(column);
+        }
+      }
+      String temp = name + "__baseline";
+      String columnList = String.join(", ", common);
+      try (Statement statement = connection.createStatement()) {
+        statement.executeUpdate("drop table if exists " + temp);
+        statement.executeUpdate("create table " + temp + " (" + table.getValue() + ")");
+        if (!common.isEmpty()) {
+          statement.executeUpdate("insert into " + temp + " (" + columnList + ") select " + columnList + " from " + name);
+        }
+        statement.executeUpdate("drop table " + name);
+        statement.executeUpdate("alter table " + temp + " rename to " + name);
+      }
+    }
+  }
+
+  /** The column definitions of every {@code create table} in the baseline script, by table name. */
+  static Map<String, String> baselineTables() throws IOException {
+    try (InputStream in = LegacySchemaMigration.class.getResourceAsStream(BASELINE_SCRIPT)) {
+      if (in == null) {
+        throw new IOException(BASELINE_SCRIPT + " is missing from the class path");
+      }
+      String script = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      Map<String, String> tables = new LinkedHashMap<>();
+      Matcher statement = Pattern.compile("create table (\\w+) \\((.*?)\\);", Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher(script);
+      while (statement.find()) {
+        tables.put(statement.group(1), statement.group(2).trim());
+      }
+      return tables;
+    }
+  }
+
+  /** Column names in a create-table body; the primary key clause is not a column. */
+  private static List<String> columnNamesOf(String definition) {
+    List<String> names = new ArrayList<>();
+    for (String part : definition.split(",")) {
+      String trimmed = part.trim();
+      if (trimmed.isEmpty() || trimmed.toLowerCase(Locale.ROOT).startsWith("primary key")) {
+        continue;
+      }
+      // "stake tinyint check (stake between 0 and 2)" holds no comma, so the split is safe here.
+      names.add(trimmed.split("\\s+")[0]);
+    }
+    return names;
+  }
+
+  private static List<String> columnNames(Connection connection, String table) throws SQLException {
+    List<String> names = new ArrayList<>();
+    try (Statement statement = connection.createStatement();
+        ResultSet columns = statement.executeQuery("pragma table_info(" + table + ")")) {
+      while (columns.next()) {
+        names.add(columns.getString("name"));
+      }
+    }
+    return names;
   }
 
   /** Columns added after the first release, with the defaults their entities use. */

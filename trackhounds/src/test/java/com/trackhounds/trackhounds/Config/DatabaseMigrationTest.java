@@ -98,6 +98,27 @@ class DatabaseMigrationTest {
   }
 
   @Test
+  void aRewrittenReleaseCandidateDatabaseHasExactlyTheBaselineSchema() throws Exception {
+    // The restore tests found this the hard way: the rewrite used to keep "not null" on dog_number
+    // and the default of an added column, so an upgraded file differed from a fresh one.
+    Path legacy = temp.resolve("legacy.db");
+    Path fresh = temp.resolve("fresh.db");
+    LegacySchemaMigrationTest.writeLegacyDatabase(legacy);
+
+    DatabaseMigration.upgrade(url(legacy), null);
+    DatabaseMigration.upgrade(url(fresh), null);
+
+    assertEquals(SchemaSnapshot.describe(url(fresh)), SchemaSnapshot.describe(url(legacy)));
+    try (Connection connection = DriverManager.getConnection(url(legacy))) {
+      assertAll("rows and ids survive the rebuild",
+          () -> assertEquals("Legacy hunt", query(connection, "select title from hunt_entity")),
+          () -> assertEquals("3", query(connection, "select id from score where dog_number = '1'")),
+          () -> assertEquals("7|2", query(connection, "select daily_score_id || '|' || time_bucket from score where id = 3")),
+          () -> assertEquals("Injured", query(connection, "select reason from scratch where id = 1")));
+    }
+  }
+
+  @Test
   void resetDropsEverythingSoTheScriptsStartOver() throws Exception {
     Path database = temp.resolve("reset.db");
     DatabaseMigration.upgrade(url(database), null);
