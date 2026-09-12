@@ -181,14 +181,8 @@ public class DogService {
    * @return all dogs
    */
   public List<DogEntity> getDogs() {
-    List<DogEntity> dogs = dogRepository.findAll();
-    for (DogEntity dog : dogs) {
-      // Calculate the total points for each dog
-      int totalPoints = calculateTotalPoints(dog);
-      dog.setPoints(totalPoints);
-    }
-    dogRepository.saveAll(dogs);
-    return dogs;
+    // Points are maintained whenever scores change; reading must not write.
+    return dogRepository.findAll();
   }
 
   /**
@@ -316,13 +310,9 @@ public class DogService {
    * @return Dog with the specified number
    */
   public DogEntity getDogByNumber(int number) {
-    DogEntity dog = dogRepository.findById(number)
+    return dogRepository.findById(number)
         .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog does not exist.",
             Map.of("number", "Dog does not exist with this number.")));
-    // Calculate the total points for the dog
-    int totalPoints = calculateTotalPoints(dog);
-    dog.setPoints(totalPoints);
-    return dog;
   }
 
   /**
@@ -417,27 +407,17 @@ public class DogService {
       if (dogRetrieval.isEmpty())
         continue;
       DogEntity dog = dogRetrieval.get();
-      List<DailyScore> scores = dog.getScores();
-      if (scores.size() < score.getDay()) {
-        for (int j = scores.size(); j < score.getDay(); j++) {
-          final int dayIndex = j + 1;
-          Days d = daysRepository.findByDay(dayIndex).orElseGet(() -> {
-            Days newDay = new Days(dayIndex, null);
-            return daysRepository.save(newDay);
-          });
-          DailyScore dailyScore = new DailyScore(d, dog);
-          dailyScore = dailyScoreRepository.save(dailyScore);
-          dog.getScores().add(dailyScore);
-        }
+      // One DailyScore per dog and day, created on the dog's first cross of that day.
+      DailyScore dailyScore = dog.dailyScoreFor(score.getDay()).orElse(null);
+      if (dailyScore == null) {
+        dailyScore = dailyScoreRepository.save(new DailyScore(day, dog));
+        dog.getScores().add(dailyScore);
       }
-      DailyScore dailyScore = dog.getScores().get(score.getDay() - 1);
-      dailyScore.setDay(day);
       Score s = new Score(score.getScores()[i], crossTime, false, score.getJudge(), dog.getNumber(), day.getDay());
       s = scoreRepository.save(s);
       dailyScore.addScore(s, startTime, scoringInterval);
       scoreRepository.save(s);
-      dailyScore = dailyScoreRepository.save(dailyScore);
-      dog.getScores().set(score.getDay() - 1, dailyScore);
+      dailyScoreRepository.save(dailyScore);
       dog.setPoints(calculateTotalPoints(dog));
       dogRepository.save(dog);
     }
@@ -591,10 +571,11 @@ public class DogService {
     List<Map<String, Object>> dogScores = new ArrayList<>();
 
     for (DogEntity dog : allDogs) {
-      if (dog.getScores().size() < day) {
+      Optional<DailyScore> forDay = dog.dailyScoreFor(day);
+      if (forDay.isEmpty()) {
         continue;
       }
-      DailyScore dailyScore = dog.getScores().get(day - 1);
+      DailyScore dailyScore = forDay.get();
 
       Map<String, Object> dogScore = new HashMap<>();
       dogScore.put("dogNumber", dog.getNumber());

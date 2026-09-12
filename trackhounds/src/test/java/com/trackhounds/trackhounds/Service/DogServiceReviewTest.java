@@ -265,6 +265,38 @@ class DogServiceReviewTest {
 
   @Test
   @Transactional
+  void daysCanBeScoredInAnyOrderWithoutFillerDays() {
+    registerDogs(1);
+    dogService.createScore(cross(3, "07:00:00", "07:10:00", new int[] { 1 }, new int[] { 35 }));
+    dogService.createScore(cross(1, "07:00:00", "07:10:00", new int[] { 1 }, new int[] { 25 }));
+    DogEntity dog = dogService.getDogByNumber(1);
+    assertAll(
+        () -> assertEquals(2, dog.getScores().size()),
+        () -> assertTrue(dog.dailyScoreFor(2).isEmpty()),
+        () -> assertEquals(35, dog.dailyScoreFor(3).orElseThrow().getDailyScore()),
+        () -> assertEquals(25, dog.dailyScoreFor(1).orElseThrow().getDailyScore()),
+        () -> assertEquals(35 + 10 + 25 + 2, dog.getPoints()),
+        () -> assertEquals(1, dogService.getDogScoresByDay(3).size()),
+        () -> assertEquals(0, dogService.getDogScoresByDay(2).size()));
+  }
+
+  @Test
+  @Transactional
+  void readingDogsDoesNotWrite() {
+    registerDogs(1);
+    dogService.createScore(cross(1, "07:00:00", "07:10:00", new int[] { 1 }, new int[] { 35 }));
+    // Simulate stale stored points: a pure read must return what is stored, not recalculate and save.
+    DogEntity stored = dogRepository.findById(1).orElseThrow();
+    stored.setPoints(999);
+    dogRepository.save(stored);
+    assertAll(
+        () -> assertEquals(999, dogService.getDogs().get(0).getPoints()),
+        () -> assertEquals(999, dogService.getDogByNumber(1).getPoints()),
+        () -> assertEquals(999, dogRepository.findById(1).orElseThrow().getPoints()));
+  }
+
+  @Test
+  @Transactional
   void huntSettingsHaveSensibleDefaults() {
     HuntEntity hunt = huntRepository.findAll().get(0);
     assertAll(

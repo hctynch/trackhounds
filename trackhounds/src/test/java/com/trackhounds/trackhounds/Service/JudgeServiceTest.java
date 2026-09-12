@@ -72,7 +72,7 @@ public class JudgeServiceTest {
                 Map<String, String> errs = e.getFields();
                 assertEquals("Invalid Fields", e.getMessage());
                 assertEquals(1, errs.size());
-                assertEquals("Number cannot be negative.", errs.get("number"));
+                assertEquals("Number must be greater than 0.", errs.get("number"));
             }
 
             invalidJudge = new JudgeEntity(1, "123-4444", "");

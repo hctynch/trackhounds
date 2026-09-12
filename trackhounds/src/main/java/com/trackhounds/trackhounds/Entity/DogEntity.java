@@ -104,6 +104,22 @@ public class DogEntity {
     return Integer.hashCode(number);
   }
 
+  /**
+   * The dog's daily score for a hunt day, looked up by day rather than by list
+   * position so days can be scored in any order.
+   *
+   * @param day hunt day (1-based)
+   * @return the daily score, if the dog has one for that day
+   */
+  public java.util.Optional<DailyScore> dailyScoreFor(int day) {
+    if (scores == null) {
+      return java.util.Optional.empty();
+    }
+    return scores.stream()
+        .filter(dailyScore -> dailyScore != null && dailyScore.getDay() != null && dailyScore.getDay().getDay() == day)
+        .findFirst();
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (obj == null)

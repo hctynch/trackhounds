@@ -45,8 +45,8 @@ public class JudgeService {
      */
     public JudgeEntity addJudge(JudgeEntity judge) {
         Map<String, String> errs = new HashMap<String, String>();
-        if (judge.getNumber() < 0) {
-            errs.put("number", "Number cannot be negative.");
+        if (judge.getNumber() <= 0) {
+            errs.put("number", "Number must be greater than 0.");
         }
         if (judge.getNumber() > 0 && judgeRepository.existsById(judge.getNumber())) {
             errs.put("number", "Number already exists.");

@@ -305,16 +305,14 @@ public class DogServiceTest {
                                         new int[] { 35, 30, 25 }, 10);
                         assertAll("Add score for different day", () -> {
                                 assertDoesNotThrow(() -> dogService.createScore(score4));
-                                assertEquals(4, dogService.getDogByNumber(1).getScores().size());
+                                assertEquals(2, dogService.getDogByNumber(1).getScores().size());
                                 DogEntity d1 = dogService.getDogByNumber(1);
                                 List<DailyScore> dailyScores5 = d1.getScores();
-                                assertEquals(4, dailyScores5.size());
+                                assertEquals(2, dailyScores5.size());
                                 assertEquals(3, dailyScores5.get(0).getTimeBucketScores().size());
-                                assertEquals(0, dailyScores5.get(1).getTimeBucketScores().size());
-                                assertEquals(0, dailyScores5.get(2).getTimeBucketScores().size());
-                                assertEquals(1, dailyScores5.get(3).getTimeBucketScores().size());
+                                assertEquals(1, dailyScores5.get(1).getTimeBucketScores().size());
                                 assertEquals(2, dailyScores5.get(0).getHighestScores().size());
-                                assertEquals(1, dailyScores5.get(3).getHighestScores().size());
+                                assertEquals(1, dailyScores5.get(1).getHighestScores().size());
                                 assertEquals(126, d1.getPoints());
                                 DogEntity d2 = dogService.getDogByNumber(2);
                                 assertEquals(108, d2.getPoints());

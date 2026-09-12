@@ -55,6 +55,29 @@ function ScoreEntry() {
   const [error, setError] = useState({});
   const [saving, setSaving] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [recent, setRecent] = useState([]); // last crosses of the selected day, newest first
+
+  useEffect(() => {
+    if (!huntExists) return;
+    DogService.getScoresByDay(selectedDay).then((scores) => {
+      if (!Array.isArray(scores)) {
+        setRecent([]);
+        return;
+      }
+      // Group the day's scores into crosses (same judge and time), newest first.
+      const groups = new Map();
+      scores.forEach((score) => {
+        const key = `${score.judgeNumber}@${score.time}`;
+        if (!groups.has(key)) groups.set(key, { key, judge: score.judgeNumber, time: score.time, dogs: [] });
+        groups.get(key).dogs.push(score);
+      });
+      setRecent(Array.from(groups.values()).sort((a, b) => (a.time < b.time ? 1 : a.time > b.time ? -1 : 0)));
+    });
+  }, [selectedDay, huntExists, refreshTick]);
+
+  const judgesLastCross = judge ? recent.find((group) => String(group.judge) === String(judge)) : null;
+  const crossTimeSeconds = crossTime ? `${crossTime}${crossTime.length === 5 ? ':00' : ''}` : '';
+  const earlierThanLast = Boolean(judgesLastCross && crossTimeSeconds && crossTimeSeconds < judgesLastCross.time);
 
   // Register-on-the-spot dialog
   const [registering, setRegistering] = useState(null); // row index
@@ -227,6 +250,7 @@ function ScoreEntry() {
     setInterval(hunt?.pointStep ?? 5);
     setCustomPoints(filled(MIN_ROWS, null));
     setCrossTime('');
+    // The judge is kept: one judge usually reports several crosses in a row.
     setDogs(filled(MIN_ROWS, ''));
     setDogErrors(filled(MIN_ROWS, false));
     setDogStakes(filled(MIN_ROWS, null));
@@ -398,7 +422,12 @@ function ScoreEntry() {
                   />
                 )}
               </Field>
-              <Field label="Cross time" required error={error.crossTime}>
+              <Field
+                label="Cross time"
+                required
+                error={error.crossTime}
+                hint={earlierThanLast ? <span className="text-warning-700">Earlier than judge {judge}&apos;s last cross at {judgesLastCross.time.slice(0, 5)}.</span> : undefined}
+              >
                 {({ id, invalid }) => (
                   <Input id={id} type="time" invalid={invalid} value={crossTime} onChange={(e) => setCrossTime(e.target.value)} onKeyDown={(e) => handleKeyDown(e, 'crossTime')} ref={setRef('crossTime')} className="tabular" autoFocus />
                 )}
@@ -531,6 +560,35 @@ function ScoreEntry() {
           </PanelFooter>
         </Panel>
       </div>
+
+      {recent.length > 0 && (
+        <Panel className="mt-6">
+          <PanelHeader
+            title={`Last crosses of day ${selectedDay}`}
+            description="Newest first, so the sheet can be checked against what was saved."
+            actions={
+              <Link to="/score-entry/view" className="text-small font-medium text-pine-700 hover:underline">
+                All scores
+              </Link>
+            }
+          />
+          <ul className="divide-y divide-line">
+            {recent.slice(0, 3).map((group) => (
+              <li key={group.key} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-5 py-2.5 text-body">
+                <span className="w-16 tabular font-medium">{group.time.slice(0, 5)}</span>
+                <span className="w-20 text-ink-muted">Judge {group.judge}</span>
+                <span className="flex flex-wrap gap-x-3 tabular">
+                  {group.dogs.map((score) => (
+                    <span key={score.id} className={score.counted ? '' : 'text-ink-faint'} title={score.counted ? 'Counted' : 'Not counted: a higher cross in the same interval'}>
+                      {score.dogNumber} <span className="text-ink-muted">({score.points})</span>
+                    </span>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
 
       <Dialog
         open={registering !== null}

@@ -73,13 +73,12 @@ None at the moment. New questions go here with the code location they affect.
 | F11 | The day count, first-dog points and scratch day were hard-coded or missing (Q5, Q6, Q11). | Hunt settings `huntDays` and `firstDogPoints`; `Scratch.day`; every day list follows the hunt. |
 | F12 | A wrong day start time could not be corrected (Q10). | `changeStartTime` re-buckets the day and recalculates points; dialog on the score entry page. |
 | F13 | Unknown dogs in a cross had no path but "fix the number" (Q9); crosses were limited to seven rows (Q7). | Register-on-the-spot dialog and Skip on the row; rows can be added. |
+| F14 | `GET /dogs` and `GET /dogs/{n}` recalculated and **saved** points on every read. | Reads are pure; points are maintained when scores change (cross saved, score deleted, start time changed). |
+| F15 | Daily scores were addressed by list position (`scores.get(day - 1)`), so scoring day 4 first created empty filler days 1-3. | `DogEntity.dailyScoreFor(day)`; one `DailyScore` per scored day, in any order. |
+| F16 | Judge number 0 was accepted by the server. | Must be greater than 0. |
 
 ## 5. Still to do (defects and rough edges that do not need a rules decision)
 
-- `GET /dogs` recalculates and **saves** every dog's points on each read. Points should be computed when
-  scores change and read without side effects (or computed in the query).
-- `calculateTotalPoints` relies on `dog.scores` index `day - 1`; `createScore` keeps that invariant but
-  nothing enforces it. Store the day on `DailyScore` lookups instead of positional access.
 - Deleting a dog cascades through `DailyScore` → `TimeBucketScore` → `Score` while `HighestScore` also
   points at the same `Score`; it works only because SQLite has no foreign keys here. Simplify the model
   (`Score` owned by `DailyScore`, bucket and counted flags on the score) before iteration 7 adds
@@ -91,18 +90,17 @@ None at the moment. New questions go here with the code location they affect.
 - `Days` has no link to the hunt; `Score.day` duplicates `DailyScore.day`. Fine for one hunt at a time,
   a problem for multiple hunts (iteration 7).
 - There is no way to **edit** a score (only delete and re-enter) and no way to edit a scratch.
-- `JudgeEntity.number = 0` is accepted by the server (the UI requires ≥ 1).
 
 ## 6. User-flow notes (to smooth out)
 
-- **First run**: the empty dashboard sends the user to "Create a hunt", but after creating it nothing
-  suggests adding judges before dogs, or dogs before scores. A short checklist on the dashboard
-  (hunt → judges → dogs → scores) with the current counts would carry a new user through the setup.
-- **Creating a new hunt wipes everything.** The warning is there; consider asking for the old hunt's
-  title to be typed, or better, keep the old hunt readable (iteration 7's export / multiple hunts).
-- **Score entry** is the hot path. Ideas: keep the judge number between crosses (same judge enters many
-  crosses), show the last three crosses saved so the scorekeeper can check them, and warn when the cross
-  time is earlier than the previous cross of that judge.
+- **First run**: done. The dashboard shows a "Getting this hunt ready" checklist (hunt → judges → dogs →
+  first cross) with the counts and a link to the next step, until every step is done.
+- **Creating a new hunt wipes everything.** Done: "New hunt" now asks for confirmation naming the current
+  hunt before leaving the dashboard, and the create page repeats the warning. Keeping old hunts readable
+  is iteration 7 (export / multiple hunts).
+- **Score entry**: done. The judge number is kept between crosses, the last three crosses of the day are
+  listed under the form (newest first, uncounted scores greyed) and the cross time warns when it is earlier
+  than that judge's last cross.
 - **Unknown dog in a cross**: now blocked (F3). If that is too strict at a real hunt (Q9), offer
   "register dog N now" inline.
 - **Scratch sheet**: no day (Q5); the reason is free text while hunts probably use a fixed set of

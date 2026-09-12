@@ -1,11 +1,51 @@
+import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
-import { LuPencil, LuPlus, LuTrophy } from 'react-icons/lu';
+import { LuCircle, LuCircleCheck, LuPencil, LuPlus, LuTrophy } from 'react-icons/lu';
 import { Link, useNavigate } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
 import { dayOptions } from '../lib/hunt';
 import DogService from '../services/DogService';
 import JudgeService from '../services/JudgeService';
-import { Badge, Button, DataTable, EmptyState, PageHeader, Panel, PanelHeader, STAKE_LABELS, SegmentedControl } from './ui';
+import { Badge, Button, ConfirmDialog, DataTable, EmptyState, PageHeader, Panel, PanelHeader, STAKE_LABELS, SegmentedControl } from './ui';
+
+/** The setup steps of a hunt, shown until every one is done. */
+function SetupChecklist({ judges, dogs, scored }) {
+  const steps = [
+    { label: 'Create the hunt', done: true },
+    { label: judges > 0 ? `${judges} ${judges === 1 ? 'judge' : 'judges'} added` : 'Add the judges', done: judges > 0, to: '/judges/all' },
+    { label: dogs > 0 ? `${dogs} ${dogs === 1 ? 'dog' : 'dogs'} registered` : 'Register the dogs', done: dogs > 0, to: '/dogs/add' },
+    { label: scored ? 'First cross entered' : 'Enter the first cross', done: scored, to: '/score-entry/enter' },
+  ];
+  const next = steps.find((step) => !step.done);
+  return (
+    <Panel className="mb-6">
+      <PanelHeader title="Getting this hunt ready" description="In this order. The next step is highlighted." />
+      <ol className="divide-y divide-line">
+        {steps.map((step) => {
+          const isNext = step === next;
+          const Icon = step.done ? LuCircleCheck : LuCircle;
+          return (
+            <li key={step.label} className={`flex items-center gap-3 px-5 py-2.5 ${isNext ? 'bg-brass-100/60' : ''}`}>
+              <Icon size={18} className={step.done ? 'text-success-600' : isNext ? 'text-brass-500' : 'text-ink-faint'} aria-hidden />
+              <span className={`flex-1 ${step.done ? 'text-ink-muted' : 'font-medium text-ink'}`}>{step.label}</span>
+              {isNext && step.to && (
+                <Link to={step.to} className="text-small font-medium text-pine-700 hover:underline">
+                  Go
+                </Link>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </Panel>
+  );
+}
+
+SetupChecklist.propTypes = {
+  judges: PropTypes.number.isRequired,
+  dogs: PropTypes.number.isRequired,
+  scored: PropTypes.bool.isRequired,
+};
 
 function DogName({ dog }) {
   return (
@@ -49,6 +89,7 @@ function Home() {
   const [overall, setOverall] = useState([]);
   const [daily, setDaily] = useState([]);
   const [day, setDay] = useState(1);
+  const [confirmNewHunt, setConfirmNewHunt] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,12 +172,26 @@ function Home() {
             <Button icon={LuPencil} onClick={() => navigate('/hunt/edit')}>
               Edit hunt
             </Button>
-            <Button variant="primary" icon={LuPlus} onClick={() => navigate('/hunt/create')}>
+            <Button variant="primary" icon={LuPlus} onClick={() => setConfirmNewHunt(true)}>
               New hunt
             </Button>
           </>
         }
       />
+
+      <ConfirmDialog
+        open={confirmNewHunt}
+        onClose={() => setConfirmNewHunt(false)}
+        onConfirm={() => navigate('/hunt/create')}
+        danger
+        title={`Replace "${hunt?.title}"?`}
+        description="TrackHounds keeps one hunt at a time. Creating a new hunt deletes this hunt's dogs, judges, scores and scratches. Print any reports you still need first."
+        confirmLabel="Continue to new hunt"
+      />
+
+      {(judgeTotal === 0 || dogTotal === 0 || overall.length === 0) && (
+        <SetupChecklist judges={judgeTotal} dogs={dogTotal} scored={overall.length > 0} />
+      )}
 
       <Panel className="mb-6 grid grid-cols-2 divide-x divide-line md:grid-cols-5">
         <Fact label="Dogs registered" value={dogTotal} />
