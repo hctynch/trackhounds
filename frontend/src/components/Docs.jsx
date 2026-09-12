@@ -27,6 +27,17 @@ function Code({ children }) {
 
 Code.propTypes = { children: PropTypes.node };
 
+function QuickStartPhase({ title, children }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-small font-semibold text-pine-700">{title}</p>
+      <ol className="list-decimal space-y-2 pl-5 text-body">{children}</ol>
+    </div>
+  );
+}
+
+QuickStartPhase.propTypes = { title: PropTypes.string.isRequired, children: PropTypes.node };
+
 function Docs() {
   const [appInfo, setAppInfo] = useState(null);
 
@@ -46,35 +57,69 @@ function Docs() {
     <>
       <PageHeader
         title="Docs and help"
-        description="How TrackHounds works, where it keeps your data, and what to do when something goes wrong."
+        description="A quick start for running a hunt, how scoring works, where the data lives, and what to do when something goes wrong."
         meta={appInfo ? <span className="text-small text-ink-muted">Version {appInfo.version}</span> : null}
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="flex flex-col gap-6">
           <Panel>
-            <PanelHeader title="Working through a hunt" />
+            <PanelHeader title="Quick start" description="The whole hunt in order. The Home page checklist tracks the setup steps." />
+            <PanelBody className="space-y-5">
+              <QuickStartPhase title="Before the hunt">
+                <li>
+                  <span className="font-medium">Create the hunt</span> from Home: title, dates, number of days (1 to 4), scoring interval in minutes, first-dog points, point step and stake. In a dual stake hunt, number ranges give every dog its stake from its number.
+                </li>
+                <li>
+                  <span className="font-medium">Add the judges</span> with their numbers. The member PIN is only a reference.
+                </li>
+                <li>
+                  <span className="font-medium">Register the dogs</span> on Add dogs. Type them in rows (arrow keys move between cells, sire and dam suggest names already typed) or use Import CSV with the columns <Code>number, name, stake, sire, dam, owner</Code>. Leading zeros count: 0 and 00 are different dogs.
+                </li>
+              </QuickStartPhase>
+              <QuickStartPhase title="Each day">
+                <li>
+                  <span className="font-medium">Set the start time</span> with the first cross of the day on Enter scores. Every later cross that day is scored in intervals from it.
+                </li>
+                <li>
+                  <span className="font-medium">Enter each cross</span>: day, cross time, judge, then the dogs in crossing order. Points fill in from the hunt&apos;s first-dog points and point step and can be overridden. Enter moves through the rows and saves. An unregistered dog can be registered on the spot or skipped, and the other dogs keep their places.
+                </li>
+                <li>
+                  <span className="font-medium">Scratch</span> any dog withdrawn from the hunt on the scratch sheet, with the day, time, judge and reason.
+                </li>
+                <li>
+                  <span className="font-medium">Print Daily speed and drive</span> from Reports at the end of the day. Home shows the standings as scores come in.
+                </li>
+              </QuickStartPhase>
+              <QuickStartPhase title="End of the hunt">
+                <li>
+                  <span className="font-medium">Print the final sheets</span>: Hunt summary (one page with settings, entries, placings and scratches), Overall speed and drive, All dogs all days, Scratches and Judge summary.
+                </li>
+                <li>
+                  <span className="font-medium">Keep a copy of the data</span>: close TrackHounds and copy <Code>trackhounds.db</Code> from the data folder somewhere safe.
+                </li>
+                <li>
+                  <span className="font-medium">Start the next hunt</span> with New hunt on Home. It clears the dogs, judges, scores and scratches of the current one, so print first.
+                </li>
+              </QuickStartPhase>
+            </PanelBody>
+          </Panel>
+
+          <Panel>
+            <PanelHeader title="Fixing mistakes" />
             <PanelBody>
-              <ol className="list-decimal space-y-2 pl-5 text-body">
-                <li>
-                  <span className="font-medium">Create the hunt</span> from Home: title, dates, number of days, scoring interval, first-dog points, point step and stake.
-                </li>
-                <li>
-                  <span className="font-medium">Add judges</span>, then <span className="font-medium">add dogs</span>. Dogs take their stake from their number when the hunt defines number ranges.
-                </li>
-                <li>
-                  <span className="font-medium">Enter scores</span> one cross at a time: day, start and cross time, judge, then the dogs in crossing order. Points fill in from the hunt&apos;s first-dog points and point step, and can be overridden. A dog that is not registered can be registered on the spot or skipped; the other dogs keep their places. A wrong start time can be changed and the day&apos;s crosses are re-sorted.
-                </li>
-                <li>
-                  <span className="font-medium">Scratch</span> any dog withdrawn from the hunt from the scratch sheet, with the day, time, judge and reason. Scratched dogs stay in the standings and are marked on every report.
-                </li>
-                <li>
-                  <span className="font-medium">Print reports</span> at the end of each day and at the end of the hunt. Standings on Home update as scores come in.
-                </li>
-              </ol>
-              <p className="mt-4 text-small text-ink-muted">
-                Creating a new hunt clears the current one. Print what you need before starting the next hunt.
-              </p>
+              <dl className="grid gap-x-6 gap-y-3 text-body sm:grid-cols-[auto_1fr]">
+                <dt className="font-medium">A wrong score</dt>
+                <dd className="text-ink-muted">Delete the line on View scores and enter the cross again. Scores cannot be edited in place; every dog&apos;s points are recalculated.</dd>
+                <dt className="font-medium">A wrong start time</dt>
+                <dd className="text-ink-muted">Use Change start time on Enter scores. The day&apos;s crosses are re-sorted into intervals from the new time.</dd>
+                <dt className="font-medium">A wrong dog number</dt>
+                <dd className="text-ink-muted">Open the dog from All dogs and change its number. Its scores and scratches move with it.</dd>
+                <dt className="font-medium">Scratched by mistake</dt>
+                <dd className="text-ink-muted">Remove the scratch on the scratch sheet. The dog is no longer marked as scratched unless another scratch remains.</dd>
+                <dt className="font-medium">Wrong hunt settings</dt>
+                <dd className="text-ink-muted">Edit hunt on Home. Changing the number ranges does not change the stake of dogs already registered.</dd>
+              </dl>
             </PanelBody>
           </Panel>
 

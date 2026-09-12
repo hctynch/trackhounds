@@ -19,7 +19,15 @@ function SetupChecklist({ judges, dogs, scored }) {
   const next = steps.find((step) => !step.done);
   return (
     <Panel className="mb-6">
-      <PanelHeader title="Getting this hunt ready" description="In this order. The next step is highlighted." />
+      <PanelHeader
+        title="Getting this hunt ready"
+        description="In this order. The next step is highlighted."
+        actions={
+          <Link to="/docs" className="text-small font-medium text-pine-700 hover:underline">
+            Quick start guide
+          </Link>
+        }
+      />
       <ol className="divide-y divide-line">
         {steps.map((step) => {
           const isNext = step === next;

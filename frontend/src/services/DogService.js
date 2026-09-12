@@ -53,6 +53,15 @@ class DogService {
     }
   }
 
+  async renumberDog(number, newNumber) {
+    try {
+      const response = await this.api.put(`/${number}/number`, { number: newNumber });
+      return response.data;
+    } catch (error) {
+      return error.response.data;
+    }
+  }
+
   async deleteDog(number) {
     try {
       const response = await this.api.delete(`/${number}`);

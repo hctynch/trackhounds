@@ -64,6 +64,10 @@ To report issues or request features:
 
 ## User's Guide
 
+New to TrackHounds? [docs/QUICK_START.md](docs/QUICK_START.md) walks through a whole hunt in order, from
+creating the hunt to printing the final sheets, and lists what to do when something was entered wrong. The same
+guide is on the `Docs and help` page inside the application.
+
 ### Install
 
 1. **Download the Installer**
@@ -136,9 +140,10 @@ Creating a new hunt clears the current one.
 #### Dogs
 
 - **All dogs**: every registered dog with its stake, owner, sire, dam and points. Edit or remove a dog from the row;
-  removing asks for confirmation.
+  removing asks for confirmation. Editing can change the dog's number; its scores and scratches move with it.
 - **Add dogs**: register several dogs at once. Arrow keys move between cells, and sire and dam suggest names already
-  typed on the page. Dogs take their stake from the hunt's number ranges.
+  typed on the page. Dogs take their stake from the hunt's number ranges. `Import CSV` reads an entry list with the
+  columns `number, name, stake, sire, dam, owner` ([template](docs/dogs-template.csv)) into the table.
 
 ![Registering dogs](docs/screenshots/add-dogs.png)
 
@@ -162,8 +167,10 @@ Dogs withdrawn from the hunt, with the time, the judge and the reason, and the f
 #### Reports
 
 Printable sheets, grouped into daily, whole-hunt and detail reports: daily and overall speed and drive, top dogs with
-a chosen number of places and stake, all dogs on all days, scratches, and the scores of one dog or one judge. Each
-report has a preview with its options and a `Print` button that uses the normal Windows print dialog.
+a chosen number of places and stake, a one-page hunt summary (settings, entries, each day at a glance, top placings
+per stake and scratches), all dogs on all days, scratches, a judge summary (crosses and dogs scored per judge and
+day), and the scores of one dog or one judge. Each report has a preview with its options and a `Print` button that
+uses the normal Windows print dialog. Scratched dogs are marked on every sheet.
 
 ![A printable report](docs/screenshots/report-overall-speed-and-drive.png)
 

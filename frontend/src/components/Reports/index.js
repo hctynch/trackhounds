@@ -2,7 +2,9 @@ import ComprehensiveDogScoresReport from './ComprehensiveDogScoresReport';
 import CustomTopDogsReport from './CustomTopDogsReport';
 import DailyCustomTopDogsReport from './DailyCustomTopDogsReport';
 import DogDetailScoresReport from './DogDetailScoresReport';
+import HuntSummaryReport from './HuntSummaryReport';
 import JudgeDetailScoresReport from './JudgeDetailScoresReport';
+import JudgeSummaryReport from './JudgeSummaryReport';
 import ScratchReport from './ScratchReport';
 import SpeedAndDriveD from './SpeedAndDriveD';
 import SpeedAndDriveO from './SpeedAndDriveO';
@@ -18,7 +20,7 @@ const reportGroups = [
   },
   {
     type: 'Whole hunt',
-    items: [SpeedAndDriveO, CustomTopDogsReport, ComprehensiveDogScoresReport, ScratchReport].map(withId),
+    items: [HuntSummaryReport, SpeedAndDriveO, CustomTopDogsReport, ComprehensiveDogScoresReport, ScratchReport, JudgeSummaryReport].map(withId),
   },
   {
     type: 'Details',

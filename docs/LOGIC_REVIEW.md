@@ -79,6 +79,8 @@ None at the moment. New questions go here with the code location they affect.
 | F16 | Judge number 0 was accepted by the server. | Must be greater than 0. |
 | F17 | `Score` was reachable from two join tables (`time_bucket_score`, `highest_score`) and deleting a dog only worked because SQLite has no foreign keys here. | Scores are owned by their `DailyScore`; the scoring interval and the counted flag live on the score. `getTimeBucketScores()`/`getHighestScores()` remain as read-only views. |
 | F18 | Dog numbers were integers (Q15) and the schema had no migration path. | `LegacySchemaMigration` runs before Hibernate on start-up: backs the database up to `backups/`, moves the score links onto the scores, drops the join tables and rebuilds the four dog-number columns with text affinity (SQLite would coerce "00" to 0 in an integer column). Covered by `LegacySchemaMigrationTest` against a copy of the release-candidate schema. |
+| F19 | A dog's number could not be corrected once it had scores; the only way was delete and re-enter everything. | `PUT /dogs/{number}/number` rewrites the key in place across `dogs`, `daily_score`, `score` and `scratch` in one transaction (score and scratch ids are kept). The Edit dog page exposes it. |
+| F20 | No sheet said what each judge had recorded, and there was no front page for the hunt's paperwork. | `ReportService`: `GET /reports/judges` (crosses and dog placings per judge per day, scratches recorded) and `GET /reports/hunt-summary` (settings, entries, each day, top five placings per stake, scratches). A "cross" is one judge's entry at one time on one day. |
 
 ## 5. Still to do (defects and rough edges that do not need a rules decision)
 
@@ -88,7 +90,8 @@ None at the moment. New questions go here with the code location they affect.
   `/dogs/scores/day/{day}` (per-dog summaries). Rename for clarity when the API is next touched.
 - `Days` has no link to the hunt; `Score.day` duplicates `DailyScore.day`. Fine for one hunt at a time,
   a problem for multiple hunts (iteration 7).
-- There is no way to **edit** a score (only delete and re-enter) and no way to edit a scratch.
+- There is no way to **edit** a score (only delete and re-enter, by decision Q12) and no way to edit a scratch.
+- `GET /dogs/{number}` answers `400` for an unknown dog; `404` would be the honest answer.
 
 ## 6. User-flow notes (to smooth out)
 
@@ -105,9 +108,13 @@ None at the moment. New questions go here with the code location they affect.
 - **Scratch sheet**: no day (Q5); the reason is free text while hunts probably use a fixed set of
   reasons (injured, withdrawn, not found); the dog's name is copied at scratch time and not shown as
   scratched anywhere else in the UI.
-- **Reports**: no report of scratched dogs' remaining scores, no per-judge summary (crosses per judge),
-  no "hunt summary" front page. The overall speed and drive sheet shows zero columns for days that were
-  not run (Q6).
-- **Judges**: the member PIN is stored but never used; either drop it or show what it is for.
-- **Dogs**: no bulk import (a CSV from the entry list would save the biggest chunk of typing at a
-  hunt); editing a dog cannot change its number.
+- **Reports**: done. Scratched dogs are marked on every sheet (F10) and the Scratches report lists them;
+  the Judge summary shows crosses and dog placings per judge and day; the Hunt summary is the one-page
+  front sheet (F20). Day columns follow the hunt's day count (Q6).
+- **Judges**: the member PIN is kept as a reference only (Q13); the dialog says so.
+- **Dogs**: done. Add dogs has Import CSV (`number, name, stake, sire, dam, owner`, header optional,
+  unreadable rows listed and skipped, rows land in the table for checking before saving) and a per-row
+  owner; Edit dog can change the number (F19).
+- **Quick start**: the Docs page opens with the whole hunt in order (before, each day, end of hunt) and a
+  "Fixing mistakes" list; the same guide is `docs/QUICK_START.md` with screenshots, linked from the README
+  and from the Home checklist.

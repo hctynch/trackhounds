@@ -82,6 +82,8 @@ function Reports() {
             columns={reportData?.columns || []}
             columnGroups={reportData?.columnGroups}
             data={reportData?.data || []}
+            facts={reportData?.facts}
+            sections={reportData?.sections}
             options={Options ? <Options onChange={setReportConfig} config={reportConfig} /> : null}
           />
         )}

@@ -33,6 +33,8 @@ import com.trackhounds.trackhounds.Repository.JudgeRepository;
 import com.trackhounds.trackhounds.Repository.ScoreRepository;
 import com.trackhounds.trackhounds.Repository.ScratchRepository;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.AllArgsConstructor;
 
 @Service
@@ -89,6 +91,13 @@ public class DogService {
    */
   @Autowired
   private HuntRepository huntRepository;
+
+  /**
+   * Entity manager, used where a change has to bypass the entity mapping
+   * (renumbering a dog rewrites its primary key).
+   */
+  @PersistenceContext
+  private EntityManager entityManager;
 
   /**
    * Create a group of dogs
@@ -170,6 +179,49 @@ public class DogService {
     d.setSire(dog.getSire());
     d.setStake(dog.getStake());
     dogRepository.save(d);
+  }
+
+  /**
+   * Change a dog's number. The number is the dog's identity and is copied onto
+   * its daily scores, crosses and scratches, so all of them move with it. Points
+   * and standings are unaffected.
+   *
+   * @param currentNumber the dog's number today
+   * @param newNumber     the number it should have
+   * @return the dog under its new number
+   * @throws TrackHoundsAPIException if the dog does not exist, the new number is
+   *                                 not a valid number, or another dog has it
+   */
+  public DogEntity renumberDog(String currentNumber, String newNumber) {
+    DogEntity dog = dogRepository.findById(currentNumber == null ? "" : currentNumber.trim())
+        .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.NOT_FOUND, "Dog with this number does not exist.",
+            Map.of("number", "Dog with this number does not exist.")));
+    String target = newNumber == null ? "" : newNumber.trim();
+    if (target.equals(dog.getNumber()))
+      return dog;
+    Map<String, String> errs = new HashMap<>();
+    if (target.isEmpty())
+      errs.put("number", "Enter the new number.");
+    else if (!DogEntity.isValidNumber(target))
+      errs.put("number", "Dog numbers are digits only, for example 12 or 007.");
+    else if (dogRepository.existsById(target))
+      errs.put("number", String.format("Dog %s already exists.", target));
+    if (!errs.isEmpty())
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid fields", errs);
+
+    // The number is a primary key referenced from three tables; rewriting it in
+    // place keeps every row's identity (score ids, scratch ids) unchanged.
+    String source = dog.getNumber();
+    entityManager.flush();
+    entityManager.clear();
+    for (String[] column : List.of(new String[] { "dogs", "number" }, new String[] { "daily_score", "dog_number" },
+        new String[] { "score", "dog_number" }, new String[] { "scratch", "dog_number" })) {
+      entityManager.createNativeQuery(String.format("update %s set %s = :target where %s = :source", column[0], column[1], column[1]))
+          .setParameter("target", target)
+          .setParameter("source", source)
+          .executeUpdate();
+    }
+    return dogRepository.findById(target).orElseThrow();
   }
 
   /**

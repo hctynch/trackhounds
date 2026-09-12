@@ -91,6 +91,18 @@ public class DogController {
   }
 
   /**
+   * Change a dog's number; its scores and scratches move with it.
+   *
+   * @param number the dog's current number
+   * @param body   {@code {"number": "<new number>"}}
+   * @return the dog under its new number
+   */
+  @PutMapping("/{number}/number")
+  public DogEntity renumberDog(@PathVariable("number") String number, @RequestBody Map<String, String> body) {
+    return dogService.renumberDog(number, body == null ? null : body.get("number"));
+  }
+
+  /**
    * Delete a dog by number
    * 
    * @param number Number of dog

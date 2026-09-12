@@ -181,7 +181,8 @@
     display: table-header-group;
   }
 
-  .report-table tr {
+  .report-table tr,
+  .report-section {
     break-inside: avoid;
   }
 

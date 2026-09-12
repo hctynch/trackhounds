@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { LuPlus } from 'react-icons/lu';
+import { LuFileUp, LuPlus } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
+import { dogsFromCsv } from '../lib/csv';
 import { stakeForNumber } from '../lib/hunt';
 import DogService from '../services/DogService';
 import { Alert, Button, CellInput, Field, Input, PageHeader, Panel, PanelBody, PanelFooter, PanelHeader, STAKE_LABELS, useToast } from './ui';
 
-const FIELDS = ['number', 'name', 'stake', 'sire', 'dam'];
-const emptyRow = () => ({ number: '', name: '', stake: 'ALL_AGE', sire: '', dam: '' });
+const FIELDS = ['number', 'name', 'stake', 'sire', 'dam', 'owner'];
+const emptyRow = () => ({ number: '', name: '', stake: 'ALL_AGE', sire: '', dam: '', owner: '' });
+const isBlank = (dog) => !dog.number && !dog.name && !dog.sire && !dog.dam && !dog.owner;
 
 /**
  * Register several dogs at once. Arrow keys move between cells; sire and dam offer the names
- * already typed in other rows so litters can be entered quickly.
+ * already typed in other rows so litters can be entered quickly. A CSV file (number, name, stake,
+ * sire, dam, owner) fills the rows in one go.
  */
 function AddDogs() {
   const navigate = useNavigate();
@@ -27,6 +30,26 @@ function AddDogs() {
   const [highlighted, setHighlighted] = useState(-1);
   const inputRefs = useRef({});
   const suggestionRefs = useRef({});
+  const fileRef = useRef(null);
+  const [importNotes, setImportNotes] = useState([]);
+
+  const importCsv = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    const text = await file.text();
+    const { dogs: imported, skipped } = dogsFromCsv(text, hunt);
+    setImportNotes(skipped.map((entry) => entry.reason));
+    if (imported.length === 0) {
+      toast.error(skipped.length > 0 ? 'No dogs could be read from that file.' : 'That file has no dog rows.');
+      return;
+    }
+    setSubmitted(false);
+    setErrors({});
+    setDogs((current) => [...current.filter((dog) => !isBlank(dog)), ...imported]);
+    const skippedNote = skipped.length > 0 ? ` ${skipped.length} ${skipped.length === 1 ? 'row was' : 'rows were'} skipped.` : '';
+    toast.success(`${imported.length} ${imported.length === 1 ? 'dog' : 'dogs'} read from ${file.name}.${skippedNote}`);
+  };
 
   const closeSuggestions = () => {
     setSuggestions([]);
@@ -134,7 +157,7 @@ function AddDogs() {
   // A partly filled row is a mistake waiting to happen; say so as soon as it appears.
   const rowErrors = {};
   dogs.forEach((dog, index) => {
-    const touched = dog.number || dog.name || dog.sire || dog.dam;
+    const touched = !isBlank(dog);
     const complete = dog.number && dog.name && dog.stake && dog.sire && dog.dam;
     if (touched && !complete) rowErrors[`row${index}`] = `Row ${index + 1}: fill in every field or clear the row.`;
   });
@@ -142,7 +165,7 @@ function AddDogs() {
   const errorList = Object.values(allErrors);
 
   const handleSubmit = async () => {
-    const complete = dogs.filter((dog) => dog.number && dog.name && dog.stake && dog.sire && dog.dam).map((dog) => ({ ...dog, owner }));
+    const complete = dogs.filter((dog) => dog.number && dog.name && dog.stake && dog.sire && dog.dam).map((dog) => ({ ...dog, owner: dog.owner || owner }));
     setSubmitted(true);
     if (Object.keys(rowErrors).length > 0) return;
     if (complete.length === 0) {
@@ -203,12 +226,13 @@ function AddDogs() {
       <div className="flex flex-col gap-6">
         <Panel>
           <PanelBody className="max-w-md">
-            <Field label="Owner" hint="Applied to every dog on this page.">
+            <Field label="Owner" hint="Used for every row that has no owner of its own.">
               {({ id }) => <Input id={id} value={owner} onChange={(event) => setOwner(event.target.value)} placeholder="Owner or kennel" autoFocus />}
             </Field>
           </PanelBody>
         </Panel>
 
+        {importNotes.length > 0 && <Alert tone="warning" title="Rows skipped from the file" items={importNotes} />}
         {errorList.length > 0 && <Alert tone="danger" title="Fix these before saving" items={errorList} />}
 
         <Panel>
@@ -216,9 +240,15 @@ function AddDogs() {
             title="Dogs"
             description="Numbers are digits and leading zeros count: 0 and 00 are different dogs. Numbers outside the hunt's ranges keep the stake you choose."
             actions={
-              <Button size="sm" icon={LuPlus} onClick={() => setDogs((current) => [...current, emptyRow()])}>
-                Add row
-              </Button>
+              <>
+                <input ref={fileRef} type="file" accept=".csv,text/csv,text/plain" className="sr-only" tabIndex={-1} aria-hidden onChange={importCsv} />
+                <Button size="sm" icon={LuFileUp} onClick={() => fileRef.current?.click()} title="Read dogs from a CSV file with the columns number, name, stake, sire, dam and owner">
+                  Import CSV
+                </Button>
+                <Button size="sm" icon={LuPlus} onClick={() => setDogs((current) => [...current, emptyRow()])}>
+                  Add row
+                </Button>
+              </>
             }
           />
           <div className="overflow-x-auto">
@@ -231,6 +261,7 @@ function AddDogs() {
                   <th className="w-36 px-2 py-2 text-left font-medium">Stake</th>
                   <th className="px-2 py-2 text-left font-medium">Sire</th>
                   <th className="px-2 py-2 text-left font-medium">Dam</th>
+                  <th className="px-2 py-2 text-left font-medium">Owner</th>
                 </tr>
               </thead>
               <tbody>
@@ -313,6 +344,19 @@ function AddDogs() {
                         onKeyDown={(event) => handleKeyDown(event, index, 'dam')}
                       />
                       {renderSuggestions(index, 'dam')}
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <CellInput
+                        name="owner"
+                        aria-label={`Row ${index + 1} owner`}
+                        placeholder={owner || ''}
+                        ref={(el) => {
+                          inputRefs.current[`owner-${index}`] = el;
+                        }}
+                        value={dog.owner}
+                        onChange={(event) => handleChange(index, 'owner', event.target.value)}
+                        onKeyDown={(event) => handleKeyDown(event, index, 'owner')}
+                      />
                     </td>
                   </tr>
                 ))}

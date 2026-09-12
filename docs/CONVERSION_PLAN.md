@@ -310,7 +310,7 @@ truck or a clubhouse, so clarity, large touch/click targets and keyboard speed m
 Suggested sequencing: do this after the first `v3.0.0` installer is confirmed on a clean machine
 (iteration 4), so the visual work lands on a stable base and can ship as `v3.1.0`.
 
-### 🔄 Iteration 6: logic review and user-flow smoothing
+### ✅ Iteration 6: logic review and user-flow smoothing
 
 Context from the author (2026-09-10): the original project was not fully fleshed out when it was
 created. The scoring logic and the user flows therefore have to be **reviewed and confirmed**, not
@@ -347,10 +347,17 @@ counted flag on the score; the two join tables are gone) and dog numbers are tex
 release-candidate databases on first start after taking a backup; it is the pattern Flyway can replace in
 iteration 8.
 
+Also done (2026-09-11): the last flow notes. Two server-computed reports, a one-page **Hunt summary** and
+a **Judge summary** (`ReportService`, `GET /reports/*`); the report sheet can now render fact grids and
+several titled sections; **Import CSV** on Add dogs (parser in `frontend/src/lib/csv.js`, template in
+`docs/dogs-template.csv`); a dog's **number can be changed** (`PUT /dogs/{number}/number`, key rewritten
+in place with its scores and scratches); and a **quick start guide** on the Docs page and in
+[QUICK_START.md](QUICK_START.md). 87 backend tests pass.
+
 Next:
 
-- Remaining flow notes in section 6: scratched-dog and per-judge reports, a hunt summary sheet, bulk dog
-  import (CSV), editing a dog's number.
+- Nothing blocks closing the iteration. Section 5 of the review lists small API rough edges (`400` vs
+  `404`, route naming, `Days` not linked to the hunt) to take when the API is next touched (iteration 7).
 
 ### ⏳ Iteration 7: data safety and hunt management
 

@@ -324,6 +324,57 @@ class DogServiceReviewTest {
 
   @Test
   @Transactional
+  void renumberingADogMovesItsScoresAndScratches() {
+    registerDogs(5, 6);
+    dogService.createScore(cross(1, "07:00:00", "07:10:00", new int[] { 5, 6 }, new int[] { 35, 30 }));
+    dogService.createScore(cross(2, "07:00:00", "07:20:00", new int[] { 6, 5 }, new int[] { 35, 30 }));
+    Scratch scratch = new Scratch();
+    scratch.setDogNumber("5");
+    scratch.setDay(2);
+    scratch.setTime(LocalTime.of(9, 0));
+    scratch.setJudgeNumber(1);
+    scratch.setReason("Other");
+    dogService.scratchDog(scratch);
+    int pointsBefore = dogService.getDogByNumber("5").getPoints();
+    Long scoreId = dogService.getScoresByDogNumber("5").get(0).getId();
+
+    DogEntity moved = dogService.renumberDog("5", "005");
+
+    assertAll(
+        () -> assertEquals("005", moved.getNumber()),
+        () -> assertEquals("Dog 5", moved.getName()),
+        () -> assertTrue(moved.isScratched()),
+        () -> assertEquals(pointsBefore, moved.getPoints()),
+        () -> assertFalse(dogRepository.existsById("5")),
+        () -> assertEquals(2, dogService.getScoresByDogNumber("005").size()),
+        () -> assertEquals(scoreId, dogService.getScoresByDogNumber("005").get(0).getId(), "score rows keep their ids"),
+        () -> assertEquals(2, moved.getScores().size(), "both daily scores follow the dog"),
+        () -> assertEquals("005", dogService.getScratches().get(0).getDogNumber()),
+        () -> assertEquals(0, scoreRepository.findByDogNumberOrderByDayAscTimeAsc("5").size()));
+
+    // Standings and cross info see the new number, and the old one is free again.
+    assertTrue(dogService.getTopScoringDogsOverall(2).stream().anyMatch(row -> "005".equals(row.get("dogNumber")) && Integer.valueOf(pointsBefore).equals(row.get("totalPoints"))));
+    assertEquals(List.of("005", "6"), dogService.getDogs().stream().map(DogEntity::getNumber).toList());
+    dogService.createDogs(List.of(new DogEntity("5", "New five", StakeType.ALL_AGE, "Owner", "Sire", "Dam")));
+    assertEquals(0, dogService.getDogByNumber("5").getPoints());
+  }
+
+  @Test
+  @Transactional
+  void renumberingRejectsTakenAndInvalidNumbers() {
+    registerDogs(5, 6);
+    TrackHoundsAPIException taken = assertThrows(TrackHoundsAPIException.class, () -> dogService.renumberDog("5", "6"));
+    TrackHoundsAPIException invalid = assertThrows(TrackHoundsAPIException.class, () -> dogService.renumberDog("5", "5A"));
+    TrackHoundsAPIException missing = assertThrows(TrackHoundsAPIException.class, () -> dogService.renumberDog("9", "10"));
+    assertAll(
+        () -> assertTrue(taken.getFields().get("number").contains("already exists")),
+        () -> assertTrue(invalid.getFields().get("number").contains("digits only")),
+        () -> assertEquals(org.springframework.http.HttpStatus.NOT_FOUND, missing.getStatus()),
+        () -> assertEquals("5", dogService.renumberDog("5", " 5 ").getNumber(), "same number is a no-op"));
+  }
+
+  @Test
+  @Transactional
   void huntSettingsHaveSensibleDefaults() {
     HuntEntity hunt = huntRepository.findAll().get(0);
     assertAll(

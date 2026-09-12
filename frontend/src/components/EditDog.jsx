@@ -11,6 +11,7 @@ function EditDog() {
   const toast = useToast();
   const { dog } = location.state || {};
   const [values, setValues] = useState({
+    number: dog?.number || '',
     name: dog?.name || '',
     stake: dog?.stake || 'ALL_AGE',
     owner: dog?.owner || '',
@@ -31,13 +32,24 @@ function EditDog() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const found = {};
+    const number = values.number.trim();
+    if (!/^[0-9]{1,6}$/.test(number)) found.number = 'Dog numbers are digits only, for example 12 or 007.';
     if (values.name.trim().length < 1) found.name = 'Give the dog a name.';
     if (values.owner.trim().length < 1) found.owner = 'Enter the owner.';
     setErrors(found);
     if (Object.keys(found).length > 0) return;
 
     setSaving(true);
-    const data = await DogService.editDog({ number: dog.number, points: dog.points, ...values });
+    if (number !== dog.number) {
+      // The number is the dog's identity: scores and scratches move with it on the server.
+      const moved = await DogService.renumberDog(dog.number, number);
+      if (!moved || moved.fields || moved instanceof Error) {
+        setSaving(false);
+        setErrors(moved?.fields || { number: 'The number could not be changed.' });
+        return;
+      }
+    }
+    const data = await DogService.editDog({ ...values, number, points: dog.points });
     setSaving(false);
     if (data instanceof Error) {
       setErrors(data.response?.data?.fields || { name: 'The changes could not be saved.' });
@@ -47,18 +59,20 @@ function EditDog() {
       setErrors(data.fields);
       return;
     }
-    toast.success(`Dog ${dog.number} updated.`);
+    toast.success(number !== dog.number ? `Dog ${dog.number} is now dog ${number}.` : `Dog ${number} updated.`);
     navigate('/dogs/all');
   };
 
   return (
     <>
-      <PageHeader backTo="/dogs/all" backLabel="All dogs" title={`Dog ${dog.number}`} description="The number and points cannot be changed here." />
+      <PageHeader backTo="/dogs/all" backLabel="All dogs" title={`Dog ${dog.number}`} description="Changing the number moves the dog's scores and scratches with it. Points come from the scores." />
       <form onSubmit={handleSubmit} noValidate className="max-w-2xl">
         <Panel>
           <PanelHeader title="Details" />
           <PanelBody className="grid gap-4 sm:grid-cols-2">
-            <Field label="Number">{({ id }) => <Input id={id} value={dog.number} disabled numeric />}</Field>
+            <Field label="Number" required error={errors.number} hint="Digits only; leading zeros count.">
+              {({ id, invalid }) => <Input id={id} invalid={invalid} type="text" inputMode="numeric" className="tabular" value={values.number} onChange={set('number')} />}
+            </Field>
             <Field label="Points">{({ id }) => <Input id={id} value={dog.points ?? 0} disabled numeric />}</Field>
             <Field label="Name" required error={errors.name} className="sm:col-span-2">
               {({ id, invalid }) => <Input id={id} invalid={invalid} value={values.name} onChange={set('name')} autoFocus />}
