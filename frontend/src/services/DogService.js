@@ -326,9 +326,7 @@ class DogService {
   async getCrossInfo(dogNumbers, startingPoints, interval, stakeType = 'ALL_AGE') {
     try {
       // Filter out empty entries and ensure numbers are valid
-      const filteredNumbers = dogNumbers
-        .filter(num => num && num.toString().trim() !== '')
-        .map(num => parseInt(num, 10));
+      const filteredNumbers = dogNumbers.map((num) => String(num ?? "").trim()).filter((num) => num !== "");
       
       // If no dogs, return empty array
       if (filteredNumbers.length === 0) {

@@ -67,10 +67,16 @@ LimitInput.propTypes = {
   onChange: PropTypes.func.isRequired,
 };
 
-export function NumberInput({ label, value, onChange, autoFocus = false }) {
+export function NumberInput({ label, value, onChange, autoFocus = false, text = false }) {
   return (
     <Field label={label} className="w-36">
-      {({ id }) => <Input id={id} type="number" numeric min={1} value={value} onChange={(event) => onChange(event.target.value)} autoFocus={autoFocus} />}
+      {({ id }) =>
+        text ? (
+          <Input id={id} type="text" inputMode="numeric" value={value} onChange={(event) => onChange(event.target.value)} className="tabular" autoFocus={autoFocus} />
+        ) : (
+          <Input id={id} type="number" numeric min={1} value={value} onChange={(event) => onChange(event.target.value)} autoFocus={autoFocus} />
+        )
+      }
     </Field>
   );
 }
@@ -80,6 +86,7 @@ NumberInput.propTypes = {
   value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
   onChange: PropTypes.func.isRequired,
   autoFocus: PropTypes.bool,
+  text: PropTypes.bool,
 };
 
 export const configShape = PropTypes.object;

@@ -66,7 +66,7 @@ public class DogController {
    * @return dog specified by number
    */
   @GetMapping("/{number}")
-  public DogEntity getDog(@PathVariable("number") int number) {
+  public DogEntity getDog(@PathVariable("number") String number) {
     return dogService.getDogByNumber(number);
   }
 
@@ -96,7 +96,7 @@ public class DogController {
    * @param number Number of dog
    */
   @DeleteMapping("/{number}")
-  public List<DogEntity> deleteDog(@PathVariable("number") int number) {
+  public List<DogEntity> deleteDog(@PathVariable("number") String number) {
     return dogService.deleteDog(number);
   }
 
@@ -117,7 +117,7 @@ public class DogController {
    * @param scoreId   Score ID
    */
   @DeleteMapping("/{dogNumber}/scores/{scoreId}")
-  public void deleteScore(@PathVariable("dogNumber") int dogNumber, @PathVariable("scoreId") Long scoreId) {
+  public void deleteScore(@PathVariable("dogNumber") String dogNumber, @PathVariable("scoreId") Long scoreId) {
     dogService.removeScore(dogNumber, scoreId);
   }
 
@@ -330,7 +330,7 @@ public class DogController {
    * @return List of scores for the specified dog
    */
   @GetMapping("/{dogNumber}/scores")
-  public List<Score> getScoresByDogNumber(@PathVariable("dogNumber") int dogNumber) {
+  public List<Score> getScoresByDogNumber(@PathVariable("dogNumber") String dogNumber) {
     return dogService.getScoresByDogNumber(dogNumber);
   }
 
@@ -354,7 +354,7 @@ public class DogController {
    */
   @GetMapping("/{dogNumber}/scores/day/{day}")
   public List<Score> getScoresByDogNumberAndDay(
-      @PathVariable("dogNumber") int dogNumber,
+      @PathVariable("dogNumber") String dogNumber,
       @PathVariable("day") int day) {
     return dogService.getScoresByDogNumberAndDay(dogNumber, day);
   }

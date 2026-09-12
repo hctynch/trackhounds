@@ -104,17 +104,19 @@ public class DogService {
     if (dogs == null || dogs.size() == 0) {
       return;
     }
-    Set<Integer> numbersInBatch = new HashSet<>();
+    Set<String> numbersInBatch = new HashSet<>();
     for (int i = 0; i < dogs.size(); i++) {
       DogEntity d = dogs.get(i);
       if (d == null)
         continue;
-      if (dogRepository.existsById(d.getNumber())) {
-        errs.put(String.format("number%d", i + 1), "Existing dog with matching number.");
-      } else if (d.getNumber() == 0) {
+      if (d.getNumber() != null)
+        d.setNumber(d.getNumber().trim());
+      if (d.getNumber() == null || d.getNumber().isEmpty()) {
         errs.put(String.format("number%d", i + 1), "Dog number not specified.");
-      } else if (d.getNumber() < 0) {
-        errs.put(String.format("number%d", i + 1), "Dog number cannot be negative.");
+      } else if (!DogEntity.isValidNumber(d.getNumber())) {
+        errs.put(String.format("number%d", i + 1), "Dog numbers are digits only, for example 12 or 007.");
+      } else if (dogRepository.existsById(d.getNumber())) {
+        errs.put(String.format("number%d", i + 1), "Existing dog with matching number.");
       } else if (!numbersInBatch.add(d.getNumber())) {
         errs.put(String.format("number%d", i + 1), "Dog number is repeated in this list.");
       }
@@ -133,9 +135,13 @@ public class DogService {
    * 
    * @param number Number of dog
    */
-  public List<DogEntity> deleteDog(int number) {
+  public List<DogEntity> deleteDog(String number) {
     dogRepository.deleteById(number);
-    return dogRepository.findAll();
+    return getDogs();
+  }
+
+  public List<DogEntity> deleteDog(int number) {
+    return deleteDog(String.valueOf(number));
   }
 
   /**
@@ -182,7 +188,9 @@ public class DogService {
    */
   public List<DogEntity> getDogs() {
     // Points are maintained whenever scores change; reading must not write.
-    return dogRepository.findAll();
+    List<DogEntity> dogs = new ArrayList<>(dogRepository.findAll());
+    dogs.sort((a, b) -> DogEntity.NUMBER_ORDER.compare(a.getNumber(), b.getNumber()));
+    return dogs;
   }
 
   /**
@@ -191,6 +199,14 @@ public class DogService {
    * @return dogs in cross, with stake, and points
    */
   public List<Map<String, Object>> getCrossInfo(int[] numbers, int startingPoints, int interval, StakeType stakeType) {
+    String[] asStrings = new String[numbers == null ? 0 : numbers.length];
+    for (int i = 0; i < asStrings.length; i++) {
+      asStrings[i] = String.valueOf(numbers[i]);
+    }
+    return getCrossInfo(asStrings, startingPoints, interval, stakeType);
+  }
+
+  public List<Map<String, Object>> getCrossInfo(String[] numbers, int startingPoints, int interval, StakeType stakeType) {
     List<Map<String, Object>> crossInfo = new ArrayList<>();
     if (numbers == null || numbers.length == 0) {
       return crossInfo;
@@ -226,19 +242,20 @@ public class DogService {
           dogInfo.put("error", "Dog does not exist. Skipping.");
           crossInfo.add(dogInfo);
           if (hunt.getStakeRange() != null && hunt.getStakeTypeRange() != null) {
-            if (numbers[i] < hunt.getStakeRange()[1]) {
+            long value = DogEntity.numericValue(numbers[i]);
+            if (value < hunt.getStakeRange()[1]) {
               if (hunt.getStakeTypeRange()[0] == StakeType.ALL_AGE) {
                 sp1 -= interval;
               } else {
                 sp2 -= interval;
               }
-            } else if (numbers[i] < hunt.getStakeRange()[2]) {
+            } else if (value < hunt.getStakeRange()[2]) {
               if (hunt.getStakeTypeRange()[1] == StakeType.ALL_AGE) {
                 sp1 -= interval;
               } else {
                 sp2 -= interval;
               }
-            } else if (numbers[i] < hunt.getStakeRange()[3]) {
+            } else if (value < hunt.getStakeRange()[3]) {
               if (hunt.getStakeTypeRange()[2] == StakeType.ALL_AGE) {
                 sp1 -= interval;
               } else {
@@ -281,8 +298,7 @@ public class DogService {
   private int calculateTotalPoints(DogEntity dog) {
     int totalPoints = 0;
     for (DailyScore dailyScore : dog.getScores()) {
-      int speedAndDrive = dailyScore.getHighestScores().stream().mapToInt(hs -> hs.getScore().getPoints()).sum();
-      dailyScore.setDailyScore(speedAndDrive);
+      int speedAndDrive = dailyScore.getDailyScore();
       dailyScoreRepository.save(dailyScore);
       totalPoints += speedAndDrive + endurance(speedAndDrive, dailyScore.getDay().getDay());
     }
@@ -310,6 +326,10 @@ public class DogService {
    * @return Dog with the specified number
    */
   public DogEntity getDogByNumber(int number) {
+    return getDogByNumber(String.valueOf(number));
+  }
+
+  public DogEntity getDogByNumber(String number) {
     return dogRepository.findById(number)
         .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog does not exist.",
             Map.of("number", "Dog does not exist with this number.")));
@@ -341,7 +361,7 @@ public class DogService {
     Map<String, String> errs = new HashMap<>();
     if (judgeRepository.findById(score.getJudge()).isEmpty())
       errs.put("judge", "Judge does not exist.");
-    int[] dogNumbers = score.getDogNumbers() == null ? new int[0] : score.getDogNumbers();
+    String[] dogNumbers = score.getDogNumbers() == null ? new String[0] : score.getDogNumbers();
     int[] points = score.getScores() == null ? new int[0] : score.getScores();
     if (dogNumbers.length == 0)
       errs.put("dogNumbers", "Dog numbers cannot be empty.");
@@ -355,12 +375,16 @@ public class DogService {
     }
     // Every dog in a cross must be registered and listed once; a silently dropped
     // dog is a lost score nobody notices until the standings are wrong.
-    Set<Integer> seen = new HashSet<>();
+    Set<String> seen = new HashSet<>();
     for (int i = 0; i < dogNumbers.length; i++) {
-      if (!seen.add(dogNumbers[i]))
-        errs.put(String.format("dogNumbers%d", i), String.format("Dog %d is listed twice in this cross.", dogNumbers[i]));
+      if (dogNumbers[i] != null)
+        dogNumbers[i] = dogNumbers[i].trim();
+      if (!DogEntity.isValidNumber(dogNumbers[i]))
+        errs.put(String.format("dogNumbers%d", i), "Dog numbers are digits only.");
+      else if (!seen.add(dogNumbers[i]))
+        errs.put(String.format("dogNumbers%d", i), String.format("Dog %s is listed twice in this cross.", dogNumbers[i]));
       else if (!dogRepository.existsById(dogNumbers[i]))
-        errs.put(String.format("dogNumbers%d", i), String.format("Dog %d is not registered in this hunt.", dogNumbers[i]));
+        errs.put(String.format("dogNumbers%d", i), String.format("Dog %s is not registered in this hunt.", dogNumbers[i]));
     }
 
     // The day's start time is set by its first cross and is authoritative afterwards:
@@ -432,6 +456,10 @@ public class DogService {
    * @throws TrackHoundsAPIException if score does not exist for dog
    */
   public void removeScore(int dogNumber, Long scoreId) {
+    removeScore(String.valueOf(dogNumber), scoreId);
+  }
+
+  public void removeScore(String dogNumber, Long scoreId) {
     DogEntity dog = dogRepository.findById(dogNumber)
         .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog does not exist.",
             Map.of("number", "Dog does not exist with this number.")));
@@ -441,13 +469,12 @@ public class DogService {
             Map.of("scoreId", "Score does not exist with this ID.")));
 
     DailyScore dailyScore = dog.getScores().stream()
-        .filter(ds -> ds.getTimeBucketScores().stream().anyMatch(tbs -> tbs.getScore().equals(score)))
+        .filter(ds -> ds.getScores().contains(score))
         .findFirst()
         .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "DailyScore does not exist.",
             Map.of("dailyScore", "DailyScore does not exist for this score.")));
 
     dailyScore.removeScore(score);
-    scoreRepository.delete(score);
     dailyScoreRepository.save(dailyScore);
     dog.setPoints(calculateTotalPoints(dog));
     dogRepository.save(dog);
@@ -549,9 +576,9 @@ public class DogService {
     Optional<Scratch> scratch = scratchRepository.findById(id);
     if (scratch.isEmpty())
       return;
-    int dogNumber = scratch.get().getDogNumber();
+    String dogNumber = scratch.get().getDogNumber();
     scratchRepository.delete(scratch.get());
-    boolean stillScratched = scratchRepository.findAll().stream().anyMatch(s -> s.getDogNumber() == dogNumber);
+    boolean stillScratched = scratchRepository.findAll().stream().anyMatch(s -> dogNumber != null && dogNumber.equals(s.getDogNumber()));
     if (!stillScratched) {
       dogRepository.findById(dogNumber).ifPresent(dog -> {
         dog.setScratched(false);
@@ -752,9 +779,7 @@ public class DogService {
 
             // Handle null cases
             if (tifd1 == null && tifd2 == null) {
-              Integer dogNumber1 = (Integer) d1.get("dogNumber");
-              Integer dogNumber2 = (Integer) d2.get("dogNumber");
-              return dogNumber1.compareTo(dogNumber2);
+              return DogEntity.NUMBER_ORDER.compare(String.valueOf(d1.get("dogNumber")), String.valueOf(d2.get("dogNumber")));
             } else if (tifd1 == null) {
               return 1; // Null times come after non-null times
             } else if (tifd2 == null) {
@@ -885,9 +910,7 @@ public class DogService {
 
             // Handle null cases
             if (tifd1 == null && tifd2 == null) {
-              Integer dogNumber1 = (Integer) d1.get("dogNumber");
-              Integer dogNumber2 = (Integer) d2.get("dogNumber");
-              return dogNumber1.compareTo(dogNumber2);
+              return DogEntity.NUMBER_ORDER.compare(String.valueOf(d1.get("dogNumber")), String.valueOf(d2.get("dogNumber")));
             } else if (tifd1 == null) {
               return 1; // Null times come after non-null times
             } else if (tifd2 == null) {
@@ -1022,6 +1045,10 @@ public class DogService {
    * @return List of scores for the specified dog
    */
   public List<Score> getScoresByDogNumber(int dogNumber) {
+    return getScoresByDogNumber(String.valueOf(dogNumber));
+  }
+
+  public List<Score> getScoresByDogNumber(String dogNumber) {
     // Verify the dog exists
     if (!dogRepository.existsById(dogNumber)) {
       throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog does not exist.",
@@ -1055,6 +1082,10 @@ public class DogService {
    * @return List of scores for the specified dog on the specified day
    */
   public List<Score> getScoresByDogNumberAndDay(int dogNumber, int day) {
+    return getScoresByDogNumberAndDay(String.valueOf(dogNumber), day);
+  }
+
+  public List<Score> getScoresByDogNumberAndDay(String dogNumber, int day) {
     // Verify the dog exists
     if (!dogRepository.existsById(dogNumber)) {
       throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Dog does not exist.",

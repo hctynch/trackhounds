@@ -85,7 +85,7 @@ class DogServiceReviewTest {
     TrackHoundsAPIException failure = assertThrows(TrackHoundsAPIException.class, () -> dogService.editDog(edit));
     assertAll(
         () -> assertTrue(failure.getFields().containsKey("name")),
-        () -> assertEquals("Dog 1", dogRepository.findById(1).orElseThrow().getName()));
+        () -> assertEquals("Dog 1", dogRepository.findById("1").orElseThrow().getName()));
   }
 
   @Test
@@ -168,13 +168,13 @@ class DogServiceReviewTest {
     scratch.setTime(LocalTime.of(9, 10));
     scratch.setReason("Injured");
     dogService.scratchDog(scratch);
-    assertTrue(dogRepository.findById(1).orElseThrow().isScratched());
+    assertTrue(dogRepository.findById("1").orElseThrow().isScratched());
 
     Long id = scratchRepository.findAll().get(0).getId();
     dogService.deleteScratch(id);
     assertAll(
         () -> assertEquals(0, scratchRepository.count()),
-        () -> assertFalse(dogRepository.findById(1).orElseThrow().isScratched()));
+        () -> assertFalse(dogRepository.findById("1").orElseThrow().isScratched()));
   }
 
   @Test
@@ -204,9 +204,9 @@ class DogServiceReviewTest {
     dogService.scratchDog(scratch);
 
     Map<String, Object> dayRow = dogService.getDogScoresByDay(1).stream()
-        .filter(row -> row.get("dogNumber").equals(2)).findFirst().orElseThrow();
+        .filter(row -> row.get("dogNumber").equals("2")).findFirst().orElseThrow();
     Map<String, Object> overallRow = dogService.getTopScoringDogsOverall(10).stream()
-        .filter(row -> row.get("dogNumber").equals(2)).findFirst().orElseThrow();
+        .filter(row -> row.get("dogNumber").equals("2")).findFirst().orElseThrow();
     Map<String, Object> crossRow = dogService.getCrossInfo(new int[] { 2 }, 35, 5, StakeType.ALL_AGE).get(0);
     assertAll(
         () -> assertEquals(true, dayRow.get("scratched")),
@@ -286,13 +286,40 @@ class DogServiceReviewTest {
     registerDogs(1);
     dogService.createScore(cross(1, "07:00:00", "07:10:00", new int[] { 1 }, new int[] { 35 }));
     // Simulate stale stored points: a pure read must return what is stored, not recalculate and save.
-    DogEntity stored = dogRepository.findById(1).orElseThrow();
+    DogEntity stored = dogRepository.findById("1").orElseThrow();
     stored.setPoints(999);
     dogRepository.save(stored);
     assertAll(
         () -> assertEquals(999, dogService.getDogs().get(0).getPoints()),
         () -> assertEquals(999, dogService.getDogByNumber(1).getPoints()),
-        () -> assertEquals(999, dogRepository.findById(1).orElseThrow().getPoints()));
+        () -> assertEquals(999, dogRepository.findById("1").orElseThrow().getPoints()));
+  }
+
+  @Test
+  @Transactional
+  void dogNumbersAreDigitStringsWithSignificantLeadingZeros() {
+    dogService.createDogs(List.of(
+        new DogEntity("0", "Zero", StakeType.ALL_AGE, "Owner", "Sire", "Dam"),
+        new DogEntity("00", "Double zero", StakeType.ALL_AGE, "Owner", "Sire", "Dam"),
+        new DogEntity("1", "One", StakeType.ALL_AGE, "Owner", "Sire", "Dam"),
+        new DogEntity("01", "Oh one", StakeType.ALL_AGE, "Owner", "Sire", "Dam")));
+    List<DogEntity> dogs = dogService.getDogs();
+    assertAll(
+        () -> assertEquals(4, dogs.size()),
+        () -> assertEquals("Double zero", dogService.getDogByNumber("00").getName()),
+        () -> assertEquals("Zero", dogService.getDogByNumber("0").getName()),
+        () -> assertEquals(List.of("0", "00", "1", "01"), dogs.stream().map(DogEntity::getNumber).toList()));
+
+    // Scores keep the exact number too.
+    dogService.createScore(new ScoreDto(1, "07:00:00", 1, "07:10:00", new String[] { "00", "0" }, new int[] { 35, 30 }, 5));
+    assertAll(
+        () -> assertEquals(38, dogService.getDogByNumber("00").getPoints()),
+        () -> assertEquals(33, dogService.getDogByNumber("0").getPoints()),
+        () -> assertEquals(1, dogService.getScoresByDogNumber("00").size()));
+
+    TrackHoundsAPIException failure = assertThrows(TrackHoundsAPIException.class,
+        () -> dogService.createDogs(List.of(new DogEntity("12A", "Bad", StakeType.ALL_AGE, "Owner", "Sire", "Dam"))));
+    assertTrue(failure.getFields().get("number1").contains("digits only"));
   }
 
   @Test

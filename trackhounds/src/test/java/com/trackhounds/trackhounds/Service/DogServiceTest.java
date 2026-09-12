@@ -584,22 +584,22 @@ public class DogServiceTest {
                                 () -> assertEquals(3, day1Scores.size()),
                                 () -> assertEquals(3, day2Scores.size()),
                                 () -> assertTrue(day1Scores.stream()
-                                                .anyMatch(score -> score.get("dogNumber").equals(1)
+                                                .anyMatch(score -> score.get("dogNumber").equals("1")
                                                                 && score.get("totalPoints").equals(70))),
                                 () -> assertTrue(day1Scores.stream()
-                                                .anyMatch(score -> score.get("dogNumber").equals(2)
+                                                .anyMatch(score -> score.get("dogNumber").equals("2")
                                                                 && score.get("totalPoints").equals(45))),
                                 () -> assertTrue(day1Scores.stream()
-                                                .anyMatch(score -> score.get("dogNumber").equals(3)
+                                                .anyMatch(score -> score.get("dogNumber").equals("3")
                                                                 && score.get("totalPoints").equals(65))),
                                 () -> assertTrue(day2Scores.stream()
-                                                .anyMatch(score -> score.get("dogNumber").equals(1)
+                                                .anyMatch(score -> score.get("dogNumber").equals("1")
                                                                 && score.get("totalPoints").equals(25))),
                                 () -> assertTrue(day2Scores.stream()
-                                                .anyMatch(score -> score.get("dogNumber").equals(2)
+                                                .anyMatch(score -> score.get("dogNumber").equals("2")
                                                                 && score.get("totalPoints").equals(35))),
                                 () -> assertTrue(day2Scores.stream()
-                                                .anyMatch(score -> score.get("dogNumber").equals(3)
+                                                .anyMatch(score -> score.get("dogNumber").equals("3")
                                                                 && score.get("totalPoints").equals(15))));
 
                 // Test getTopScoringDogsByDay
@@ -607,9 +607,9 @@ public class DogServiceTest {
 
                 assertAll("getTopScoringDogsByDay",
                                 () -> assertEquals(2, top2DogsDay1.size()),
-                                () -> assertEquals(1, top2DogsDay1.get(0).get("dogNumber")), // Dog1 should be first
+                                () -> assertEquals("1", top2DogsDay1.get(0).get("dogNumber")), // Dog1 should be first
                                                                                              // with 70 points
-                                () -> assertEquals(3, top2DogsDay1.get(1).get("dogNumber")) // Dog3 should be second
+                                () -> assertEquals("3", top2DogsDay1.get(1).get("dogNumber")) // Dog3 should be second
                                                                                             // with 45 points
                 );
 
@@ -618,9 +618,9 @@ public class DogServiceTest {
 
                 assertAll("getTop10ScoringDogsByDay",
                                 () -> assertEquals(3, top10DogsDay1.size()), // Only 3 dogs total
-                                () -> assertEquals(1, top10DogsDay1.get(0).get("dogNumber")), // Dog1 first
-                                () -> assertEquals(3, top10DogsDay1.get(1).get("dogNumber")), // Dog3 second
-                                () -> assertEquals(2, top10DogsDay1.get(2).get("dogNumber")) // Dog2 third
+                                () -> assertEquals("1", top10DogsDay1.get(0).get("dogNumber")), // Dog1 first
+                                () -> assertEquals("3", top10DogsDay1.get(1).get("dogNumber")), // Dog3 second
+                                () -> assertEquals("2", top10DogsDay1.get(2).get("dogNumber")) // Dog2 third
                 );
 
                 // Test getTop10ScoringDogsOverall
@@ -628,13 +628,13 @@ public class DogServiceTest {
 
                 assertAll("getTop10ScoringDogsOverall",
                                 () -> assertEquals(3, top10DogsOverall.size()), // Only 3 dogs total
-                                () -> assertEquals(1, top10DogsOverall.get(0).get("dogNumber")), // Dog1 should be first
+                                () -> assertEquals("1", top10DogsOverall.get(0).get("dogNumber")), // Dog1 should be first
                                                                                                  // with 70+25=95
                                                                                                  // points
-                                () -> assertEquals(2, top10DogsOverall.get(1).get("dogNumber")), // Dog3 should be
+                                () -> assertEquals("2", top10DogsOverall.get(1).get("dogNumber")), // Dog3 should be
                                                                                                  // second with 45+15=60
                                                                                                  // points
-                                () -> assertEquals(3, top10DogsOverall.get(2).get("dogNumber")) // Dog2 should be third
+                                () -> assertEquals("3", top10DogsOverall.get(2).get("dogNumber")) // Dog2 should be third
                                                                                                 // with 30+35=65
                                                                                                 // points
                 );
@@ -676,7 +676,7 @@ public class DogServiceTest {
 
                 assertAll("No top dogs test",
                                 () -> assertEquals(1, noTopDogs.size()),
-                                () -> assertEquals(10, noTopDogs.get(0).get("dogNumber")),
+                                () -> assertEquals("10", noTopDogs.get(0).get("dogNumber")),
                                 () -> assertEquals(0, noTopDogs.get(0).get("totalPoints")));
 
                 // Create multiple dogs with same score to test sorting stability
@@ -743,12 +743,12 @@ public class DogServiceTest {
                 assertAll("getTopScoringDogsByStakeType",
                                 () -> assertEquals(2, topAllAgeDogs.size()),
                                 () -> assertEquals(2, topDerbyDogs.size()),
-                                () -> assertEquals(2, topAllAgeDogs.get(0).get("dogNumber")), // AllAgeDog2 has 65
+                                () -> assertEquals("2", topAllAgeDogs.get(0).get("dogNumber")), // AllAgeDog2 has 65
                                                                                               // points
-                                () -> assertEquals(1, topAllAgeDogs.get(1).get("dogNumber")), // AllAgeDog1 has 65
+                                () -> assertEquals("1", topAllAgeDogs.get(1).get("dogNumber")), // AllAgeDog1 has 65
                                                                                               // points
-                                () -> assertEquals(4, topDerbyDogs.get(0).get("dogNumber")), // DerbyDog1 has 65 points
-                                () -> assertEquals(3, topDerbyDogs.get(1).get("dogNumber")), // DerbyDog2 has 65 points
+                                () -> assertEquals("4", topDerbyDogs.get(0).get("dogNumber")), // DerbyDog1 has 65 points
+                                () -> assertEquals("3", topDerbyDogs.get(1).get("dogNumber")), // DerbyDog2 has 65 points
                                 () -> assertEquals(75, topAllAgeDogs.get(0).get("totalPoints")),
                                 () -> assertEquals(76, topDerbyDogs.get(0).get("totalPoints")));
 
@@ -760,10 +760,10 @@ public class DogServiceTest {
                 assertAll("getTop10ScoringDogsByStakeType",
                                 () -> assertEquals(2, top10AllAgeDogs.size()),
                                 () -> assertEquals(2, top10DerbyDogs.size()),
-                                () -> assertTrue(top10AllAgeDogs.stream().anyMatch(d -> d.get("dogNumber").equals(1))),
-                                () -> assertTrue(top10AllAgeDogs.stream().anyMatch(d -> d.get("dogNumber").equals(2))),
-                                () -> assertTrue(top10DerbyDogs.stream().anyMatch(d -> d.get("dogNumber").equals(3))),
-                                () -> assertTrue(top10DerbyDogs.stream().anyMatch(d -> d.get("dogNumber").equals(4))));
+                                () -> assertTrue(top10AllAgeDogs.stream().anyMatch(d -> d.get("dogNumber").equals("1"))),
+                                () -> assertTrue(top10AllAgeDogs.stream().anyMatch(d -> d.get("dogNumber").equals("2"))),
+                                () -> assertTrue(top10DerbyDogs.stream().anyMatch(d -> d.get("dogNumber").equals("3"))),
+                                () -> assertTrue(top10DerbyDogs.stream().anyMatch(d -> d.get("dogNumber").equals("4"))));
 
                 // Test getTopScoringDogsByDayAndStakeType
                 List<Map<String, Object>> topAllAgeDogsDay1 = dogService.getTopScoringDogsByDayAndStakeType(1,
@@ -784,21 +784,21 @@ public class DogServiceTest {
                                 () -> assertEquals(2, topDerbyDogsDay1.size()),
                                 () -> assertEquals(2, topAllAgeDogsDay2.size()),
                                 () -> assertEquals(2, topDerbyDogsDay2.size()),
-                                () -> assertEquals(1, topAllAgeDogsDay1.get(0).get("dogNumber")), // Dog1 has 40 points
+                                () -> assertEquals("1", topAllAgeDogsDay1.get(0).get("dogNumber")), // Dog1 has 40 points
                                                                                                   // on day 1
-                                () -> assertEquals(2, topAllAgeDogsDay1.get(1).get("dogNumber")), // Dog2 has 30 points
+                                () -> assertEquals("2", topAllAgeDogsDay1.get(1).get("dogNumber")), // Dog2 has 30 points
                                                                                                   // on day 1
-                                () -> assertEquals(3, topDerbyDogsDay1.get(0).get("dogNumber")), // Dog3 has 50 points
+                                () -> assertEquals("3", topDerbyDogsDay1.get(0).get("dogNumber")), // Dog3 has 50 points
                                                                                                  // on day 1
-                                () -> assertEquals(4, topDerbyDogsDay1.get(1).get("dogNumber")), // Dog4 has 20 points
+                                () -> assertEquals("4", topDerbyDogsDay1.get(1).get("dogNumber")), // Dog4 has 20 points
                                                                                                  // on day 1
-                                () -> assertEquals(2, topAllAgeDogsDay2.get(0).get("dogNumber")), // Dog2 has 35 points
+                                () -> assertEquals("2", topAllAgeDogsDay2.get(0).get("dogNumber")), // Dog2 has 35 points
                                                                                                   // on day 2
-                                () -> assertEquals(1, topAllAgeDogsDay2.get(1).get("dogNumber")), // Dog1 has 25 points
+                                () -> assertEquals("1", topAllAgeDogsDay2.get(1).get("dogNumber")), // Dog1 has 25 points
                                                                                                   // on day 2
-                                () -> assertEquals(4, topDerbyDogsDay2.get(0).get("dogNumber")), // Dog4 has 45 points
+                                () -> assertEquals("4", topDerbyDogsDay2.get(0).get("dogNumber")), // Dog4 has 45 points
                                                                                                  // on day 2
-                                () -> assertEquals(3, topDerbyDogsDay2.get(1).get("dogNumber")) // Dog3 has 15 points on
+                                () -> assertEquals("3", topDerbyDogsDay2.get(1).get("dogNumber")) // Dog3 has 15 points on
                                                                                                 // day 2
                 );
 
@@ -811,10 +811,10 @@ public class DogServiceTest {
                 assertAll("getTop10ScoringDogsByDayAndStakeType",
                                 () -> assertEquals(2, top10AllAgeDogsDay1.size()),
                                 () -> assertEquals(2, top10DerbyDogsDay1.size()),
-                                () -> assertEquals(1, top10AllAgeDogsDay1.get(0).get("dogNumber")),
-                                () -> assertEquals(2, top10AllAgeDogsDay1.get(1).get("dogNumber")),
-                                () -> assertEquals(3, top10DerbyDogsDay1.get(0).get("dogNumber")),
-                                () -> assertEquals(4, top10DerbyDogsDay1.get(1).get("dogNumber")));
+                                () -> assertEquals("1", top10AllAgeDogsDay1.get(0).get("dogNumber")),
+                                () -> assertEquals("2", top10AllAgeDogsDay1.get(1).get("dogNumber")),
+                                () -> assertEquals("3", top10DerbyDogsDay1.get(0).get("dogNumber")),
+                                () -> assertEquals("4", top10DerbyDogsDay1.get(1).get("dogNumber")));
         }
 
         /**
@@ -847,8 +847,8 @@ public class DogServiceTest {
                 assertAll("Dogs with no scores tests",
                                 () -> assertEquals(1, noScoreAllAgeDogs.size()),
                                 () -> assertEquals(1, noScoreDerbyDogs.size()),
-                                () -> assertEquals(1, noScoreAllAgeDogs.get(0).get("dogNumber")),
-                                () -> assertEquals(2, noScoreDerbyDogs.get(0).get("dogNumber")),
+                                () -> assertEquals("1", noScoreAllAgeDogs.get(0).get("dogNumber")),
+                                () -> assertEquals("2", noScoreDerbyDogs.get(0).get("dogNumber")),
                                 () -> assertEquals(0, noScoreAllAgeDogs.get(0).get("totalPoints")),
                                 () -> assertEquals(0, noScoreDerbyDogs.get(0).get("totalPoints")));
 
@@ -921,8 +921,8 @@ public class DogServiceTest {
                 assertAll("getScoresByJudgeNumber",
                                 () -> assertEquals(2, judge1Scores.size()), // Judge 1 gave 2 scores
                                 () -> assertEquals(1, judge2Scores.size()), // Judge 2 gave 1 score
-                                () -> assertTrue(judge1Scores.stream().anyMatch(s -> s.getDogNumber() == 1)),
-                                () -> assertTrue(judge2Scores.stream().anyMatch(s -> s.getDogNumber() == 2)));
+                                () -> assertTrue(judge1Scores.stream().anyMatch(s -> "1".equals(s.getDogNumber()))),
+                                () -> assertTrue(judge2Scores.stream().anyMatch(s -> "2".equals(s.getDogNumber()))));
 
                 // Test getScoresByDogNumberAndDay
                 List<Score> dog1Day1Scores = dogService.getScoresByDogNumberAndDay(1, 1);
@@ -1046,10 +1046,10 @@ public class DogServiceTest {
                                 () -> assertEquals(40, topDogsDay1.get(2).get("totalPoints")),
                                 () -> assertEquals(40, topDogsDay1.get(3).get("totalPoints")),
                                 // Dogs with later score times should come first
-                                () -> assertEquals(2, topDogsDay1.get(0).get("dogNumber")), // Later score time
-                                () -> assertEquals(4, topDogsDay1.get(1).get("dogNumber")), // Later score time
-                                () -> assertEquals(1, topDogsDay1.get(2).get("dogNumber")), // Earlier score time
-                                () -> assertEquals(3, topDogsDay1.get(3).get("dogNumber")) // Earlier score time
+                                () -> assertEquals("2", topDogsDay1.get(0).get("dogNumber")), // Later score time
+                                () -> assertEquals("4", topDogsDay1.get(1).get("dogNumber")), // Later score time
+                                () -> assertEquals("1", topDogsDay1.get(2).get("dogNumber")), // Earlier score time
+                                () -> assertEquals("3", topDogsDay1.get(3).get("dogNumber")) // Earlier score time
                 );
 
                 // Test tie-breaking for getTopScoringDogsOverall
@@ -1058,12 +1058,12 @@ public class DogServiceTest {
                 assertAll("Tie-breaking in getTopScoringDogsOverall",
                                 () -> assertEquals(4, topDogsOverall.size()),
                                 // Dogs with scores on day 2 should be ranked higher in case of tie
-                                () -> assertEquals(2, topDogsOverall.get(0).get("dogNumber")), // Has score on day 2
-                                () -> assertEquals(3, topDogsOverall.get(1).get("dogNumber")), // Has score on day 2
+                                () -> assertEquals("2", topDogsOverall.get(0).get("dogNumber")), // Has score on day 2
+                                () -> assertEquals("3", topDogsOverall.get(1).get("dogNumber")), // Has score on day 2
                                 // Then the later time on day 1 should break the tie
-                                () -> assertEquals(4, topDogsOverall.get(2).get("dogNumber")), // Later score time on
+                                () -> assertEquals("4", topDogsOverall.get(2).get("dogNumber")), // Later score time on
                                                                                                // day 1
-                                () -> assertEquals(1, topDogsOverall.get(3).get("dogNumber")) // Earlier score time on
+                                () -> assertEquals("1", topDogsOverall.get(3).get("dogNumber")) // Earlier score time on
                                                                                               // day 1
                 );
 
@@ -1075,11 +1075,11 @@ public class DogServiceTest {
                                 () -> assertEquals(2, topAllAgeDogs.size()),
                                 () -> assertEquals(2, topDerbyDogs.size()),
                                 // Dog2 has score on day 2 (later than Dog1)
-                                () -> assertEquals(2, topAllAgeDogs.get(0).get("dogNumber")),
-                                () -> assertEquals(1, topAllAgeDogs.get(1).get("dogNumber")),
+                                () -> assertEquals("2", topAllAgeDogs.get(0).get("dogNumber")),
+                                () -> assertEquals("1", topAllAgeDogs.get(1).get("dogNumber")),
                                 // Dog3 has score on day 2 (later than Dog4)
-                                () -> assertEquals(3, topDerbyDogs.get(0).get("dogNumber")),
-                                () -> assertEquals(4, topDerbyDogs.get(1).get("dogNumber")));
+                                () -> assertEquals("3", topDerbyDogs.get(0).get("dogNumber")),
+                                () -> assertEquals("4", topDerbyDogs.get(1).get("dogNumber")));
 
                 // Test tie-breaking for getTopScoringDogsByDayAndStakeType
                 List<Map<String, Object>> topAllAgeDogsDay1 = dogService.getTopScoringDogsByDayAndStakeType(1,
@@ -1091,10 +1091,10 @@ public class DogServiceTest {
                                 () -> assertEquals(2, topAllAgeDogsDay1.size()),
                                 () -> assertEquals(2, topDerbyDogsDay1.size()),
                                 // Within a single day, later score time should win
-                                () -> assertEquals(2, topAllAgeDogsDay1.get(0).get("dogNumber")), // Later score
-                                () -> assertEquals(1, topAllAgeDogsDay1.get(1).get("dogNumber")), // Earlier score
-                                () -> assertEquals(4, topDerbyDogsDay1.get(0).get("dogNumber")), // Later score
-                                () -> assertEquals(3, topDerbyDogsDay1.get(1).get("dogNumber")) // Earlier score
+                                () -> assertEquals("2", topAllAgeDogsDay1.get(0).get("dogNumber")), // Later score
+                                () -> assertEquals("1", topAllAgeDogsDay1.get(1).get("dogNumber")), // Earlier score
+                                () -> assertEquals("4", topDerbyDogsDay1.get(0).get("dogNumber")), // Later score
+                                () -> assertEquals("3", topDerbyDogsDay1.get(1).get("dogNumber")) // Earlier score
                 );
         }
 
@@ -1203,22 +1203,22 @@ public class DogServiceTest {
                                 () -> assertEquals(8, allDogs.size()),
 
                                 // Scenario 1: Dog2 should win tie with Dog1 due to later day
-                                () -> assertEquals(2, allDogs.get(0).get("dogNumber")), // Dog2 has score on day 2
-                                () -> assertEquals(1, allDogs.get(1).get("dogNumber")), // Dog1 only has score on day 1
+                                () -> assertEquals("2", allDogs.get(0).get("dogNumber")), // Dog2 has score on day 2
+                                () -> assertEquals("1", allDogs.get(1).get("dogNumber")), // Dog1 only has score on day 1
 
                                 // Scenario 2: Dog3 should win tie with Dog4 due to later time bucket
-                                () -> assertEquals(3, allDogs.get(2).get("dogNumber")), // Dog3 has score in later
+                                () -> assertEquals("3", allDogs.get(2).get("dogNumber")), // Dog3 has score in later
                                 // bucket
-                                () -> assertEquals(4, allDogs.get(3).get("dogNumber")), // Dog4 has score in earlier
+                                () -> assertEquals("4", allDogs.get(3).get("dogNumber")), // Dog4 has score in earlier
                                 // bucket
 
                                 // Scenario 3: Dog6 should win tie with Dog5 due to later bucket score
-                                () -> assertEquals(6, allDogs.get(4).get("dogNumber")),
-                                () -> assertEquals(5, allDogs.get(5).get("dogNumber")),
+                                () -> assertEquals("6", allDogs.get(4).get("dogNumber")),
+                                () -> assertEquals("5", allDogs.get(5).get("dogNumber")),
 
                                 // Scenario 4: Dog7 and Dog8 should be sorted by dog number (ascending)
-                                () -> assertEquals(7, allDogs.get(6).get("dogNumber")), // Lower dog number
-                                () -> assertEquals(8, allDogs.get(7).get("dogNumber")), // Higher dog number
+                                () -> assertEquals("7", allDogs.get(6).get("dogNumber")), // Lower dog number
+                                () -> assertEquals("8", allDogs.get(7).get("dogNumber")), // Higher dog number
 
                                 // Verify tie scores are actually equal
                                 () -> assertEquals(allDogs.get(0).get("totalPoints"),
@@ -1240,22 +1240,22 @@ public class DogServiceTest {
 
                                 // Check expected order for dogs with same points on day 1
                                 // All dogs with day 1 scores should be in descending order by points
-                                () -> assertEquals(1, day1Dogs.get(0).get("dogNumber")), // Dog1 has 50 points on day 1
+                                () -> assertEquals("1", day1Dogs.get(0).get("dogNumber")), // Dog1 has 50 points on day 1
 
                                 // Scenario 2: Dog3 and Dog4 both have 40 points
-                                () -> assertEquals(3, day1Dogs.get(1).get("dogNumber")), // Dog3 has score in later
+                                () -> assertEquals("3", day1Dogs.get(1).get("dogNumber")), // Dog3 has score in later
                                 // bucket
-                                () -> assertEquals(4, day1Dogs.get(2).get("dogNumber")), // Dog4 has score in earlier
+                                () -> assertEquals("4", day1Dogs.get(2).get("dogNumber")), // Dog4 has score in earlier
                                 // bucket
 
                                 // Scenario 3: Dog5 and Dog6 both have 30 points
-                                () -> assertEquals(6, day1Dogs.get(3).get("dogNumber")), // Dog5 has higher individual
+                                () -> assertEquals("6", day1Dogs.get(3).get("dogNumber")), // Dog5 has higher individual
                                 // score
-                                () -> assertEquals(5, day1Dogs.get(4).get("dogNumber")), // Dog6 has lower individual
+                                () -> assertEquals("5", day1Dogs.get(4).get("dogNumber")), // Dog6 has lower individual
                                 // score
 
                                 // Dog2 has lowest points on day 1
-                                () -> assertEquals(2, day1Dogs.get(5).get("dogNumber")) // Dog2 has 25 points on day 1
+                                () -> assertEquals("2", day1Dogs.get(5).get("dogNumber")) // Dog2 has 25 points on day 1
                 );
 
                 // TEST 3: getTopScoringDogsByStakeType (ALL_AGE)
@@ -1265,14 +1265,14 @@ public class DogServiceTest {
                                 () -> assertEquals(4, allAgeDogs.size()),
 
                                 // Scenario 1: Dog2 should win tie with Dog1 due to later day
-                                () -> assertEquals(2, allAgeDogs.get(0).get("dogNumber")), // Dog2 has score on day 2
-                                () -> assertEquals(1, allAgeDogs.get(1).get("dogNumber")), // Dog1 only has score on day
+                                () -> assertEquals("2", allAgeDogs.get(0).get("dogNumber")), // Dog2 has score on day 2
+                                () -> assertEquals("1", allAgeDogs.get(1).get("dogNumber")), // Dog1 only has score on day
                                 // 1
 
                                 // Scenario 2: Dog3 should win tie with Dog4 due to later time bucket
-                                () -> assertEquals(3, allAgeDogs.get(2).get("dogNumber")), // Dog3 has score in later
+                                () -> assertEquals("3", allAgeDogs.get(2).get("dogNumber")), // Dog3 has score in later
                                 // bucket
-                                () -> assertEquals(4, allAgeDogs.get(3).get("dogNumber")) // Dog4 has score in earlier
+                                () -> assertEquals("4", allAgeDogs.get(3).get("dogNumber")) // Dog4 has score in earlier
                                                                                           // bucket
                 );
 
@@ -1283,14 +1283,14 @@ public class DogServiceTest {
                                 () -> assertEquals(4, derbyDogs.size()),
 
                                 // Scenario 3: Dog5 should win tie with Dog6 due to higher individual score
-                                () -> assertEquals(6, derbyDogs.get(0).get("dogNumber")), // Dog5 has higher individual
+                                () -> assertEquals("6", derbyDogs.get(0).get("dogNumber")), // Dog5 has higher individual
                                 // score
-                                () -> assertEquals(5, derbyDogs.get(1).get("dogNumber")), // Dog6 has lower individual
+                                () -> assertEquals("5", derbyDogs.get(1).get("dogNumber")), // Dog6 has lower individual
                                 // score
 
                                 // Scenario 4: Dog7 and Dog8 should be sorted by dog number (ascending)
-                                () -> assertEquals(7, derbyDogs.get(2).get("dogNumber")), // Lower dog number
-                                () -> assertEquals(8, derbyDogs.get(3).get("dogNumber")) // Higher dog number
+                                () -> assertEquals("7", derbyDogs.get(2).get("dogNumber")), // Lower dog number
+                                () -> assertEquals("8", derbyDogs.get(3).get("dogNumber")) // Higher dog number
                 );
 
                 // TEST 5: getTopScoringDogsByDayAndStakeType (Day 1, ALL_AGE)
@@ -1301,12 +1301,12 @@ public class DogServiceTest {
                                 () -> assertEquals(4, day1AllAgeDogs.size()),
 
                                 // Check expected order for ALL_AGE dogs on day 1
-                                () -> assertEquals(1, day1AllAgeDogs.get(0).get("dogNumber")), // Dog1 has 50 points
-                                () -> assertEquals(3, day1AllAgeDogs.get(1).get("dogNumber")), // Dog3 has 40 points,
+                                () -> assertEquals("1", day1AllAgeDogs.get(0).get("dogNumber")), // Dog1 has 50 points
+                                () -> assertEquals("3", day1AllAgeDogs.get(1).get("dogNumber")), // Dog3 has 40 points,
                                 // later bucket
-                                () -> assertEquals(4, day1AllAgeDogs.get(2).get("dogNumber")), // Dog4 has 40 points,
+                                () -> assertEquals("4", day1AllAgeDogs.get(2).get("dogNumber")), // Dog4 has 40 points,
                                 // earlier bucket
-                                () -> assertEquals(2, day1AllAgeDogs.get(3).get("dogNumber")) // Dog2 has 25 points
+                                () -> assertEquals("2", day1AllAgeDogs.get(3).get("dogNumber")) // Dog2 has 25 points
                 );
 
                 // Add an additional test with multiple scores on the same day
@@ -1346,8 +1346,8 @@ public class DogServiceTest {
 
                                 // On day 3, Dog1 has higher total (50) than Dog2 (also 50) but Dog1 has a score
                                 // in a later bucket
-                                () -> assertEquals(1, day3Dogs.get(0).get("dogNumber")), // Dog1 has score in bucket 4
-                                () -> assertEquals(2, day3Dogs.get(1).get("dogNumber")) // Dog2 has score in bucket 1
+                                () -> assertEquals("1", day3Dogs.get(0).get("dogNumber")), // Dog1 has score in bucket 4
+                                () -> assertEquals("2", day3Dogs.get(1).get("dogNumber")) // Dog2 has score in bucket 1
                 );
         }
 
@@ -1374,9 +1374,9 @@ public class DogServiceTest {
 
                 assertAll("Single-stake hunt",
                                 () -> assertEquals(2, crossInfo.size()),
-                                () -> assertEquals(1, crossInfo.get(0).get("dogNumber")),
+                                () -> assertEquals("1", crossInfo.get(0).get("dogNumber")),
                                 () -> assertEquals(35, crossInfo.get(0).get("points")),
-                                () -> assertEquals(2, crossInfo.get(1).get("dogNumber")),
+                                () -> assertEquals("2", crossInfo.get(1).get("dogNumber")),
                                 () -> assertEquals(30, crossInfo.get(1).get("points")));
 
                 // Test case 2: Dual-stake hunt
@@ -1388,13 +1388,13 @@ public class DogServiceTest {
 
                 assertAll("Dual-stake hunt",
                                 () -> assertEquals(4, crossInfo1.size()),
-                                () -> assertEquals(1, crossInfo1.get(0).get("dogNumber")),
+                                () -> assertEquals("1", crossInfo1.get(0).get("dogNumber")),
                                 () -> assertEquals(35, crossInfo1.get(0).get("points")), // ALL_AGE starting points
-                                () -> assertEquals(3, crossInfo1.get(1).get("dogNumber")),
+                                () -> assertEquals("3", crossInfo1.get(1).get("dogNumber")),
                                 () -> assertEquals(35, crossInfo1.get(1).get("points")), // DERBY starting points
-                                () -> assertEquals(2, crossInfo1.get(2).get("dogNumber")),
+                                () -> assertEquals("2", crossInfo1.get(2).get("dogNumber")),
                                 () -> assertEquals(30, crossInfo1.get(2).get("points")), // ALL_AGE interval applied
-                                () -> assertEquals(4, crossInfo1.get(3).get("dogNumber")),
+                                () -> assertEquals("4", crossInfo1.get(3).get("dogNumber")),
                                 () -> assertEquals(30, crossInfo1.get(3).get("points")) // DERBY interval applied
                 );
 
@@ -1407,11 +1407,11 @@ public class DogServiceTest {
 
                 assertAll("Invalid dog numbers",
                                 () -> assertEquals(3, crossInfo2.size()), // Only valid dogs are included
-                                () -> assertEquals(1, crossInfo2.get(0).get("dogNumber")),
+                                () -> assertEquals("1", crossInfo2.get(0).get("dogNumber")),
                                 () -> assertEquals(35, crossInfo2.get(0).get("points")),
-                                () -> assertEquals(999, crossInfo2.get(1).get("dogNumber")),
+                                () -> assertEquals("999", crossInfo2.get(1).get("dogNumber")),
                                 () -> assertNotNull(crossInfo2.get(1).get("error")),
-                                () -> assertEquals(3, crossInfo2.get(2).get("dogNumber")),
+                                () -> assertEquals("3", crossInfo2.get(2).get("dogNumber")),
                                 () -> assertEquals(25, crossInfo2.get(2).get("points")));
 
                 // Test case 4: Empty numbers array
@@ -1431,9 +1431,9 @@ public class DogServiceTest {
 
                 assertAll("Dual-stake hunt with one stake type",
                                 () -> assertEquals(2, crossInfo4.size()),
-                                () -> assertEquals(1, crossInfo4.get(0).get("dogNumber")),
+                                () -> assertEquals("1", crossInfo4.get(0).get("dogNumber")),
                                 () -> assertEquals(35, crossInfo4.get(0).get("points")),
-                                () -> assertEquals(2, crossInfo4.get(1).get("dogNumber")),
+                                () -> assertEquals("2", crossInfo4.get(1).get("dogNumber")),
                                 () -> assertEquals(30, crossInfo4.get(1).get("points")));
 
                 // Test case 6: Dual-stake hunt with mixed stake types
@@ -1445,13 +1445,13 @@ public class DogServiceTest {
 
                 assertAll("Dual-stake hunt with mixed stake types",
                                 () -> assertEquals(4, crossInfo5.size()),
-                                () -> assertEquals(1, crossInfo5.get(0).get("dogNumber")),
+                                () -> assertEquals("1", crossInfo5.get(0).get("dogNumber")),
                                 () -> assertEquals(35, crossInfo5.get(0).get("points")), // ALL_AGE starting points
-                                () -> assertEquals(3, crossInfo5.get(1).get("dogNumber")),
+                                () -> assertEquals("3", crossInfo5.get(1).get("dogNumber")),
                                 () -> assertEquals(35, crossInfo5.get(1).get("points")), // DERBY starting points
-                                () -> assertEquals(2, crossInfo5.get(2).get("dogNumber")),
+                                () -> assertEquals("2", crossInfo5.get(2).get("dogNumber")),
                                 () -> assertEquals(30, crossInfo5.get(2).get("points")), // ALL_AGE interval applied
-                                () -> assertEquals(4, crossInfo5.get(3).get("dogNumber")),
+                                () -> assertEquals("4", crossInfo5.get(3).get("dogNumber")),
                                 () -> assertEquals(30, crossInfo5.get(3).get("points")) // DERBY interval applied
                 );
         }

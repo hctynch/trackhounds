@@ -32,7 +32,7 @@ public class ScoreDto {
     /**
      * Dog numbers of the score
      */
-    private int[] dogNumbers;
+    private String[] dogNumbers;
     /**
      * Scores of the score
      */
@@ -42,5 +42,21 @@ public class ScoreDto {
      * Interval of the hunt
      */
     private int interval;
+
+    /** Convenience for callers that still hold numeric dog numbers. */
+    public ScoreDto(int day, String startTime, int judge, String crossTime, int[] dogNumbers, int[] scores, int interval) {
+        this(day, startTime, judge, crossTime, toStrings(dogNumbers), scores, interval);
+    }
+
+    private static String[] toStrings(int[] numbers) {
+        if (numbers == null) {
+            return null;
+        }
+        String[] result = new String[numbers.length];
+        for (int i = 0; i < numbers.length; i++) {
+            result[i] = String.valueOf(numbers[i]);
+        }
+        return result;
+    }
 
 }

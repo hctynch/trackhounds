@@ -48,6 +48,7 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
 | Q12 | Scores are **not edited in place**; delete and re-enter. | No change. |
 | Q13 | The judge **member PIN** is a reference number only. | Kept as an optional field. |
 | Q14 | Scratch reasons are a **fixed list plus "Other"** with free text. | `SCRATCH_REASONS` in `frontend/src/lib/hunt.js`: injured, withdrawn by owner, not found, disqualified, other. Adjust the list there. |
+| Q15 | Dog numbers are **combinations of digits** and leading zeros are significant: "0" and "00" are two different dogs. | The dog number is a text key (digits only, up to six). Numbers order by value, then by length ("0", "00", "1", "01"). Every screen sends and shows numbers as text. Databases from the release candidates are upgraded on first start (see F18). |
 
 Also confirmed: **dual stake** hunts must score all-age and derby dogs separately within one cross. That is
 what `getCrossInfo` does (two point ladders); it stays and is covered by `testGetCrossInfo`.
@@ -76,13 +77,11 @@ None at the moment. New questions go here with the code location they affect.
 | F14 | `GET /dogs` and `GET /dogs/{n}` recalculated and **saved** points on every read. | Reads are pure; points are maintained when scores change (cross saved, score deleted, start time changed). |
 | F15 | Daily scores were addressed by list position (`scores.get(day - 1)`), so scoring day 4 first created empty filler days 1-3. | `DogEntity.dailyScoreFor(day)`; one `DailyScore` per scored day, in any order. |
 | F16 | Judge number 0 was accepted by the server. | Must be greater than 0. |
+| F17 | `Score` was reachable from two join tables (`time_bucket_score`, `highest_score`) and deleting a dog only worked because SQLite has no foreign keys here. | Scores are owned by their `DailyScore`; the scoring interval and the counted flag live on the score. `getTimeBucketScores()`/`getHighestScores()` remain as read-only views. |
+| F18 | Dog numbers were integers (Q15) and the schema had no migration path. | `LegacySchemaMigration` runs before Hibernate on start-up: backs the database up to `backups/`, moves the score links onto the scores, drops the join tables and rebuilds the four dog-number columns with text affinity (SQLite would coerce "00" to 0 in an integer column). Covered by `LegacySchemaMigrationTest` against a copy of the release-candidate schema. |
 
 ## 5. Still to do (defects and rough edges that do not need a rules decision)
 
-- Deleting a dog cascades through `DailyScore` → `TimeBucketScore` → `Score` while `HighestScore` also
-  points at the same `Score`; it works only because SQLite has no foreign keys here. Simplify the model
-  (`Score` owned by `DailyScore`, bucket and counted flags on the score) before iteration 7 adds
-  migrations.
 - `GET /dogs/day/{day}` answers `400` when the day has no start time yet; `404` or an empty value is the
   honest answer.
 - Two routes do similar things with different shapes: `/dogs/scores/{day}` (raw scores) and

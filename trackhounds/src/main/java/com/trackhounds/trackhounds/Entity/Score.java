@@ -2,72 +2,67 @@ package com.trackhounds.trackhounds.Entity;
 
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * One dog's points from one cross. Owned by the dog's {@link DailyScore} for
+ * that day, which decides the scoring interval ({@code timeBucket}) the cross
+ * falls into and whether it {@code counted} (the highest cross of the dog in
+ * that interval).
+ */
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-/**
- * Score class for individual scores.
- */
 public class Score {
 
-  /**
-   * Unique Id
-   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-  /**
-   * Points awarded
-   */
+
   private int points;
-  /**
-   * Time of the score
-   */
+
   private LocalTime time;
-  /**
-   * Whether or not to count based off interval
-   */
+
   private boolean counted = false;
 
-  /**
-   * The number of the judge that awarded the score
-   */
   private int judgeNumber;
 
-  /**
-   * The number of the dog that this score belongs to
-   */
-  private int dogNumber;
+  /** Dog number: a string of digits; leading zeros are significant ("0" and "00" differ). */
+  private String dogNumber;
 
-  /**
-   * The day of the score
-   */
   private int day;
 
-  /**
-   * Default constructor for a score
-   * 
-   * @param points Points awarded
-   * @param time   Time of the cross
-   */
+  /** Scoring interval of the day this cross falls into, counted from the day's start time. */
+  private int timeBucket;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "daily_score_id")
+  @JsonBackReference("daily-score-scores")
+  private DailyScore dailyScore;
+
+  public Score(int points, LocalTime time, boolean counted, int judgeNumber, String dogNumber, int day) {
+    this.points = points;
+    this.time = time;
+    this.counted = counted;
+    this.judgeNumber = judgeNumber;
+    this.dogNumber = dogNumber;
+    this.day = day;
+  }
+
   public Score(int points, LocalTime time, boolean counted, int judgeNumber, int dogNumber, int day) {
-    setPoints(points);
-    setTime(time);
-    setCounted(counted);
-    setJudgeNumber(judgeNumber);
-    setDogNumber(dogNumber);
-    setDay(day);
+    this(points, time, counted, judgeNumber, String.valueOf(dogNumber), day);
   }
 
   @Override
@@ -86,5 +81,4 @@ public class Score {
     // Constant per class: the id is assigned on save, so it cannot take part in the hash.
     return Score.class.hashCode();
   }
-
 }

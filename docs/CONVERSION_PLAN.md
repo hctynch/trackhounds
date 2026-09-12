@@ -341,10 +341,14 @@ hunt has judges, dogs and a first cross, "New hunt" asks for confirmation naming
 score entry keeps the judge between crosses, lists the day's last three crosses and warns when a cross
 time is earlier than that judge's last cross. 78 backend tests pass.
 
+Also done (2026-09-11): the score model is simplified (scores owned by their daily score, interval and
+counted flag on the score; the two join tables are gone) and dog numbers are text keys so that "0" and
+"00" are different dogs (author's rule). Both are schema changes, so `LegacySchemaMigration` upgrades
+release-candidate databases on first start after taking a backup; it is the pattern Flyway can replace in
+iteration 8.
+
 Next:
 
-- Simplify the score model (`Score` owned by `DailyScore`, bucket and counted flag on the score) before
-  iteration 8 freezes the schema with migrations; see LOGIC_REVIEW.md section 5.
 - Remaining flow notes in section 6: scratched-dog and per-judge reports, a hunt summary sheet, bulk dog
   import (CSV), editing a dog's number.
 

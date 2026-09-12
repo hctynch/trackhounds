@@ -35,10 +35,11 @@ function ViewScores() {
           setLoading(false);
           return;
         }
-        const number = parseInt(filterValue, 10);
-        if (filterType === 'dog') {
+        if (filterType === "dog") {
+          const number = filterValue.trim();
           response = dayNumber ? await DogService.getScoresByDogNumberAndDay(number, dayNumber) : await DogService.getScoresByDogNumber(number);
         } else {
+          const number = parseInt(filterValue, 10);
           response = dayNumber ? await DogService.getScoresByJudgeNumberAndDay(number, dayNumber) : await DogService.getScoresByJudgeNumber(number);
         }
       }
@@ -138,7 +139,7 @@ function ViewScores() {
           {filterType !== 'all' && (
             <Field label={filterType === 'dog' ? 'Dog number' : 'Judge number'} className="w-40" error={fieldError(filterType === 'dog' ? 'dogNumber' : 'judgeNumber')}>
               {({ id, invalid }) => (
-                <Input id={id} type="number" numeric min={1} invalid={invalid} value={filterValue} onChange={(event) => setFilterValue(event.target.value)} autoFocus />
+                <Input id={id} type={filterType === "dog" ? "text" : "number"} inputMode="numeric" numeric={filterType !== "dog"} min={1} invalid={invalid} value={filterValue} onChange={(event) => setFilterValue(event.target.value)} className="tabular" autoFocus />
               )}
             </Field>
           )}

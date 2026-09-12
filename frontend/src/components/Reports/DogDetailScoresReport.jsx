@@ -12,13 +12,13 @@ export const DogNumberSelector = ({ onChange, config }) => {
     setDogNumber(merged.dogNumber);
     setDay(merged.day);
     if (merged.dogNumber) {
-      onChange({ dogNumber: parseInt(merged.dogNumber, 10), day: merged.day === 'all' ? null : parseInt(merged.day, 10) });
+      onChange({ dogNumber: String(merged.dogNumber).trim(), day: merged.day === "all" ? null : parseInt(merged.day, 10) });
     }
   };
 
   return (
     <OptionsRow>
-      <NumberInput label="Dog number" value={dogNumber} onChange={(value) => update({ dogNumber: value })} autoFocus />
+      <NumberInput label="Dog number" value={dogNumber} onChange={(value) => update({ dogNumber: value })} autoFocus text />
       <DaySelect value={day} onChange={(value) => update({ day: value })} allowAll />
     </OptionsRow>
   );

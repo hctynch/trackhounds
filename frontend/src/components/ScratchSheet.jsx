@@ -50,7 +50,7 @@ function ScratchSheet() {
     }
     setSaving(true);
     const response = await DogService.postScratch({
-      dogNumber: Number(values.dogNumber),
+      dogNumber: values.dogNumber.trim(),
       day: Number(values.day),
       time: values.time,
       judgeNumber: Number(values.judgeNumber),
@@ -112,7 +112,7 @@ function ScratchSheet() {
             <PanelBody className="flex flex-col gap-4">
               {errors.general && <Alert tone="danger">{errors.general}</Alert>}
               <Field label="Dog number" required error={errors.dogNumber}>
-                {({ id, invalid }) => <Input id={id} type="number" numeric min={1} invalid={invalid} value={values.dogNumber} onChange={set('dogNumber')} />}
+                {({ id, invalid }) => <Input id={id} type="text" inputMode="numeric" invalid={invalid} value={values.dogNumber} onChange={set("dogNumber")} className="tabular" />}
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Day" required error={errors.day}>

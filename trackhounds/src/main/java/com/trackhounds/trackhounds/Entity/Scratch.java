@@ -22,7 +22,7 @@ public class Scratch {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private int dogNumber;
+    private String dogNumber;
 
     private String dogName;
     /** Hunt day the scratch happened on (1 to the hunt's day count). */
@@ -34,4 +34,12 @@ public class Scratch {
     private int judgeNumber;
 
     private String reason;
+
+    public void setDogNumber(int dogNumber) {
+        this.dogNumber = String.valueOf(dogNumber);
+    }
+
+    public void setDogNumber(String dogNumber) {
+        this.dogNumber = dogNumber;
+    }
 }

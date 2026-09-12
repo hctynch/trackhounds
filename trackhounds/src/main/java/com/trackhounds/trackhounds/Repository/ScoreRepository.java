@@ -24,7 +24,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
      * @param dogNumber Number of the dog
      * @return List of scores ordered chronologically
      */
-    List<Score> findByDogNumberOrderByDayAscTimeAsc(int dogNumber);
+    List<Score> findByDogNumberOrderByDayAscTimeAsc(String dogNumber);
 
     /**
      * Find all scores for a given judge, ordered by day and time
@@ -41,7 +41,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
      * @param day       Day of the hunt (1-4)
      * @return List of scores ordered by time
      */
-    List<Score> findByDogNumberAndDayOrderByTimeAsc(int dogNumber, int day);
+    List<Score> findByDogNumberAndDayOrderByTimeAsc(String dogNumber, int day);
 
     /**
      * Find all scores for a given judge on a specific day, ordered by time

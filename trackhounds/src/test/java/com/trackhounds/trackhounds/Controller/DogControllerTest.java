@@ -177,7 +177,7 @@ public class DogControllerTest {
                                 .content(gson.toJson(updatedDog)))
                                 .andExpect(status().isOk());
 
-                DogEntity retrievedDog = dogRepository.findById(1).orElse(null);
+                DogEntity retrievedDog = dogRepository.findById("1").orElse(null);
                 assertNotNull(retrievedDog);
                 assertEquals("UpdatedName", retrievedDog.getName());
         }
@@ -198,11 +198,11 @@ public class DogControllerTest {
                 mvc.perform(post("/dogs/scores").contentType(MediaType.APPLICATION_JSON)
                                 .content(gson.toJson(score)))
                                 .andExpect(status().isOk());
-                DogEntity dog = dogRepository.findById(1).get();
+                DogEntity dog = dogRepository.findById("1").get();
                 assertEquals(38, dog.getPoints());
-                DogEntity dog2 = dogRepository.findById(2).get();
+                DogEntity dog2 = dogRepository.findById("2").get();
                 assertEquals(33, dog2.getPoints());
-                DogEntity dog3 = dogRepository.findById(3).get();
+                DogEntity dog3 = dogRepository.findById("3").get();
                 assertEquals(27, dog3.getPoints());
         }
 
@@ -262,7 +262,7 @@ public class DogControllerTest {
                                 .andExpect(status().isOk());
 
                 // Verify dog is marked as scratched
-                DogEntity scratchedDog = dogRepository.findById(1).orElse(null);
+                DogEntity scratchedDog = dogRepository.findById("1").orElse(null);
                 assertNotNull(scratchedDog);
                 assertTrue(scratchedDog.isScratched());
 
@@ -270,7 +270,7 @@ public class DogControllerTest {
                 List<Scratch> scratches = scratchRepository.findAll();
                 assertEquals(1, scratches.size());
                 assertEquals("Test reason", scratches.get(0).getReason());
-                assertEquals(1, scratches.get(0).getDogNumber());
+                assertEquals("1", scratches.get(0).getDogNumber());
         }
 
         /**
@@ -398,7 +398,7 @@ public class DogControllerTest {
                                 .accept(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()").value(3))
-                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].dogNumber").value("1"))
                                 .andExpect(jsonPath("$[0].dogName").value("Dog1"))
                                 .andExpect(jsonPath("$[0].totalPoints").exists());
 
@@ -423,16 +423,16 @@ public class DogControllerTest {
                                 .accept(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()").value(2))
-                                .andExpect(jsonPath("$[0].dogNumber").value(1)) // Dog1 should be first (40 points)
-                                .andExpect(jsonPath("$[1].dogNumber").value(2)); // Dog2 should be second (30 points)
+                                .andExpect(jsonPath("$[0].dogNumber").value("1")) // Dog1 should be first (40 points)
+                                .andExpect(jsonPath("$[1].dogNumber").value("2")); // Dog2 should be second (30 points)
 
                 // Test getting top 2 dogs for day 2
                 mvc.perform(get("/dogs/scores/day/2/top/2")
                                 .accept(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()").value(2))
-                                .andExpect(jsonPath("$[0].dogNumber").value(2)) // Dog2 should be first (35 points)
-                                .andExpect(jsonPath("$[1].dogNumber").value(1)); // Dog1 should be second (25 points)
+                                .andExpect(jsonPath("$[0].dogNumber").value("2")) // Dog2 should be first (35 points)
+                                .andExpect(jsonPath("$[1].dogNumber").value("1")); // Dog1 should be second (25 points)
 
                 // Test day with no scores
                 mvc.perform(get("/dogs/scores/day/3/top/2")
@@ -478,9 +478,9 @@ public class DogControllerTest {
                 setupTestScores();
 
                 // Verify dog points from both days are combined
-                DogEntity dog1 = dogRepository.findById(1).get();
-                DogEntity dog2 = dogRepository.findById(2).get();
-                DogEntity dog3 = dogRepository.findById(3).get();
+                DogEntity dog1 = dogRepository.findById("1").get();
+                DogEntity dog2 = dogRepository.findById("2").get();
+                DogEntity dog3 = dogRepository.findById("3").get();
 
                 assertEquals(74, dog1.getPoints()); // 44 + 30 = 74
                 assertEquals(75, dog2.getPoints()); // 33 + 42 = 75
@@ -493,7 +493,7 @@ public class DogControllerTest {
                                 .andExpect(jsonPath("$.length()").value(3)) // Should return all 3 dogs
                                 // Dogs 1 and 2 have the same total (65), so either could be first/second
                                 // Only check Dog3 is last since it has lowest score
-                                .andExpect(jsonPath("$[2].dogNumber").value(3)) // Dog3 should be third (35 points)
+                                .andExpect(jsonPath("$[2].dogNumber").value("3")) // Dog3 should be third (35 points)
                                 .andExpect(jsonPath("$[2].totalPoints").value(40));
         }
 
@@ -713,8 +713,8 @@ public class DogControllerTest {
                                 .accept(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()").value(2)) // Dog 1 has scores on 2 days
-                                .andExpect(jsonPath("$[0].dogNumber").value(1))
-                                .andExpect(jsonPath("$[1].dogNumber").value(1));
+                                .andExpect(jsonPath("$[0].dogNumber").value("1"))
+                                .andExpect(jsonPath("$[1].dogNumber").value("1"));
 
                 // Test getting scores for non-existent dog
                 mvc.perform(get("/dogs/999/scores")
@@ -774,7 +774,7 @@ public class DogControllerTest {
                                 .accept(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()").value(1))
-                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].dogNumber").value("1"))
                                 .andExpect(jsonPath("$[0].day").value(1));
 
                 // Test getting scores for dog #1 on day 2
@@ -782,7 +782,7 @@ public class DogControllerTest {
                                 .accept(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()").value(1))
-                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].dogNumber").value("1"))
                                 .andExpect(jsonPath("$[0].day").value(2));
 
                 // Test getting scores for a non-existent day
@@ -868,9 +868,9 @@ public class DogControllerTest {
                                 .content(gson.toJson(allAgeRequest)))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()").value(2))
-                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].dogNumber").value("1"))
                                 .andExpect(jsonPath("$[0].points").value(35))
-                                .andExpect(jsonPath("$[1].dogNumber").value(2))
+                                .andExpect(jsonPath("$[1].dogNumber").value("2"))
                                 .andExpect(jsonPath("$[1].points").value(30));
 
                 // 2. Test Dual-stake hunt
@@ -885,13 +885,13 @@ public class DogControllerTest {
                                 .content(gson.toJson(dualRequest)))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()").value(4))
-                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].dogNumber").value("1"))
                                 .andExpect(jsonPath("$[0].points").value(35)) // ALL_AGE starting points
-                                .andExpect(jsonPath("$[1].dogNumber").value(3))
+                                .andExpect(jsonPath("$[1].dogNumber").value("3"))
                                 .andExpect(jsonPath("$[1].points").value(35)) // DERBY starting points
-                                .andExpect(jsonPath("$[2].dogNumber").value(2))
+                                .andExpect(jsonPath("$[2].dogNumber").value("2"))
                                 .andExpect(jsonPath("$[2].points").value(30)) // ALL_AGE interval applied
-                                .andExpect(jsonPath("$[3].dogNumber").value(4))
+                                .andExpect(jsonPath("$[3].dogNumber").value("4"))
                                 .andExpect(jsonPath("$[3].points").value(30)); // DERBY interval applied
 
                 // 3. Test with invalid dog numbers
@@ -906,11 +906,11 @@ public class DogControllerTest {
                                 .content(gson.toJson(invalidDogRequest)))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()").value(3))
-                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].dogNumber").value("1"))
                                 .andExpect(jsonPath("$[0].points").value(35))
-                                .andExpect(jsonPath("$[1].dogNumber").value(999))
+                                .andExpect(jsonPath("$[1].dogNumber").value("999"))
                                 .andExpect(jsonPath("$[1].error").exists())
-                                .andExpect(jsonPath("$[2].dogNumber").value(3))
+                                .andExpect(jsonPath("$[2].dogNumber").value("3"))
                                 .andExpect(jsonPath("$[2].points").value(25));
 
                 // 4. Test with empty array
@@ -938,9 +938,9 @@ public class DogControllerTest {
                                 .content(gson.toJson(singleStakeInDualRequest)))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()").value(2))
-                                .andExpect(jsonPath("$[0].dogNumber").value(1))
+                                .andExpect(jsonPath("$[0].dogNumber").value("1"))
                                 .andExpect(jsonPath("$[0].points").value(35))
-                                .andExpect(jsonPath("$[1].dogNumber").value(2))
+                                .andExpect(jsonPath("$[1].dogNumber").value("2"))
                                 .andExpect(jsonPath("$[1].points").value(30));
 
                 // 6. Test edge case with null values (should return a 400 error)

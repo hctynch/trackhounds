@@ -214,7 +214,7 @@ function AddDogs() {
         <Panel>
           <PanelHeader
             title="Dogs"
-            description="Numbers outside the hunt's ranges keep the stake you choose."
+            description="Numbers are digits and leading zeros count: 0 and 00 are different dogs. Numbers outside the hunt's ranges keep the stake you choose."
             actions={
               <Button size="sm" icon={LuPlus} onClick={() => setDogs((current) => [...current, emptyRow()])}>
                 Add row
@@ -239,9 +239,9 @@ function AddDogs() {
                     <td className="px-3 py-1.5 text-right text-small text-ink-faint tabular">{index + 1}</td>
                     <td className="px-2 py-1.5">
                       <CellInput
-                        type="number"
-                        numeric
-                        min={1}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         name="number"
                         aria-label={`Row ${index + 1} number`}
                         ref={(el) => {

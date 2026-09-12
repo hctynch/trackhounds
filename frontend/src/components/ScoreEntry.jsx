@@ -25,6 +25,7 @@ import {
 const MIN_ROWS = 7;
 const REGISTER_STAKES = ['ALL_AGE', 'DERBY'].map((value) => ({ value, label: STAKE_LABELS[value] }));
 
+const isDogNumber = (value) => /^[0-9]{1,6}$/.test(String(value ?? "").trim());
 const filled = (count, value) => Array.from({ length: count }, () => value);
 
 /**
@@ -117,7 +118,7 @@ function ScoreEntry() {
 
   const updateCrossInfo = useCallback(() => {
     if (!huntExists || resetFlagRef.current) return;
-    const validDogs = dogs.filter((dog) => dog && dog.toString().trim() !== '');
+    const validDogs = dogs.filter((dog) => isDogNumber(dog));
     if (validDogs.length === 0) return;
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(async () => {
@@ -134,7 +135,7 @@ function ScoreEntry() {
         const nextStakes = [...dogStakes];
         dogs.forEach((dog, index) => {
           if (dog && dog.toString().trim() !== '') {
-            const info = infoByDog[Number(dog)];
+            const info = infoByDog[String(dog).trim()];
             if (info && !info.error) {
               nextStakes[index] = info.scratched ? `${info.stake}:scratched` : info.stake;
               if (nextPoints[index] === null) nextPoints[index] = info.points;
@@ -265,11 +266,16 @@ function ScoreEntry() {
   const handleSubmit = async () => {
     if (!huntExists) return;
     const unresolved = dogs.findIndex((dog, index) => dog && dogErrors[index] && !skipped[index]);
+    const badFormat = dogs.findIndex((dog) => dog && dog.trim() !== "" && !isDogNumber(dog));
+    if (badFormat !== -1) {
+      setError((current) => ({ ...current, general: `Dog number "${dogs[badFormat]}" is not valid: digits only, for example 12 or 007.` }));
+      return;
+    }
     if (unresolved !== -1) {
       setError((current) => ({ ...current, general: `Dog ${dogs[unresolved]} is not registered. Register it or skip it before saving.` }));
       return;
     }
-    const included = dogs.map((dog, index) => ({ dog, index })).filter(({ dog, index }) => dog && Number(dog) && !skipped[index]);
+    const included = dogs.map((dog, index) => ({ dog, index })).filter(({ dog, index }) => isDogNumber(dog) && !skipped[index]);
     if (included.length === 0) {
       setError((current) => ({ ...current, general: 'Enter at least one dog number.' }));
       return;
@@ -280,7 +286,7 @@ function ScoreEntry() {
       startTime,
       judge: Number(judge),
       crossTime,
-      dogNumbers: included.map(({ dog }) => Number(dog)),
+      dogNumbers: included.map(({ dog }) => dog.trim()),
       scores: included.map(({ index }) => calculatePoints(index)),
       // Buckets use the hunt's scoring interval; the server reads it from the hunt.
       interval: scoringInterval,
@@ -311,7 +317,7 @@ function ScoreEntry() {
     if (!registerValues.owner.trim()) found.owner = 'Enter the owner.';
     setRegisterErrors(found);
     if (Object.keys(found).length > 0) return;
-    const number = parseInt(dogs[registering], 10);
+    const number = dogs[registering].trim();
     setRegisterSaving(true);
     const result = await DogService.createDogs([{ number, ...registerValues, name: registerValues.name.trim(), owner: registerValues.owner.trim() }]);
     setRegisterSaving(false);

@@ -1,45 +1,25 @@
 package com.trackhounds.trackhounds.Entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Entity
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 /**
- * Entity class for the highest score of a dog in a time bucket.
+ * Read-only view of a counted cross (the dog's highest in its scoring
+ * interval). Kept for callers (and tests) that used to read the old join
+ * table; the data now lives on {@link Score#isCounted()}.
  */
-public class HighestScore {
-    /**
-     * Unique Id
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    /**
-     * Time bucket of the highest score
-     */
-    private int timeBucket;
-    /**
-     * Score of the highest score
-     */
-    @ManyToOne
-    private Score score;
-    /**
-     * Reference to the DailyScore
-     */
-    @ManyToOne
-    @JsonBackReference
-    private DailyScore dailyScore;
+public final class HighestScore {
+
+  private final int timeBucket;
+  private final Score score;
+
+  public HighestScore(int timeBucket, Score score) {
+    this.timeBucket = timeBucket;
+    this.score = score;
+  }
+
+  public int getTimeBucket() {
+    return timeBucket;
+  }
+
+  public Score getScore() {
+    return score;
+  }
 }

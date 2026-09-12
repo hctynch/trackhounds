@@ -7,6 +7,6 @@ import com.trackhounds.trackhounds.Entity.DogEntity;
 /**
  * Repository for Dogs
  */
-public interface DogRepository extends JpaRepository<DogEntity, Integer> {
+public interface DogRepository extends JpaRepository<DogEntity, String> {
 
 }
