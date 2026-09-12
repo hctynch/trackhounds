@@ -15,8 +15,10 @@
 	<description>TrackHounds - offline desktop scoring application for Master's Foxhunts</description>
 
 	<properties>
-		<java.version>21</java.version>
+		<java.version>24</java.version>
 		<sqlite-jdbc.version>3.53.4.0</sqlite-jdbc.version>
+		<!-- JavaFX WebView application window (iteration 9). The javafx-* POMs pick the platform classifier. -->
+		<javafx.version>26.0.2</javafx.version>
 
 		<!-- Frontend build (React/Vite). The build downloads its own Node so only a JDK is required. -->
 		<frontend.directory>${project.basedir}/../frontend</frontend.directory>
@@ -79,6 +81,18 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<!-- JavaFX WebView application window (trackhounds.desktop.window=javafx). Loaded from the
+		     class path inside the fat jar; the native libraries are unpacked to the data folder. -->
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-controls</artifactId>
+			<version>${javafx.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-web</artifactId>
+			<version>${javafx.version}</version>
 		</dependency>
 
 		<dependency>
@@ -379,6 +393,10 @@
 										<module>jdk.localedata</module>
 										<module>jdk.unsupported</module>
 										<module>jdk.zipfs</module>
+										<!-- Needed by JavaFX (graphics and WebView) when loaded from the class path. -->
+										<module>java.datatransfer</module>
+										<module>jdk.jsobject</module>
+										<module>jdk.xml.dom</module>
 									</addModules>
 									<jLinkOptions>
 										<option>--strip-debug</option>

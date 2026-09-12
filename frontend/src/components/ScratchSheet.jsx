@@ -127,7 +127,7 @@ function ScratchSheet() {
                   )}
                 </Field>
                 <Field label="Time" required error={errors.time}>
-                  {({ id, invalid }) => <Input id={id} type="time" invalid={invalid} value={values.time} onChange={set('time')} className="tabular" />}
+                  {({ id, invalid }) => <Input id={id} type="time" placeholder="HH:MM" invalid={invalid} value={values.time} onChange={set('time')} className="tabular" />}
                 </Field>
               </div>
               <Field label="Judge number" required error={errors.judgeNumber}>

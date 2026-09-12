@@ -18,11 +18,12 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      # JDK 25 (LTS): the JavaFX 26 window needs at least Java 24, and this JDK becomes the bundled runtime.
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
           cache: 'maven'
           cache-dependency-path: 'trackhounds/pom.xml'
 

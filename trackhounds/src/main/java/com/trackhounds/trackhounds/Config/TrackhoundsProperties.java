@@ -55,6 +55,14 @@ public class TrackhoundsProperties {
         /** Whether to show the tray icon and open the application window. */
         private boolean enabled = true;
 
+        /**
+         * Which window shows the UI: {@code browser} (Microsoft Edge or Google
+         * Chrome in app mode, the default until the JavaFX window is proven) or
+         * {@code javafx} (a JavaFX WebView owned by this process; iteration 9).
+         * When JavaFX cannot start, the browser window is used.
+         */
+        private String window = "browser";
+
         /** Port tried first before falling back to a random free port. */
         private int preferredPort = 8080;
 

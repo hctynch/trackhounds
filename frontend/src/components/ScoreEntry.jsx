@@ -430,7 +430,7 @@ function ScoreEntry() {
                 {({ id, invalid }) => (
                   <Input
                     id={id}
-                    type="time"
+                    type="time" placeholder="HH:MM"
                     invalid={invalid}
                     value={startTime}
                     readOnly={dayStarted}
@@ -448,7 +448,7 @@ function ScoreEntry() {
                 hint={earlierThanLast ? <span className="text-warning-700">Earlier than judge {judge}&apos;s last cross at {judgesLastCross.time.slice(0, 5)}.</span> : undefined}
               >
                 {({ id, invalid }) => (
-                  <Input id={id} type="time" invalid={invalid} value={crossTime} onChange={(e) => setCrossTime(e.target.value)} onKeyDown={(e) => handleKeyDown(e, 'crossTime')} ref={setRef('crossTime')} className="tabular" autoFocus />
+                  <Input id={id} type="time" placeholder="HH:MM" invalid={invalid} value={crossTime} onChange={(e) => setCrossTime(e.target.value)} onKeyDown={(e) => handleKeyDown(e, 'crossTime')} ref={setRef('crossTime')} className="tabular" autoFocus />
                 )}
               </Field>
             </div>
@@ -683,7 +683,7 @@ function ScoreEntry() {
       >
         <form id="change-start-form" onSubmit={saveStartTime} noValidate>
           <Field label="New start time" required error={changeError}>
-            {({ id, invalid }) => <Input id={id} type="time" invalid={invalid} value={newStart} onChange={(e) => setNewStart(e.target.value)} className="tabular" autoFocus />}
+            {({ id, invalid }) => <Input id={id} type="time" placeholder="HH:MM" invalid={invalid} value={newStart} onChange={(e) => setNewStart(e.target.value)} className="tabular" autoFocus />}
           </Field>
         </form>
       </Dialog>

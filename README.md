@@ -6,7 +6,7 @@ _By: Hunt Tynch_
 
 ## **_Tools and Technologies_**
 
-![Java](https://img.shields.io/badge/Java%2021-ED8B00.svg?style=flat&logo=openjdk&logoColor=white)
+![Java](https://img.shields.io/badge/Java%2025-ED8B00.svg?style=flat&logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-6DB33F.svg?style=flat&logo=Spring-Boot&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57.svg?style=flat&logo=SQLite&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB.svg?style=flat&logo=React&logoColor=black)
@@ -78,6 +78,7 @@ guide is on the `Docs and help` page inside the application.
 
    - Open TrackHounds from the shortcut. The application window opens and a TrackHounds icon appears in the system tray (next to the clock).
    - The window is shown with Microsoft Edge in "app mode" (no tabs or address bar). If Edge is not available the page opens in your default browser.
+   - Preview: a window owned by TrackHounds itself (JavaFX, no browser involved) can be switched on by starting with `--trackhounds.desktop.window=javafx`. It is planned to become the default once printing from it has been checked.
 
 4. **Close TrackHounds**
 
@@ -188,7 +189,7 @@ uses the normal Windows print dialog. Scratched dogs are marked on every sheet.
 
 ### Prerequisites
 
-- JDK 21 or newer (includes `jpackage`). Nothing else: Maven and Node are downloaded by the build.
+- JDK 24 or newer, 25 recommended (includes `jpackage`; the JavaFX window needs Java 24 at least). Nothing else: Maven and Node are downloaded by the build.
 
 ### Project layout
 

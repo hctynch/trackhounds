@@ -136,8 +136,16 @@ public class DesktopLauncher {
      * Open (another) application window.
      */
     public void openWindow() {
-        boolean appMode = BrowserWindow.open(url, profileDir(), properties.getDesktop().getWindowWidth(),
-                properties.getDesktop().getWindowHeight());
+        int width = properties.getDesktop().getWindowWidth();
+        int height = properties.getDesktop().getWindowHeight();
+        if ("javafx".equalsIgnoreCase(properties.getDesktop().getWindow())) {
+            if (JavaFxWindow.isAvailable()
+                    && JavaFxWindow.open(url, "TrackHounds", width, height, properties.getDataDir().resolve("javafx-cache"), this::shutdown)) {
+                return;
+            }
+            LOG.warn("The JavaFX window is not available; opening a browser window instead");
+        }
+        boolean appMode = BrowserWindow.open(url, profileDir(), width, height);
         if (!appMode && trayIcon == null) {
             LOG.warn("No tray icon and no application window: close the window to stop, or end the process manually.");
         }

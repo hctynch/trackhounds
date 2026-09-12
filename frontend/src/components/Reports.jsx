@@ -44,6 +44,9 @@ function Reports() {
 
   useEffect(() => {
     if (!selectedReport?.fetchData) return undefined;
+    // The options are reset to the report's defaults by the effect above; until that has happened
+    // a report with defaults would be fetched once with an empty configuration (day "undefined").
+    if (selectedReport.defaultConfig && Object.keys(reportConfig).length === 0) return undefined;
     let cancelled = false;
     setLoading(true);
     selectedReport

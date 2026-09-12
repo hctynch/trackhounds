@@ -421,9 +421,71 @@ comparison test is the replacement, and it is the stricter check. Also checked, 
 offline: Flyway core has no network code; telemetry is a plugin interface whose only implementation in the
 community jar is a no-op, and the URLs inside the jar are documentation links in error messages.
 
-### ⏳ Iteration 9: window technology review
+### 🔄 Iteration 9: window technology review
 
-Revisit after real-world use of the Edge app-mode window. Options, in order of effort:
+**Decision (author, 2026-09-12): move the application window to JavaFX WebView** (option 3 below). The
+recommendation on the table was to keep Edge app mode and finish its messaging, because the two risks of
+WebView are exactly the two things the browser window was kept for: printing (WebKit in JavaFX has no
+`window.print()`, so reports go through the JavaFX print API) and Tailwind 4 support in JavaFX's WebKit
+build. The author chose the pure-Java window anyway, so the move is done in the order that settles those
+two risks first:
+
+1. **Spike, behind a switch.** `trackhounds.desktop.window=javafx|browser` selects the window; the Edge
+   path stays as it is until the JavaFX one is proven. `Desktop/JavaFxWindow` opens a `Stage` with a
+   `WebView` on the local URL, opens `target=_blank` links in the default browser, and exposes a small JS
+   bridge (`window.trackhoundsWindow.print(...)`) that the report sheet calls instead of `window.print()`.
+   Printing loads the sheet's HTML and stylesheet into an offscreen `WebEngine` and prints that through
+   `PrinterJob`, which mirrors what `react-to-print` does with an iframe, so the print CSS stays as it is.
+2. **Rendering check.** Every page of the built UI is captured from inside the JavaFX window (a `WebView`
+   snapshot) and compared with the Edge screenshots in `docs/screenshots/`. Things to look at: Tailwind 4
+   output (`color-mix()`, `@property`, `@layer`), the native `<dialog>` element, `<input type="time">`
+   (desktop WebKit builds may render it as a plain text field), Server-Sent Events and `sendBeacon`.
+3. **Print check.** Each report printed from the JavaFX window through a real print dialog, compared with
+   the Edge output: page breaks, repeated table headers, fonts. The author does this on a real printer or
+   the Windows PDF printer; it cannot be automated without a prompt-free printer.
+4. **Exit criteria** for making JavaFX the default and removing the Edge path: every page renders like the
+   Edge screenshots, every report prints acceptably, start-up is not slower than app mode, and the
+   installer grows by no more than about 60 MB. If a blocker turns up in 2 or 3, the fallback is embedded
+   Chromium (JCEF), not a return to this question.
+
+**Spike results (2026-09-12, steps 1 and 2 done, step 3 open):**
+
+- Built as planned: `javafx-controls` and `javafx-web` 26.0.2 from Maven (the platform classifier jars,
+  about 47 MB more in the jar, inside the budget), `Desktop/JavaFxWindow`, the
+  `trackhounds.desktop.window` switch (default still `browser`), the print bridge, `target=_blank` to the
+  system browser, WebKit's console routed to the log, and the capture mode
+  (`-Dtrackhounds.desktop.capture=<dir>`). Run it with
+  `java -Dtrackhounds.desktop.capture=<dir> -jar trackhounds-3.0.0.jar --trackhounds.desktop.window=javafx`.
+- **Rendering: every page matches the Edge screenshots.** Tailwind 4 output (`color-mix()`, `@layer`,
+  `@property`), the fonts, badges, tables, segmented controls and the native `<dialog>` all render the
+  same in JavaFX 26's WebKit; Server-Sent Events work (the page connects and the launcher sees it).
+  Evidence in `docs/screenshots/javafx-home.png` and `javafx-score-entry.png`. Two differences, both fixed
+  or accepted: WebKit rejected the Select control's chevron, a raw `<svg>` data URL that a Tailwind
+  arbitrary value produced (now a percent-encoded `select-arrow` utility in `index.css`, fine in both
+  engines); and `<input type="time">` is a plain text field in JavaFX's WebKit, so the time fields carry
+  an `HH:MM` placeholder and the server's time parsing reports a bad entry (Edge ignores the placeholder).
+- **Printing, first half: the print document is right.** The capture run also builds the document the
+  bridge prints (the sheet's HTML with the app's stylesheet) in a second WebView and saves it
+  (`docs/screenshots/javafx-print-document.png`): fonts, rules and zebra rows come through. What is not
+  checked yet is the second half, pagination through `WebEngine.print`: repeated table headers and page
+  breaks on a multi-page sheet. That needs a real print dialog: start the app with
+  `--trackhounds.desktop.window=javafx`, open Reports, print Daily speed and drive and All dogs all days
+  to the Windows PDF printer, and compare with the Edge output.
+- Start-up: the window shows about one second after the server is ready (the first run unpacks the
+  native libraries into `<data>/javafx-cache`). JavaFX logs "Unsupported JavaFX configuration: classes
+  were loaded from 'unnamed module'" because the jars sit inside the Spring Boot fat jar; it works.
+- Build consequences: JavaFX 26 ships Java 24 class files, so `java.version` is 24 and both workflows
+  set up **JDK 25** (LTS), which also becomes the bundled runtime. Developers need JDK 24 or newer. The
+  jlink image adds `java.datatransfer`, `jdk.jsobject` and `jdk.xml.dom`.
+- Not touched yet: `javafx-media` (pulled in by `javafx-web`, about 1 MB, could be excluded), the
+  `browser-profile` folder and the Edge path itself, which stay until the exit criteria are met, and the
+  installer size (the app image has not been rebuilt with JavaFX).
+
+Next for this iteration: the author's print check (above); then, if it passes, make `javafx` the
+default, remove the Edge/Chrome path and the browser profile, rebuild the app image and confirm the
+installer size, update the README's "Start TrackHounds" wording and the troubleshooting section.
+
+Also decided: no Mac or Linux work for now (iteration 10). Options as originally listed, in order of effort:
 
 1. Keep app mode (current). Add a Chrome fallback check and better messaging when neither is present.
 2. **Embedded WebView2** via a Java binding (JNI/JNA). Native window, no separate browser process, still
@@ -437,11 +499,17 @@ Revisit after real-world use of the Edge app-mode window. Options, in order of e
 
 ### ⏳ Iteration 10: distribution extras
 
-- Optional "Check for updates" button that queries GitHub releases **only when the user asks** and opens
-  the download page (the app itself never phones home).
-- Code signing (certificate cost) to remove the SmartScreen warning, if the budget allows.
-- macOS `.dmg` / Linux `.deb` with the same jpackage setup if there is demand (the launcher already has
-  the code paths).
+- ✅ "Check for updates" button (2026-09-12): UI only, by decision. The Docs page's **Check for updates**
+  calls GitHub's latest-release API on click (`lib/updates.js`, 8 s timeout, pre-releases excluded),
+  compares the tag with the version from `/app/info` (`lib/version.js`, pre-release aware) and shows
+  "latest", "version X available" with a link to the release page, or a could-not-reach message. No server
+  endpoint; nothing happens without the click.
+- Code signing: decided 2026-09-12 to **stay unsigned for now**. The SmartScreen workaround stays
+  documented in the README. Options priced at the time, for when the budget allows: Azure Trusted Signing
+  (about 10 USD a month, identity validation, signs from CI), SignPath Foundation (free for eligible open
+  source), or an OV/EV certificate (roughly 200 to 600 USD a year plus a token or cloud HSM).
+- macOS `.dmg` / Linux `.deb`: **out of scope** by decision of 2026-09-12 (the launcher keeps its code
+  paths, nothing is built or tested for them).
 - ✅ Automated smoke test in CI (2026-09-12): `.github/scripts/smoke.sh`, run by `Build and Test` after
   `mvnw verify`, starts the jar with `--server` against an empty folder, checks `/actuator/health`,
   `/app/info`, the UI, the CSV template, `GET /hunt` (404) and `GET /dogs`, confirms V1 was applied, then
@@ -592,7 +660,9 @@ git tag v3.0.0 && git push origin v3.0.0       # CI builds and publishes the rel
 ```
 
 Runtime switches: `--server`, `--trackhounds.data-dir=<dir>`, `--trackhounds.port=<port>`,
-`--trackhounds.desktop.enabled=false` (also as system properties or `TRACKHOUNDS_*` environment variables).
+`--trackhounds.desktop.enabled=false`, `--trackhounds.desktop.window=javafx|browser` (also as system
+properties or `TRACKHOUNDS_*` environment variables); `-Dtrackhounds.desktop.capture=<dir>` saves a PNG of
+every page from the JavaFX window and quits.
 
 ## 5. Known limitations
 

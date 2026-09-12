@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { LuBug, LuDownload, LuExternalLink, LuFileText, LuFolderOpen, LuLifeBuoy, LuRefreshCw } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import { getAppInfo } from '../config';
+import { fetchLatestRelease } from '../lib/updates';
+import { compareVersions } from '../lib/version';
 import DataService from '../services/DataService';
 import { Button, PageHeader, Panel, PanelBody, PanelHeader, useToast } from './ui';
 
@@ -43,6 +45,25 @@ QuickStartPhase.propTypes = { title: PropTypes.string.isRequired, children: Prop
 function Docs() {
   const toast = useToast();
   const [appInfo, setAppInfo] = useState(null);
+  const [update, setUpdate] = useState({ state: 'idle' }); // idle | checking | latest | newer | failed
+
+  // Only on a click: GitHub is asked for the latest release and its tag is compared with this build.
+  const checkForUpdates = async () => {
+    setUpdate({ state: 'checking' });
+    try {
+      const latest = await fetchLatestRelease();
+      const comparison = compareVersions(latest.version, appInfo?.version);
+      if (comparison === null) {
+        setUpdate({ state: 'failed', message: `The latest release is ${latest.version}; this version could not be compared with it.` });
+      } else if (comparison > 0) {
+        setUpdate({ state: 'newer', version: latest.version, url: latest.url });
+      } else {
+        setUpdate({ state: 'latest', version: latest.version });
+      }
+    } catch {
+      setUpdate({ state: 'failed', message: 'GitHub could not be reached. Check the internet connection and try again.' });
+    }
+  };
 
   const openFolder = async (target) => {
     const result = await DataService.openFolder(target);
@@ -235,8 +256,20 @@ function Docs() {
                 <div>
                   <p className="font-medium text-ink">Update</p>
                   <p className="mt-0.5 text-ink-muted">
-                    Run the newer installer over the existing installation. Your data is kept. TrackHounds never checks for updates on its own.
+                    Run the newer installer over the existing installation. Your data is kept. TrackHounds never checks for updates on its own; the button below asks GitHub only when you click it.
                   </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <Button size="sm" icon={LuRefreshCw} loading={update.state === 'checking'} disabled={!appInfo} onClick={checkForUpdates}>
+                      Check for updates
+                    </Button>
+                    {update.state === 'latest' && <span className="text-success-700">This is the latest version ({update.version}).</span>}
+                    {update.state === 'newer' && (
+                      <span className="text-ink">
+                        Version {update.version} is available. <ExternalLink href={update.url}>Open the download page</ExternalLink>
+                      </span>
+                    )}
+                    {update.state === 'failed' && <span className="text-warning-700">{update.message}</span>}
+                  </div>
                 </div>
               </div>
             </PanelBody>

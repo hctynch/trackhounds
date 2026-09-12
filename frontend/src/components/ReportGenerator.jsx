@@ -102,7 +102,26 @@ function ReportGenerator({ hunt, day, title, columns = [], columnGroups, data = 
     DogService.getStartTime(day).then((result) => setStartTime(result instanceof Error ? 'not set' : result || 'not set'));
   }, [day]);
 
-  const print = useReactToPrint({ contentRef, documentTitle: title });
+  const printInBrowser = useReactToPrint({ contentRef, documentTitle: title });
+
+  // Inside the JavaFX window there is no window.print(); the window prints the sheet itself from
+  // its HTML and the page's stylesheets (see Desktop/JavaFxWindow.Bridge). Browsers print the iframe
+  // that react-to-print builds.
+  const print = () => {
+    const bridge = window.trackhoundsWindow;
+    if (bridge && typeof bridge.print === 'function' && contentRef.current) {
+      const links = Array.from(document.styleSheets)
+        .map((sheet) => sheet.href)
+        .filter(Boolean)
+        .map((href) => new URL(href, window.location.href).href);
+      const inline = Array.from(document.querySelectorAll('style'))
+        .map((style) => style.textContent || '')
+        .join('\n');
+      bridge.print(title, contentRef.current.outerHTML, links.join('\n'), inline);
+      return;
+    }
+    printInBrowser();
+  };
 
   const hasSections = Array.isArray(sections) && sections.length > 0;
   const hasFacts = Array.isArray(facts) && facts.length > 0;
