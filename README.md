@@ -2,13 +2,6 @@
 
 _By: Hunt Tynch_
 
-![Started](https://img.shields.io/github/created-at/hctynch/trackhounds?label=Started%20in&color=0080ff)
-![Release](https://img.shields.io/github/release-date/hctynch/trackhounds?display_date=published_at&style=flat&color=0080ff)
-![Coverage](https://codecov.io/gh/hctynch/trackhounds/branch/main/graph/badge.svg)
-![Commit](https://img.shields.io/github/last-commit/hctynch/trackhounds?style=flat&logo=git&logoColor=white&color=0080ff)
-![Language](https://img.shields.io/github/languages/top/hctynch/trackhounds?style=flat&color=0080ff)
-![Languages](https://img.shields.io/github/languages/count/hctynch/trackhounds?style=flat&color=0080ff)
-
 ---
 
 ## **_Tools and Technologies_**
