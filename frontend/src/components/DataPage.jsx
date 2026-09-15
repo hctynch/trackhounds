@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LuArchive, LuArchiveRestore, LuDownload, LuFolderInput, LuFolderOpen, LuSave, LuTrash2 } from 'react-icons/lu';
 import { getAppInfo } from '../config';
+import { downloadFile } from '../lib/download';
 import { useHunt } from '../hooks/useHunt';
 import DataService from '../services/DataService';
 import { Alert, Button, ConfirmDialog, DataTable, EmptyState, IconButton, PageHeader, Panel, PanelBody, PanelHeader, useToast } from './ui';
@@ -229,11 +230,14 @@ function DataPage() {
               }
               actions={
                 <>
-                  <a href={DataService.downloadUrl()} download className="inline-flex">
-                    <Button icon={LuDownload} disabled={!hunt} title="Download a copy of the current hunt to another folder or drive">
-                      Download a copy
-                    </Button>
-                  </a>
+                  <Button
+                    icon={LuDownload}
+                    disabled={!hunt}
+                    title="Download a copy of the current hunt to another folder or drive"
+                    onClick={() => downloadFile(DataService.downloadUrl(), `trackhounds-${(hunt?.title || 'hunt').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}.db`)}
+                  >
+                    Download a copy
+                  </Button>
                   <Button variant="primary" icon={LuSave} loading={busy === 'backup'} disabled={!hunt} onClick={() => run('backup', () => DataService.createBackup(), () => 'Backup saved.')}>
                     Save a backup
                   </Button>

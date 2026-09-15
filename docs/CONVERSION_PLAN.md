@@ -527,11 +527,15 @@ Also decided: no Mac or Linux work for now (iteration 10). Options as originally
 
 ### ⏳ Iteration 10: distribution extras
 
-- ✅ "Check for updates" button (2026-09-12): UI only, by decision. The Docs page's **Check for updates**
-  calls GitHub's latest-release API on click (`lib/updates.js`, 8 s timeout, pre-releases excluded),
-  compares the tag with the version from `/app/info` (`lib/version.js`, pre-release aware) and shows
-  "latest", "version X available" with a link to the release page, or a could-not-reach message. No server
-  endpoint; nothing happens without the click.
+- ✅ "Check for updates" button (2026-09-12, reworked 2026-09-14). The Docs page's **Check for updates**
+  compares GitHub's latest release tag with the version from `/app/info` (`lib/version.js`, pre-release
+  aware) and shows "latest", "version X available" with a link to the release page, or a could-not-reach
+  message. It was UI-only at first; a probe of JavaFX 26's WebKit showed that the window cannot make
+  **any** HTTPS request (fetch and XMLHttpRequest to GitHub and to example.com fail with "Load failed",
+  from a null and from an http origin alike), so the call moved to the server: `GET /app/latest-release`
+  asks GitHub with Java's HttpClient, only when the button is clicked. Nothing happens without the click.
+  The "Open the download page" link goes through the window bridge (`openExternal`), as every external
+  link on the Docs page now does.
 - Code signing: decided 2026-09-12 to **stay unsigned for now**. The SmartScreen workaround stays
   documented in the README. Options priced at the time, for when the budget allows: Azure Trusted Signing
   (about 10 USD a month, identity validation, signs from CI), SignPath Foundation (free for eligible open
@@ -543,7 +547,7 @@ Also decided: no Mac or Linux work for now (iteration 10). Options as originally
   `/app/info`, the UI, the CSV template, `GET /hunt` (404) and `GET /dogs`, confirms V1 was applied, then
   starts it again and confirms the schema is found current with no backup taken. Runs locally too.
 
-### 🔄 Iteration 11: stakes made visible, and a report builder
+### ✅ Iteration 11: stakes made visible, and a report builder
 
 Context from the author (2026-09-12), after using the app: the judge number sat at the right edge of
 its input box; on the dashboard and in the score list it was not clear which stake a dog belongs to
@@ -588,7 +592,41 @@ Noticed on the way, left for the builder below:
   `TopDogsByDayAndStakeTypeReport.jsx` are no longer in the catalogue; the last three survive only because
   `Reports.jsx` imports their option selectors.
 
-**Plan: the report builder**
+**Done 2026-09-14: two window bugs and the report builder.**
+
+- **Download template did nothing in the JavaFX window.** A probe of the WebKit build showed why: a
+  `download` link navigates the window to the file's text (there is no download manager). The window
+  bridge grew `saveFile(url, suggestedName)`: a native save dialog, then the window fetches the address
+  from the app's own server and writes the file. `lib/download.js` uses it when the bridge exists and a
+  plain anchor in a browser. Both downloads (the CSV template, "Download a copy" on Backups) go through it.
+- **Update check** moved server-side (see iteration 10).
+- **Report builder**, as planned below with the recommended answers to the four decisions: JSON files in
+  `<data>/reports/` (a layout belongs to the club, survives "New hunt" and past hunts, is in the folder
+  backup); the built-in sheets are definitions (`Reports/builtin.js`), which is what makes "Customise"
+  work and removed ten report modules and nine option components; four datasets for now; up and down
+  buttons for column order. In detail:
+  - `ReportDatasetService`, `GET /reports/datasets/{dogs|scores|scratches|judges}?day=&stake=&limit=&dog=&judge=`:
+    flat rows with every column filled in and a column catalogue (key, label, numeric, group). Dogs are
+    ranked by `DogService`'s rule overall or for the day (dogs without a score that day come last with no
+    place); day columns follow `huntDays`; the selected day's S&D, endurance and total ride along.
+  - `ReportLayoutService`, `GET|PUT|DELETE /reports/custom[/{id}]`: one JSON file per layout, validated
+    for id, name, dataset and at least one column; unreadable files are skipped and logged.
+  - `lib/reports.js` runs a definition in the browser: resolves fixed and asked filters, fetches the
+    dataset, drops scratched or placeless dogs when asked, sorts, limits, expands `sdDay*`-style keys to
+    the hunt's days, adds the stake column only when a dual hunt prints both stakes (`auto`), marks
+    scratched dogs on the name or number, builds header groups from consecutive grouped columns, fills the
+    title template (`{name} {hunt} {day} {dayNumber} {stake} {limit} {dogNumber} {judgeNumber}`) and
+    prints a dual hunt as two sections when `splitByStake` is on.
+  - `ReportGenerator`'s table takes header groups as `{title, start, span}` (the old "first column,
+    groups of four, last column" arithmetic is gone) and bold columns; the report page shows Customise on
+    built-ins and Edit, Duplicate, Delete on custom sheets; the catalogue has a Custom group and a New
+    report button.
+  - `ReportBuilder` at `/reports/builder[/{id}]` (`?from=<builtin>` to customise): settings, filters
+    with "fixed / ask when opened", column picker with print order, labels, sort, and a live preview that is
+    the real sheet with its asked controls.
+  - Hunt summary stays hand-written. Tests: `ReportDatasetServiceTest` and `ReportLayoutServiceTest`.
+
+**Plan: the report builder** (as written before the work; kept for the reasoning)
 
 Goal: a scorekeeper composes a printable sheet from the hunt's data without code: what the rows are,
 which columns in which order, the filters, a name. The sheet then lives in the Reports catalogue and
@@ -654,7 +692,7 @@ Done when: a scorekeeper can build "Day N placings with owner and stake, top 15,
 without code, print it, and find it again after restarting the app and after opening a past hunt; every
 built-in sheet prints as it does today; day columns follow the hunt's day count everywhere.
 
-💡 Decisions needed before (b):
+Decisions taken 2026-09-14 (the recommended option in each case):
 
 1. Storage: JSON files in the data folder (recommended, above) or a table in the hunt database, where a
    layout would travel with a past-hunt file and be lost on "New hunt" unless copied.

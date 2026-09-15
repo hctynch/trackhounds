@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { LuBug, LuDownload, LuExternalLink, LuFileText, LuFolderOpen, LuLifeBuoy, LuRefreshCw } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import { getAppInfo } from '../config';
+import { openExternal } from '../lib/download';
 import { fetchLatestRelease } from '../lib/updates';
 import { compareVersions } from '../lib/version';
 import DataService from '../services/DataService';
@@ -13,7 +14,7 @@ const ISSUES_URL = 'https://github.com/hctynch/trackhounds/issues';
 
 function ExternalLink({ href, children }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-pine-700 underline-offset-2 hover:underline">
+    <a href={href} target="_blank" rel="noopener noreferrer" onClick={(event) => openExternal(event, href)} className="inline-flex items-center gap-1 font-medium text-pine-700 underline-offset-2 hover:underline">
       {children}
       <LuExternalLink size={13} aria-hidden />
     </a>

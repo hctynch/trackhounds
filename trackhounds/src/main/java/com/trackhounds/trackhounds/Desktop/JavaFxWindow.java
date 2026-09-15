@@ -26,6 +26,7 @@ import javafx.scene.image.PixelReader;
 import javafx.scene.image.WritableImage;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import netscape.javascript.JSObject;
 
@@ -42,7 +43,11 @@ import netscape.javascript.JSObject;
  * which mirrors what {@code react-to-print} does with an iframe in a browser
  * (WebKit in JavaFX has no {@code window.print()}),</li>
  * <li>{@code openExternal(url)}: opens a link with the system browser; links
- * with {@code target=_blank} go the same way.</li>
+ * with {@code target=_blank} go the same way,</li>
+ * <li>{@code saveFile(url, suggestedName)}: WebKit has no download manager (a
+ * {@code download} link navigates the window to the file's text), so the page
+ * asks for a save dialog and the window fetches the address and writes the
+ * file.</li>
  * </ul>
  * The Server-Sent Events lifetime tracking still works from inside the window,
  * but closing the last window also ends the application directly.
@@ -67,7 +72,9 @@ public final class JavaFxWindow {
             { "score-entry", "/score-entry/enter" }, { "scores", "/score-entry/view" },
             { "scratch-sheet", "/scratch-sheet/view" }, { "reports", "/reports" },
             { "report-daily-speed-and-drive", "/reports/daily-speed-and-drive" },
-            { "report-hunt-summary", "/reports/hunt-summary" }, { "hunt-edit", "/hunt/edit" },
+            { "report-hunt-summary", "/reports/hunt-summary" }, { "report-all-dogs", "/reports/all-dogs-all-days" },
+            { "report-builder", "/reports/builder?from=daily-speed-and-drive" },
+            { "report-one-dog", "/reports/scores-for-one-dog" }, { "report-custom", "/reports/club-daily-sheet" }, { "hunt-edit", "/hunt/edit" },
             { "backups", "/data" }, { "docs", "/docs" } };
 
     private static final List<Stage> STAGES = new CopyOnWriteArrayList<>();
@@ -405,6 +412,57 @@ public final class JavaFxWindow {
         public void openExternal(String url) {
             if (url != null && !url.isBlank()) {
                 BrowserWindow.openWithDefaultBrowser(url);
+            }
+        }
+
+        /**
+         * Save what {@code url} serves to a file the user picks. The address is
+         * fetched by the window itself (it is the application's own server), so
+         * the page needs no download support from WebKit.
+         *
+         * @param url           absolute address of the file
+         * @param suggestedName file name offered in the dialog
+         */
+        public void saveFile(String url, String suggestedName) {
+            if (url == null || url.isBlank()) {
+                return;
+            }
+            Platform.runLater(() -> {
+                FileChooser chooser = new FileChooser();
+                chooser.setTitle("Save file");
+                String name = suggestedName == null || suggestedName.isBlank() ? "download" : suggestedName;
+                chooser.setInitialFileName(name);
+                int dot = name.lastIndexOf('.');
+                if (dot > 0) {
+                    String extension = name.substring(dot + 1).toLowerCase(java.util.Locale.ROOT);
+                    chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(extension.toUpperCase(java.util.Locale.ROOT) + " file", "*." + extension));
+                }
+                chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All files", "*.*"));
+                java.io.File target = chooser.showSaveDialog(owner);
+                if (target == null) {
+                    return;
+                }
+                Thread worker = new Thread(() -> download(url, target.toPath()), "trackhounds-save-file");
+                worker.setDaemon(true);
+                worker.start();
+            });
+        }
+
+        private static void download(String url, Path target) {
+            try {
+                java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+                java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url)).GET().build();
+                java.net.http.HttpResponse<Path> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofFile(target));
+                if (response.statusCode() >= 400) {
+                    Files.deleteIfExists(target);
+                    throw new IOException("The server answered " + response.statusCode());
+                }
+                LOG.info("Saved {} to {}", url, target);
+            } catch (IOException | RuntimeException e) {
+                LOG.warn("Could not save {} to {}", url, target, e);
+                Platform.runLater(() -> dialog(Alert.AlertType.ERROR, "Save file", "The file could not be saved: " + e.getMessage()));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
 

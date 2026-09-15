@@ -181,6 +181,14 @@ per stake and scratches), all dogs on all days, scratches, a judge summary (cros
 day), and the scores of one dog or one judge. Each report has a preview with its options and a `Print` button that
 uses the normal Windows print dialog. Scratched dogs are marked on every sheet.
 
+`New report` opens the **report builder**: choose the rows (dogs, scores, scratches or judges), tick the columns in
+print order, decide which filters are fixed and which are asked when the sheet is opened (day, stake, number of rows,
+a dog or a judge), a sort and a title, and watch the sheet in the live preview. Saved reports appear under
+`Custom reports` and survive a new hunt. Every built-in sheet has a `Customise` button that opens the builder with
+that sheet filled in.
+
+![The report builder](docs/screenshots/report-builder.png)
+
 ![A printable report](docs/screenshots/report-overall-speed-and-drive.png)
 
 ---

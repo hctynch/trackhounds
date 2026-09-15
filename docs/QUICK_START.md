@@ -97,6 +97,7 @@ standings as scores come in. In a dual hunt, switch Home between **Both stakes**
 | Scratches                 | Every withdrawn dog with the judge and reason.                                         |
 | Judge summary             | Crosses and dogs scored by each judge per day, and the scratches they recorded.        |
 | Scores for one dog/judge  | Every cross, and whether it counted, for checking a query.                             |
+| Custom reports            | Your own sheets from the report builder (**New report**, or **Customise** on any sheet). |
 
 ![The hunt summary](screenshots/report-hunt-summary.png)
 

@@ -7,41 +7,54 @@ import { Button, EmptyState, Panel, PanelHeader } from './ui';
 
 const isNumeric = (value) => value === '' || value === null || value === undefined || !Number.isNaN(Number(value));
 
-/** One table of a printed sheet. The header repeats on every printed page and rows never split. */
-function SheetTable({ columns, columnGroups, data }) {
+/**
+ * One table of a printed sheet. The header repeats on every printed page and rows never split.
+ * `columnGroups` ({ title, start, span }) put a group heading over a run of columns; grouped runs
+ * get a rule on their left and right so the eye can find them.
+ */
+function SheetTable({ columns, columnGroups = [], boldColumns = [], data }) {
   const numericColumn = (index) => data.length > 0 && data.every((row) => isNumeric(row[index]));
+  const groupAt = (index) => columnGroups.find((group) => index >= group.start && index < group.start + group.span);
+  const startsGroup = (index) => columnGroups.some((group) => group.start === index);
+  const endsGroup = (index) => columnGroups.some((group) => group.start + group.span === index);
+  const ruled = (index) => index > 0 && (startsGroup(index) || endsGroup(index));
+  const bold = (index) => boldColumns.includes(index);
+  const grouped = columnGroups.length > 0;
 
   return (
     <table className="report-table w-full border-collapse text-[13px]">
       <thead>
-        {columnGroups ? (
-          <>
-            <tr>
-              <th className="border-b border-line-strong px-2 py-1.5 text-left font-medium text-ink-muted">{columns[0]}</th>
-              {columnGroups.map((group) => (
-                <th key={group.title} colSpan={group.span} className="border-b border-l border-line-strong px-2 py-1.5 text-center font-medium text-ink">
+        <tr>
+          {columns.map((column, index) => {
+            const group = groupAt(index);
+            if (group && group.start !== index) return null;
+            if (group) {
+              return (
+                <th key={index} colSpan={group.span} className="border-b border-l border-line-strong px-2 py-1.5 text-center font-medium text-ink last:border-r">
                   {group.title}
                 </th>
-              ))}
-              <th className="border-b border-l border-line-strong px-2 py-1.5 text-right font-medium text-ink-muted">{columns[columns.length - 1]}</th>
-            </tr>
-            <tr>
-              <th className="border-b border-line-strong"></th>
-              {columns.slice(1, columns.length - 1).map((column, index) => (
-                <th key={index} className={`border-b border-line-strong px-2 py-1.5 text-right font-medium text-ink-muted ${index % 4 === 0 ? 'border-l' : ''}`}>
-                  {column}
-                </th>
-              ))}
-              <th className="border-b border-l border-line-strong"></th>
-            </tr>
-          </>
-        ) : (
-          <tr>
-            {columns.map((column, index) => (
-              <th key={index} className={`border-b border-line-strong px-2 py-1.5 font-medium text-ink-muted ${numericColumn(index) ? 'text-right' : 'text-left'}`}>
+              );
+            }
+            return (
+              <th
+                key={index}
+                rowSpan={grouped ? 2 : 1}
+                className={`border-b border-line-strong px-2 py-1.5 font-medium text-ink-muted ${numericColumn(index) ? 'text-right' : 'text-left'} ${ruled(index) ? 'border-l' : ''} ${grouped ? 'align-bottom' : ''}`}
+              >
                 {column}
               </th>
-            ))}
+            );
+          })}
+        </tr>
+        {grouped && (
+          <tr>
+            {columns.map((column, index) =>
+              groupAt(index) ? (
+                <th key={index} className={`border-b border-line-strong px-2 py-1.5 font-medium text-ink-muted ${numericColumn(index) ? 'text-right' : 'text-left'} ${ruled(index) ? 'border-l' : ''}`}>
+                  {column}
+                </th>
+              ) : null,
+            )}
           </tr>
         )}
       </thead>
@@ -51,9 +64,9 @@ function SheetTable({ columns, columnGroups, data }) {
             {row.map((cell, cellIndex) => (
               <td
                 key={cellIndex}
-                className={`border-b border-line px-2 py-1 ${numericColumn(cellIndex) ? 'text-right tabular' : 'text-left'} ${
-                  columnGroups && cellIndex > 0 && (cellIndex - 1) % 4 === 0 ? 'border-l border-line-strong' : ''
-                } ${columnGroups && cellIndex === row.length - 1 ? 'border-l border-line-strong font-semibold' : ''}`}
+                className={`border-b border-line px-2 py-1 ${numericColumn(cellIndex) ? 'text-right tabular' : 'text-left'} ${ruled(cellIndex) ? 'border-l border-line-strong' : ''} ${
+                  bold(cellIndex) ? 'font-semibold' : ''
+                }`}
               >
                 {cell}
               </td>
@@ -65,9 +78,12 @@ function SheetTable({ columns, columnGroups, data }) {
   );
 }
 
+const groupShape = PropTypes.shape({ title: PropTypes.string, start: PropTypes.number, span: PropTypes.number });
+
 SheetTable.propTypes = {
   columns: PropTypes.arrayOf(PropTypes.node).isRequired,
-  columnGroups: PropTypes.arrayOf(PropTypes.shape({ title: PropTypes.string, span: PropTypes.number })),
+  columnGroups: PropTypes.arrayOf(groupShape),
+  boldColumns: PropTypes.arrayOf(PropTypes.number),
   data: PropTypes.arrayOf(PropTypes.array).isRequired,
 };
 
@@ -93,7 +109,7 @@ FactGrid.propTypes = {
  * The printable sheet. A report is either one table (columns + data) or several titled sections,
  * optionally preceded by a grid of facts. See the print rules in index.css.
  */
-function ReportGenerator({ hunt, day, title, columns = [], columnGroups, data = [], facts, sections, options }) {
+function ReportGenerator({ hunt, day, title, columns = [], columnGroups, boldColumns, data = [], facts, sections, options, actions, description }) {
   const contentRef = useRef(null);
   const [startTime, setStartTime] = useState('');
 
@@ -131,11 +147,14 @@ function ReportGenerator({ hunt, day, title, columns = [], columnGroups, data = 
     <Panel>
       <PanelHeader
         title={title}
-        description={options ? undefined : 'Preview of the printed sheet'}
+        description={description || (options ? undefined : 'Preview of the printed sheet')}
         actions={
-          <Button variant="primary" icon={LuPrinter} onClick={print} disabled={empty}>
-            Print
-          </Button>
+          <>
+            {actions}
+            <Button variant="primary" icon={LuPrinter} onClick={print} disabled={empty}>
+              Print
+            </Button>
+          </>
         }
       />
       {options && <div className="border-b border-line bg-sunken px-5 py-3">{options}</div>}
@@ -180,11 +199,11 @@ function ReportGenerator({ hunt, day, title, columns = [], columnGroups, data = 
                         {section.data.length === 0 ? (
                           <p className="text-small text-ink-muted">{section.emptyText || 'None.'}</p>
                         ) : (
-                          <SheetTable columns={section.columns} columnGroups={section.columnGroups} data={section.data} />
+                          <SheetTable columns={section.columns} columnGroups={section.columnGroups} boldColumns={section.boldColumns} data={section.data} />
                         )}
                       </section>
                     ))
-                  : data.length > 0 && <SheetTable columns={columns} columnGroups={columnGroups} data={data} />}
+                  : data.length > 0 && <SheetTable columns={columns} columnGroups={columnGroups} boldColumns={boldColumns} data={data} />}
               </>
             )}
           </div>
@@ -197,7 +216,8 @@ function ReportGenerator({ hunt, day, title, columns = [], columnGroups, data = 
 const sectionShape = PropTypes.shape({
   title: PropTypes.string.isRequired,
   columns: PropTypes.arrayOf(PropTypes.node).isRequired,
-  columnGroups: PropTypes.array,
+  columnGroups: PropTypes.arrayOf(groupShape),
+  boldColumns: PropTypes.arrayOf(PropTypes.number),
   data: PropTypes.arrayOf(PropTypes.array).isRequired,
   emptyText: PropTypes.string,
 });
@@ -206,12 +226,15 @@ ReportGenerator.propTypes = {
   hunt: PropTypes.shape({ title: PropTypes.string, dates: PropTypes.string }),
   day: PropTypes.number,
   title: PropTypes.string.isRequired,
+  description: PropTypes.node,
   columns: PropTypes.arrayOf(PropTypes.node),
-  columnGroups: PropTypes.arrayOf(PropTypes.shape({ title: PropTypes.string, span: PropTypes.number })),
+  columnGroups: PropTypes.arrayOf(groupShape),
+  boldColumns: PropTypes.arrayOf(PropTypes.number),
   data: PropTypes.arrayOf(PropTypes.array),
   facts: PropTypes.arrayOf(PropTypes.shape({ label: PropTypes.string.isRequired, value: PropTypes.node })),
   sections: PropTypes.arrayOf(sectionShape),
   options: PropTypes.node,
+  actions: PropTypes.node,
 };
 
 export default ReportGenerator;

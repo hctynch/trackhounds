@@ -9,6 +9,7 @@ import EditDog from './components/EditDog';
 import EditHunt from './components/EditHunt';
 import Home from './components/Home';
 import Judges from './components/Judges';
+import ReportBuilder from './components/ReportBuilder';
 import Reports from './components/Reports';
 import ScoreEntry from './components/ScoreEntry';
 import ScratchSheet from './components/ScratchSheet';
@@ -36,6 +37,8 @@ function App() {
               <Route path="/score-entry/view" element={<ViewScores />} />
               <Route path="/scratch-sheet/view" element={<ScratchSheet />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/reports/builder" element={<ReportBuilder />} />
+              <Route path="/reports/builder/:id" element={<ReportBuilder />} />
               <Route path="/reports/:reportId" element={<Reports />} />
               <Route path="/data" element={<DataPage />} />
               <Route path="/docs" element={<Docs />} />

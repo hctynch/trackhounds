@@ -1,21 +1,24 @@
+import { API_BASE_URL } from '../config';
+
 /**
- * The one network call TrackHounds makes, and only when the user clicks "Check for updates":
- * GitHub's "latest release" endpoint (pre-releases are not included).
+ * The one network call TrackHounds makes, and only when the user clicks "Check for updates". The
+ * server asks GitHub's "latest release" endpoint (pre-releases are not included) because the JavaFX
+ * window's WebKit cannot make HTTPS requests itself; nothing is called without the click.
  */
-export const LATEST_RELEASE_API = 'https://api.github.com/repos/hctynch/trackhounds/releases/latest';
+export const LATEST_RELEASE_API = `${API_BASE_URL}/app/latest-release`;
 
 /**
  * @returns {Promise<{version: string, name: string, url: string, publishedAt: string}>}
  * @throws when GitHub cannot be reached or answers with an error
  */
-export async function fetchLatestRelease(timeoutMs = 8000) {
+export async function fetchLatestRelease(timeoutMs = 12000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(LATEST_RELEASE_API, { headers: { Accept: 'application/vnd.github+json' }, signal: controller.signal });
-    if (!response.ok) throw new Error(`GitHub answered ${response.status}`);
-    const release = await response.json();
-    return { version: release.tag_name, name: release.name, url: release.html_url, publishedAt: release.published_at };
+    const response = await fetch(LATEST_RELEASE_API, { headers: { Accept: 'application/json' }, signal: controller.signal });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body?.message || `The server answered ${response.status}`);
+    return body;
   } finally {
     clearTimeout(timer);
   }

@@ -3,8 +3,16 @@ package com.trackhounds.trackhounds.Controller;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
@@ -99,6 +107,47 @@ public class AppInfoController {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("opened", file.toString());
         return result;
+    }
+
+    /** GitHub's "latest release" address; pre-releases are not included. */
+    static final String LATEST_RELEASE_API = "https://api.github.com/repos/hctynch/trackhounds/releases/latest";
+
+    /**
+     * The newest published release, asked from GitHub <em>only when this is
+     * called</em> (the Docs page's "Check for updates" button). The server makes
+     * the call because the JavaFX window's WebKit cannot make HTTPS requests.
+     *
+     * @return version (the tag), name, url of the release page, publishedAt
+     */
+    @GetMapping("/latest-release")
+    public Map<String, Object> latestRelease() {
+        try {
+            HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).followRedirects(HttpClient.Redirect.NORMAL).build();
+            HttpRequest request = HttpRequest.newBuilder(URI.create(LATEST_RELEASE_API))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("Accept", "application/vnd.github+json")
+                    .header("User-Agent", "TrackHounds")
+                    .GET().build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new TrackHoundsAPIException(HttpStatus.BAD_GATEWAY, "GitHub answered " + response.statusCode() + ".", Map.of("status", String.valueOf(response.statusCode())));
+            }
+            JsonNode release = new ObjectMapper().readTree(response.body());
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("version", release.path("tag_name").asText(null));
+            result.put("name", release.path("name").asText(null));
+            result.put("url", release.path("html_url").asText(null));
+            result.put("publishedAt", release.path("published_at").asText(null));
+            return result;
+        } catch (TrackHoundsAPIException e) {
+            throw e;
+        } catch (IOException | RuntimeException e) {
+            throw new TrackHoundsAPIException(HttpStatus.BAD_GATEWAY, "GitHub could not be reached. Check the internet connection and try again.",
+                    Map.of("cause", e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new TrackHoundsAPIException(HttpStatus.BAD_GATEWAY, "The update check was interrupted.", Map.of());
+        }
     }
 
     private boolean canOpen() {
