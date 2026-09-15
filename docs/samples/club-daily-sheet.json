@@ -1,0 +1,36 @@
+{
+  "name" : "Club daily sheet",
+  "description" : "Day placings with owner and stake, top 15",
+  "dataset" : "dogs",
+  "columns" : [ {
+    "key" : "place"
+  }, {
+    "key" : "dayTotal",
+    "label" : "Total"
+  }, {
+    "key" : "daySpeedAndDrive",
+    "label" : "S&D"
+  }, {
+    "key" : "number"
+  }, {
+    "key" : "name"
+  }, {
+    "key" : "stake"
+  }, {
+    "key" : "owner"
+  } ],
+  "filters" : {
+    "day" : "ask",
+    "stake" : "ask",
+    "limit" : 15,
+    "includeScratched" : true,
+    "scoredOnly" : true,
+    "splitByStake" : false
+  },
+  "sort" : {
+    "key" : "rank",
+    "direction" : "asc"
+  },
+  "title" : "Day {dayNumber} placings, {stake}",
+  "id" : "club-daily-sheet"
+}
