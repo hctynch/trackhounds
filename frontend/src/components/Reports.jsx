@@ -151,7 +151,7 @@ function Reports() {
             data={reportData?.data || []}
             facts={reportData?.facts}
             sections={reportData?.sections}
-            options={definitionBased ? <DefinitionOptions definition={selectedReport} answers={answers} onChange={setAnswers} /> : null}
+            options={definitionBased && askedFilters(selectedReport).length > 0 ? <DefinitionOptions definition={selectedReport} answers={answers} onChange={setAnswers} /> : null}
             actions={actions}
           />
         )}

@@ -47,6 +47,13 @@ public class Score {
   /** Scoring interval of the day this cross falls into, counted from the day's start time. */
   private int timeBucket;
 
+  /** The cross this score was entered with ({@link CrossEntity}). */
+  private Long crossId;
+
+  /** The dog's place in that cross, counted from 0 for the first dog across. */
+  @org.hibernate.annotations.ColumnDefault("0")
+  private int crossPosition;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "daily_score_id")
   @JsonBackReference("daily-score-scores")

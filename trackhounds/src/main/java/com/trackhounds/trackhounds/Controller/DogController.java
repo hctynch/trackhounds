@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.trackhounds.trackhounds.Dto.CrossInfoRequest;
@@ -123,8 +124,53 @@ public class DogController {
   }
 
   /**
+   * Every cross with its dogs in crossing order: by day, cross time, then
+   * order of entry. The highest id is the cross entered last.
+   *
+   * @param day only this day; every day when left out
+   * @return one row per cross
+   */
+  @GetMapping("/crosses")
+  public List<Map<String, Object>> getCrosses(@RequestParam(value = "day", required = false) Integer day) {
+    return dogService.getCrosses(day);
+  }
+
+  /**
+   * One cross with its dogs in crossing order; 404 when it does not exist.
+   *
+   * @param id id of the cross
+   */
+  @GetMapping("/crosses/{id}")
+  public Map<String, Object> getCross(@PathVariable("id") Long id) {
+    return dogService.getCross(id);
+  }
+
+  /**
+   * Correct a cross: its day, time, judge, dogs and points are replaced by the
+   * submitted ones and the standings are recalculated.
+   *
+   * @param id    id of the cross
+   * @param score the corrected cross, in the shape a new cross is posted in
+   * @return the cross as stored
+   */
+  @PutMapping("/crosses/{id}")
+  public Map<String, Object> putCross(@PathVariable("id") Long id, @RequestBody ScoreDto score) {
+    return dogService.updateCross(id, score);
+  }
+
+  /**
+   * Delete a cross with every score in it.
+   *
+   * @param id id of the cross
+   */
+  @DeleteMapping("/crosses/{id}")
+  public void deleteCross(@PathVariable("id") Long id) {
+    dogService.deleteCross(id);
+  }
+
+  /**
    * Delete a score by dog number and score ID
-   * 
+   *
    * @param dogNumber Dog number
    * @param scoreId   Score ID
    */
@@ -156,9 +202,10 @@ public class DogController {
     String value = body == null ? null : body.get("startTime");
     LocalTime startTime;
     try {
-      startTime = value == null || value.isBlank() ? null : LocalTime.parse(value);
+      startTime = value == null || value.isBlank() ? null : DogService.parseTime(value);
     } catch (Exception e) {
-      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields", Map.of("startTime", "Invalid start time."));
+      throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields",
+          Map.of("startTime", "Invalid start time. Enter it as 0600 or 06:00."));
     }
     dogService.changeStartTime(day, startTime);
     return dogService.getStartTime(day);

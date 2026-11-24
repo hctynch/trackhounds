@@ -207,6 +207,71 @@ public class DogControllerTest {
         }
 
         /**
+         * Tests listing, reading, correcting and deleting a cross as a whole
+         * (GET, PUT and DELETE /dogs/crosses), with times typed without a colon.
+         */
+        @Test
+        @Transactional
+        void testCrossEndpoints() throws Exception {
+                dogService.createDogs(List.of(
+                                new DogEntity(1, "Dog1", StakeType.ALL_AGE, "Owner1", "Sire", "Dam"),
+                                new DogEntity(2, "Dog2", StakeType.ALL_AGE, "Owner2", "Sire", "Dam"),
+                                new DogEntity(3, "Dog3", StakeType.ALL_AGE, "Owner3", "Sire", "Dam")));
+                mvc.perform(post("/dogs/scores").contentType(MediaType.APPLICATION_JSON)
+                                .content(gson.toJson(new ScoreDto(1, "0530", 1, "0545", new int[] { 2, 1 },
+                                                new int[] { 35, 30 }, 10))))
+                                .andExpect(status().isOk());
+
+                mvc.perform(get("/dogs/crosses").accept(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.length()").value(1))
+                                .andExpect(jsonPath("$[0].day").value(1))
+                                .andExpect(jsonPath("$[0].time").value("05:45:00"))
+                                .andExpect(jsonPath("$[0].judgeNumber").value(1))
+                                .andExpect(jsonPath("$[0].judgeName").value("Judgy Judge"))
+                                .andExpect(jsonPath("$[0].scores.length()").value(2))
+                                .andExpect(jsonPath("$[0].scores[0].dogNumber").value("2"))
+                                .andExpect(jsonPath("$[0].scores[0].dogName").value("Dog2"))
+                                .andExpect(jsonPath("$[0].scores[0].position").value(1))
+                                .andExpect(jsonPath("$[0].scores[0].points").value(35))
+                                .andExpect(jsonPath("$[0].scores[1].dogNumber").value("1"));
+                mvc.perform(get("/dogs/crosses?day=2").accept(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.length()").value(0));
+
+                Long id = (Long) dogService.getCrosses(null).get(0).get("id");
+                mvc.perform(get("/dogs/crosses/" + id).accept(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.id").value(id.intValue()));
+
+                // Dog 1 was a slip of the pen for dog 3, and the cross was at 05:50.
+                mvc.perform(put("/dogs/crosses/" + id).contentType(MediaType.APPLICATION_JSON)
+                                .content(gson.toJson(new ScoreDto(1, "", 1, "0550", new int[] { 2, 3 },
+                                                new int[] { 35, 30 }, 10))))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.id").value(id.intValue()))
+                                .andExpect(jsonPath("$.time").value("05:50:00"))
+                                .andExpect(jsonPath("$.scores[1].dogNumber").value("3"));
+                assertEquals(0, dogService.getDogByNumber(1).getPoints());
+                assertEquals(33, dogService.getDogByNumber(3).getPoints());
+
+                // A correction that is refused says which row is wrong and changes nothing.
+                mvc.perform(put("/dogs/crosses/" + id).contentType(MediaType.APPLICATION_JSON)
+                                .content(gson.toJson(new ScoreDto(1, "", 1, "0550", new int[] { 2, 99 },
+                                                new int[] { 35, 30 }, 10))))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.fields.dogNumbers1").value("Dog 99 is not registered in this hunt."));
+                assertEquals(33, dogService.getDogByNumber(3).getPoints());
+
+                mvc.perform(delete("/dogs/crosses/" + id)).andExpect(status().isOk());
+                assertEquals(0, scoreRepository.count());
+                assertEquals(0, dogService.getDogByNumber(2).getPoints());
+                mvc.perform(get("/dogs/crosses/" + id).accept(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isNotFound());
+                mvc.perform(delete("/dogs/crosses/" + id)).andExpect(status().isNotFound());
+        }
+
+        /**
          * Tests deleting a score using the DELETE /dogs/{dogNumber}/scores/{scoreId}
          * endpoint.
          */

@@ -34,8 +34,8 @@ import lombok.AllArgsConstructor;
  * scores: what each judge recorded, and the one-page hunt summary.
  *
  * A "cross" is one judge's entry at one time on one day; the dogs in it are
- * stored as separate {@link Score} rows, so crosses are counted as distinct
- * (day, judge, time) combinations.
+ * separate {@link Score} rows that carry the cross's id, so crosses are
+ * counted as distinct cross ids.
  */
 @Service
 @Transactional
@@ -52,6 +52,7 @@ public class ReportService {
   private final ScratchRepository scratchRepository;
   private final DaysRepository daysRepository;
   private final DogService dogService;
+  private final AwardService awardService;
 
   /**
    * One row per judge: crosses and dogs scored per day, totals, and the
@@ -75,17 +76,17 @@ public class ReportService {
       int totalCrosses = 0;
       int totalScores = 0;
       for (int day = 1; day <= dayCount; day++) {
-        Set<String> crossTimes = new HashSet<>();
+        Set<String> crosses = new HashSet<>();
         int scored = 0;
         for (Score score : scores) {
           if (score.getJudgeNumber() != judge.getNumber() || score.getDay() != day)
             continue;
           scored++;
-          crossTimes.add(String.valueOf(score.getTime()));
+          crosses.add(crossKey(score));
         }
-        crossesByDay.put(String.valueOf(day), crossTimes.size());
+        crossesByDay.put(String.valueOf(day), crosses.size());
         scoresByDay.put(String.valueOf(day), scored);
-        totalCrosses += crossTimes.size();
+        totalCrosses += crosses.size();
         totalScores += scored;
       }
       row.put("crossesByDay", crossesByDay);
@@ -121,6 +122,12 @@ public class ReportService {
     huntFacts.put("huntInterval", hunt.getHuntInterval());
     huntFacts.put("firstDogPoints", hunt.getFirstDogPoints());
     huntFacts.put("pointStep", hunt.getPointStep());
+    huntFacts.put("packScoring", hunt.isPackScoring());
+    huntFacts.put("packMinimumPoints", hunt.getPackMinimumPoints());
+    huntFacts.put("city", hunt.getCity());
+    huntFacts.put("state", hunt.getState());
+    huntFacts.put("president", hunt.getPresident());
+    huntFacts.put("masterOfHounds", hunt.getMasterOfHounds());
     summary.put("hunt", huntFacts);
 
     Map<String, Object> counts = new LinkedHashMap<>();
@@ -169,14 +176,21 @@ public class ReportService {
       scratchRows.add(row);
     }
     summary.put("scratches", scratchRows);
+    summary.put("awards", awardService.getAwards());
     return summary;
   }
 
   private static int countCrosses(List<Score> scores) {
     Set<String> keys = new HashSet<>();
     for (Score score : scores)
-      keys.add(score.getDay() + "|" + score.getJudgeNumber() + "|" + score.getTime());
+      keys.add(crossKey(score));
     return keys.size();
+  }
+
+  /** What tells one cross from another: its id, or day, judge and time for a score without one. */
+  private static String crossKey(Score score) {
+    return score.getCrossId() != null ? "#" + score.getCrossId()
+        : score.getDay() + "|" + score.getJudgeNumber() + "|" + score.getTime();
   }
 
   private static void addPlacings(List<Map<String, Object>> into, StakeType stake, List<Map<String, Object>> standings) {

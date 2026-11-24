@@ -1,6 +1,7 @@
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import AddDogs from './components/AddDogs';
 import AppLifecycle from './components/AppLifecycle';
+import Awards from './components/Awards';
 import CreateHunt from './components/CreateHunt';
 import DataPage from './components/DataPage';
 import Docs from './components/Docs';
@@ -11,7 +12,7 @@ import Home from './components/Home';
 import Judges from './components/Judges';
 import ReportBuilder from './components/ReportBuilder';
 import Reports from './components/Reports';
-import ScoreEntry from './components/ScoreEntry';
+import ScoreEntry, { EditCross } from './components/ScoreEntry';
 import ScratchSheet from './components/ScratchSheet';
 import ViewScores from './components/ViewScores';
 import AppShell from './components/layout/AppShell';
@@ -35,6 +36,8 @@ function App() {
               <Route path="/judges/all" element={<Judges />} />
               <Route path="/score-entry/enter" element={<ScoreEntry />} />
               <Route path="/score-entry/view" element={<ViewScores />} />
+              <Route path="/score-entry/view/:crossId" element={<EditCross />} />
+              <Route path="/awards" element={<Awards />} />
               <Route path="/scratch-sheet/view" element={<ScratchSheet />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/reports/builder" element={<ReportBuilder />} />

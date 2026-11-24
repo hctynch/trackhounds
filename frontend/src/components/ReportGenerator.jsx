@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { LuPrinter } from 'react-icons/lu';
 import { useReactToPrint } from 'react-to-print';
+import { huntLocation } from '../lib/hunt';
 import DogService from '../services/DogService';
 import { Button, EmptyState, Panel, PanelHeader } from './ui';
 
@@ -173,6 +174,11 @@ function ReportGenerator({ hunt, day, title, columns = [], columnGroups, boldCol
                     Dates <span className="text-ink">{hunt.dates}</span>
                   </span>
                 )}
+                {huntLocation(hunt) && (
+                  <span>
+                    Location <span className="text-ink">{huntLocation(hunt)}</span>
+                  </span>
+                )}
                 {day && (
                   <span>
                     Day <span className="text-ink">{day}</span>
@@ -223,7 +229,7 @@ const sectionShape = PropTypes.shape({
 });
 
 ReportGenerator.propTypes = {
-  hunt: PropTypes.shape({ title: PropTypes.string, dates: PropTypes.string }),
+  hunt: PropTypes.shape({ title: PropTypes.string, dates: PropTypes.string, city: PropTypes.string, state: PropTypes.string }),
   day: PropTypes.number,
   title: PropTypes.string.isRequired,
   description: PropTypes.node,

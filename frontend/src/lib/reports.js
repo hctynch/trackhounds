@@ -12,6 +12,7 @@ export const DATASETS = [
   { value: 'scores', label: 'Scores', description: 'One row per dog placing in a cross.' },
   { value: 'scratches', label: 'Scratches', description: 'One row per scratch.' },
   { value: 'judges', label: 'Judges', description: 'One row per judge with what they recorded.' },
+  { value: 'awards', label: 'Special awards', description: 'One row per award given to a dog, such as Best Mouth.' },
 ];
 
 export const ASK = 'ask';
@@ -21,14 +22,14 @@ export const DEFAULT_ANSWERS = { day: 1, stake: 'ALL', limit: 10, dogNumber: '',
 /** The filters a dataset understands. */
 export function filtersFor(dataset) {
   return {
-    day: true,
+    day: dataset !== 'awards',
     stake: true,
     limit: true,
     dogNumber: dataset === 'scores',
     judgeNumber: dataset === 'scores' || dataset === 'scratches',
     includeScratched: dataset === 'dogs',
     scoredOnly: dataset === 'dogs',
-    splitByStake: dataset !== 'judges',
+    splitByStake: dataset !== 'judges' && dataset !== 'awards',
   };
 }
 

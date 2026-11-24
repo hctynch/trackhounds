@@ -1,85 +1,53 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuClipboardList, LuTrash2 } from 'react-icons/lu';
-import { Link } from 'react-router-dom';
+import { LuClipboardList, LuPencil, LuTrash2 } from 'react-icons/lu';
+import { Link, useNavigate } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
 import { huntDays, isDualHunt, showsStake, STAKE_VIEWS } from '../lib/hunt';
+import { formatTime } from '../lib/time';
 import DogService from '../services/DogService';
-import { Alert, Badge, ConfirmDialog, DataTable, EmptyState, Field, IconButton, Input, PageHeader, Panel, PanelBody, SearchInput, Select, STAKE_LABELS, StakeBadge, useToast } from './ui';
+import { Alert, Badge, Button, ConfirmDialog, EmptyState, Field, Input, PageHeader, Panel, PanelBody, SearchInput, SegmentedControl, Select, STAKE_LABELS, StakeBadge, useToast } from './ui';
 
+const ORDERS = [
+  { value: 'time', label: 'By cross time' },
+  { value: 'entered', label: 'Last entered first' },
+];
 
+/**
+ * Every cross of the hunt with its dogs grouped under it, the way the judge's card reads. A cross
+ * is corrected or deleted as a whole: Edit opens it on the score entry page.
+ */
 function ViewScores() {
   const toast = useToast();
+  const navigate = useNavigate();
   const { hunt } = useHunt();
   const dual = isDualHunt(hunt);
   const DAY_OPTIONS = [{ value: 'all', label: 'All days' }, ...huntDays(hunt).map((d) => ({ value: String(d), label: `Day ${d}` }))];
   const [search, setSearch] = useState('');
   const [day, setDay] = useState('all');
-  const [filterType, setFilterType] = useState('all');
-  const [filterValue, setFilterValue] = useState('');
+  const [judge, setJudge] = useState('');
   const [stakeView, setStakeView] = useState('ALL');
-  const [dogsByNumber, setDogsByNumber] = useState({});
-  const [scores, setScores] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [order, setOrder] = useState('time');
+  const [crosses, setCrosses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchScores = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      let response;
-      const dayNumber = day === 'all' ? null : parseInt(day, 10);
-      if (filterType === 'all') {
-        response = dayNumber ? await DogService.getScoresByDay(dayNumber) : await DogService.getScores();
-      } else {
-        if (!filterValue) {
-          setScores([]);
-          setLoading(false);
-          return;
-        }
-        if (filterType === "dog") {
-          const number = filterValue.trim();
-          response = dayNumber ? await DogService.getScoresByDogNumberAndDay(number, dayNumber) : await DogService.getScoresByDogNumber(number);
-        } else {
-          const number = parseInt(filterValue, 10);
-          response = dayNumber ? await DogService.getScoresByJudgeNumberAndDay(number, dayNumber) : await DogService.getScoresByJudgeNumber(number);
-        }
-      }
-      if (response && response.message && response.fields) {
-        setError({ message: response.message, fields: response.fields });
-        setScores([]);
-      } else {
-        setScores(Array.isArray(response) ? response : []);
-      }
-    } catch (err) {
-      console.error('Error fetching scores:', err);
-      setError({ message: 'The scores could not be loaded.' });
-      setScores([]);
-    } finally {
-      setLoading(false);
+  const load = useCallback(async () => {
+    setError('');
+    const response = await DogService.getCrosses();
+    if (Array.isArray(response)) {
+      setCrosses(response);
+    } else {
+      setCrosses([]);
+      setError(response?.message || 'The scores could not be loaded.');
     }
-  }, [day, filterType, filterValue]);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    fetchScores();
-  }, [fetchScores]);
-
-  // A score row only carries the dog's number; the name and stake come from the dog list.
-  useEffect(() => {
-    let cancelled = false;
-    DogService.getDogs().then((dogs) => {
-      if (cancelled) return;
-      const byNumber = {};
-      (Array.isArray(dogs) ? dogs : []).forEach((dog) => {
-        byNumber[String(dog.number)] = dog;
-      });
-      setDogsByNumber(byNumber);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [hunt]);
+    load();
+  }, [load, hunt]);
 
   useEffect(() => {
     if (!dual) setStakeView('ALL');
@@ -87,111 +55,60 @@ function ViewScores() {
 
   const confirmDelete = async () => {
     setDeleting(true);
-    const response = await DogService.deleteCross(pendingDelete.dogNumber, pendingDelete.id);
+    const response = await DogService.removeCross(pendingDelete.id);
     setDeleting(false);
-    if (response && (response.error || response.message)) {
-      toast.error(response.message || response.error);
+    if (response) {
+      toast.error(response.message || 'The cross could not be deleted.');
       return;
     }
-    setScores((current) => current.filter((score) => score.id !== pendingDelete.id));
-    toast.success(`Score for dog ${pendingDelete.dogNumber} at ${pendingDelete.time} deleted.`);
+    setCrosses((current) => current.filter((cross) => cross.id !== pendingDelete.id));
+    toast.success(`Cross at ${formatTime(pendingDelete.time)} on day ${pendingDelete.day} deleted. Standings are recalculated.`);
     setPendingDelete(null);
   };
 
-  const dogOf = (score) => dogsByNumber[String(score.dogNumber)];
+  const needle = search.trim();
+  const matchesSearch = useCallback((score) => Boolean(needle) && String(score.dogNumber ?? '').includes(needle), [needle]);
 
+  // A cross is listed when it passes every filter; with a stake chosen only that stake's dogs are
+  // shown in it (their ladder), while a dog search shows the whole cross the dog was in.
   const visible = useMemo(() => {
-    const needle = search.trim();
-    return scores.filter((score) => {
-      if (needle && !score.dogNumber?.toString().includes(needle)) return false;
-      if (stakeView !== 'ALL' && dogsByNumber[String(score.dogNumber)]?.stake !== stakeView) return false;
-      return true;
-    });
-  }, [scores, search, stakeView, dogsByNumber]);
+    const judgeNumber = judge.trim();
+    const listed = crosses
+      .filter((cross) => day === 'all' || String(cross.day) === day)
+      .filter((cross) => !judgeNumber || String(cross.judgeNumber) === judgeNumber)
+      .map((cross) => (stakeView === 'ALL' ? cross : { ...cross, scores: cross.scores.filter((score) => score.stake === stakeView) }))
+      .filter((cross) => cross.scores.length > 0)
+      .filter((cross) => !needle || cross.scores.some(matchesSearch));
+    return order === 'entered' ? [...listed].sort((a, b) => b.id - a.id) : listed;
+  }, [crosses, day, judge, stakeView, needle, matchesSearch, order]);
 
-  const fieldError = (name) => error?.fields?.[name];
-
-  const columns = [
-    { key: 'day', header: 'Day', numeric: true, width: '4rem' },
-    { key: 'time', header: 'Cross time', width: '7rem', cellClassName: 'tabular' },
-    { key: 'judgeNumber', header: 'Judge', numeric: true, width: '5rem' },
-    { key: 'dogNumber', header: 'Dog', numeric: true, width: '5rem', cellClassName: 'font-semibold' },
-    {
-      key: 'dogName',
-      header: 'Name',
-      render: (score) => {
-        const dog = dogOf(score);
-        if (!dog) return <span className="text-ink-faint">Not registered</span>;
-        return (
-          <span className="inline-flex items-center gap-2">
-            <span>{dog.name}</span>
-            {showsStake(hunt, dog.stake) && (stakeView === 'ALL' || dog.stake !== stakeView) && <StakeBadge stake={dog.stake} />}
-            {dog.scratched && <Badge tone="warning">Scratched</Badge>}
-          </span>
-        );
-      },
-    },
-    { key: 'points', header: 'Points', numeric: true, width: '5rem', cellClassName: 'font-semibold' },
-    {
-      key: 'counted',
-      header: 'Counted',
-      render: (score) => (score.counted ? <span className="text-success-700">Yes</span> : <span className="text-ink-faint">No</span>),
-    },
-    {
-      key: 'actions',
-      header: '',
-      align: 'right',
-      width: '3.5rem',
-      render: (score) => <IconButton icon={LuTrash2} label="Delete score" tone="danger" onClick={() => setPendingDelete(score)} />,
-    },
-  ];
-
+  const scoreCount = visible.reduce((total, cross) => total + cross.scores.length, 0);
+  const filtered = day !== 'all' || judge.trim() !== '' || needle !== '' || stakeView !== 'ALL';
   const summary = loading
     ? 'Loading'
-    : `${visible.length} ${visible.length === 1 ? 'score' : 'scores'}${filterType !== 'all' ? `, ${filterType} ${filterValue || '?'}` : ''}${day !== 'all' ? `, day ${day}` : ''}${
-        stakeView !== 'ALL' ? `, ${STAKE_LABELS[stakeView].toLowerCase()}` : ''
-      }`;
+    : `${visible.length} ${visible.length === 1 ? 'cross' : 'crosses'}, ${scoreCount} ${scoreCount === 1 ? 'score' : 'scores'}${judge.trim() ? `, judge ${judge.trim()}` : ''}${
+        day !== 'all' ? `, day ${day}` : ''
+      }${stakeView !== 'ALL' ? `, ${STAKE_LABELS[stakeView].toLowerCase()}` : ''}${needle ? `, dog ${needle}` : ''}`;
+
+  const cell = 'px-4 py-2 align-middle';
 
   return (
     <>
       <PageHeader
         title="Scores"
-        description="Every cross recorded in this hunt. Counted scores are the highest in their interval."
+        description="Every cross recorded in this hunt, with its dogs in crossing order. Counted scores are the highest in their interval. Edit opens a cross to correct its time, judge, dogs or points."
         actions={<SearchInput value={search} onChange={setSearch} placeholder="Find by dog number" className="w-56" />}
       />
 
-      {error?.message && (
-        <Alert tone="danger" title={error.message} className="mb-6" items={error.fields ? Object.values(error.fields) : undefined} />
+      {error && (
+        <Alert tone="danger" title={error} className="mb-6" />
       )}
 
       <Panel className="mb-6">
         <PanelBody className="flex flex-wrap items-end gap-4">
-          <Field label="Show" className="w-44">
+          <Field label="Day" className="w-36">
             {({ id }) => (
-              <Select
-                id={id}
-                value={filterType}
-                onChange={(event) => {
-                  setFilterType(event.target.value);
-                  setFilterValue('');
-                }}
-              >
-                <option value="all">All scores</option>
-                <option value="dog">One dog</option>
-                <option value="judge">One judge</option>
-              </Select>
-            )}
-          </Field>
-          {filterType !== 'all' && (
-            <Field label={filterType === 'dog' ? 'Dog number' : 'Judge number'} className="w-40" error={fieldError(filterType === 'dog' ? 'dogNumber' : 'judgeNumber')}>
-              {({ id, invalid }) => (
-                <Input id={id} type={filterType === "dog" ? "text" : "number"} inputMode="numeric" numeric={filterType !== "dog"} min={1} invalid={invalid} value={filterValue} onChange={(event) => setFilterValue(event.target.value)} className="tabular" autoFocus />
-              )}
-            </Field>
-          )}
-          <Field label="Day" className="w-36" error={fieldError('day')}>
-            {({ id, invalid }) => (
-              <Select id={id} invalid={invalid} value={day} onChange={(event) => setDay(event.target.value)}>
+              <Select id={id} value={day} onChange={(event) => setDay(event.target.value)}>
                 {DAY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -199,6 +116,9 @@ function ViewScores() {
                 ))}
               </Select>
             )}
+          </Field>
+          <Field label="Judge number" className="w-36">
+            {({ id }) => <Input id={id} type="number" numeric min={1} value={judge} onChange={(event) => setJudge(event.target.value)} placeholder="Every judge" />}
           </Field>
           {dual && (
             <Field label="Stake" className="w-40">
@@ -213,23 +133,20 @@ function ViewScores() {
               )}
             </Field>
           )}
+          <Field label="Order">
+            <SegmentedControl label="Order" options={ORDERS} value={order} onChange={setOrder} />
+          </Field>
           <p className="ml-auto pb-2 text-small text-ink-muted">{summary}</p>
         </PanelBody>
       </Panel>
 
       <Panel>
-        <DataTable
-          columns={columns}
-          rows={visible}
-          rowKey={(score) => score.id}
-          stickyHeader
-          empty={
-            loading ? (
+        {visible.length === 0 ? (
+          <div className="px-4 py-10">
+            {loading ? (
               <p className="text-center text-small text-ink-muted">Loading scores</p>
-            ) : filterType !== 'all' && !filterValue ? (
-              <EmptyState compact title={`Enter a ${filterType} number`} description="Scores appear as soon as a number is entered." />
-            ) : filterType !== 'all' || day !== 'all' || search || stakeView !== 'ALL' ? (
-              <EmptyState compact title="No scores match" description="Change the day, stake or number, or clear the search." />
+            ) : filtered ? (
+              <EmptyState compact title="No crosses match" description="Change the day, judge, stake or dog number." />
             ) : (
               <EmptyState
                 icon={LuClipboardList}
@@ -241,9 +158,88 @@ function ViewScores() {
                   </Link>
                 }
               />
-            )
-          }
-        />
+            )}
+          </div>
+        ) : (
+          <div className="w-full overflow-x-auto">
+            <table className="w-full border-collapse text-body">
+              <thead>
+                <tr className="border-b border-line-strong text-small font-medium text-ink-muted">
+                  <th scope="col" className="w-14 px-4 py-2.5 text-right font-medium">
+                    Place
+                  </th>
+                  <th scope="col" className="w-20 px-4 py-2.5 text-right font-medium">
+                    Dog
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                    Name
+                  </th>
+                  <th scope="col" className="w-24 px-4 py-2.5 text-right font-medium">
+                    Points
+                  </th>
+                  <th scope="col" className="w-40 px-4 py-2.5 text-left font-medium">
+                    Counted
+                  </th>
+                </tr>
+              </thead>
+              {visible.map((cross) => (
+                <tbody key={cross.id} className="border-b border-line-strong last:border-b-0">
+                  <tr className="bg-sunken">
+                    <th scope="rowgroup" colSpan={5} className="px-4 py-2 text-left font-normal">
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+                        <span className="font-semibold text-ink">Day {cross.day}</span>
+                        <span className="tabular font-semibold text-ink">{formatTime(cross.time)}</span>
+                        <span className="text-ink">
+                          Judge {cross.judgeNumber}
+                          {cross.judgeName ? <span className="text-ink-muted">, {cross.judgeName}</span> : null}
+                        </span>
+                        <span className="text-small text-ink-muted">
+                          {cross.scores.length} {cross.scores.length === 1 ? 'dog' : 'dogs'}
+                          {stakeView !== 'ALL' ? `, ${STAKE_LABELS[stakeView].toLowerCase()} only` : ''}
+                        </span>
+                        <span className="ml-auto flex items-center gap-2">
+                          <Button size="sm" icon={LuPencil} onClick={() => navigate(`/score-entry/view/${cross.id}`, { state: { from: '/score-entry/view' } })}>
+                            Edit
+                          </Button>
+                          <Button size="sm" variant="danger" icon={LuTrash2} onClick={() => setPendingDelete(cross)} aria-label={`Delete the cross at ${formatTime(cross.time)} on day ${cross.day}`}>
+                            Delete
+                          </Button>
+                        </span>
+                      </div>
+                    </th>
+                  </tr>
+                  {cross.scores.map((score) => (
+                    <tr key={score.id} className={`border-t border-line ${matchesSearch(score) ? 'bg-brass-100/50' : ''} ${score.counted ? '' : 'text-ink-muted'}`}>
+                      <td className={`${cell} text-right font-serif text-[15px] text-ink-faint tabular`}>{score.position}</td>
+                      <td className={`${cell} text-right font-semibold tabular`}>{score.dogNumber}</td>
+                      <td className={cell}>
+                        {score.dogName ? (
+                          <span className="inline-flex items-center gap-2">
+                            <span>{score.dogName}</span>
+                            {showsStake(hunt, score.stake) && (stakeView === 'ALL' || score.stake !== stakeView) && <StakeBadge stake={score.stake} />}
+                            {score.scratched && <Badge tone="warning">Scratched</Badge>}
+                          </span>
+                        ) : (
+                          <span className="text-ink-faint">Not registered</span>
+                        )}
+                      </td>
+                      <td className={`${cell} text-right font-semibold tabular`}>{score.points}</td>
+                      <td className={cell}>
+                        {score.counted ? (
+                          <span className="text-success-700">Yes</span>
+                        ) : (
+                          <span className="text-ink-faint" title="A higher cross of this dog in the same scoring interval counts instead.">
+                            No, interval {score.interval}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              ))}
+            </table>
+          </div>
+        )}
       </Panel>
 
       <ConfirmDialog
@@ -252,9 +248,15 @@ function ViewScores() {
         onConfirm={confirmDelete}
         busy={deleting}
         danger
-        title="Delete this score?"
-        description={pendingDelete ? `Dog ${pendingDelete.dogNumber}, ${pendingDelete.points} points at ${pendingDelete.time} on day ${pendingDelete.day}. Standings are recalculated.` : ''}
-        confirmLabel="Delete score"
+        title="Delete this cross?"
+        description={
+          pendingDelete
+            ? `Day ${pendingDelete.day}, ${formatTime(pendingDelete.time)}, judge ${pendingDelete.judgeNumber}: ${
+                crosses.find((cross) => cross.id === pendingDelete.id)?.scores.length ?? pendingDelete.scores.length
+              } dog scores are removed and the standings are recalculated. To take one dog out, edit the cross instead.`
+            : ''
+        }
+        confirmLabel="Delete cross"
       />
     </>
   );

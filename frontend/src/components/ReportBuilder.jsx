@@ -257,6 +257,8 @@ function ReportBuilder() {
                     onChange={(event) => {
                       const dataset = event.target.value;
                       update({ dataset, columns: [], sort: { key: 'rank', direction: 'asc' } });
+                      // A dataset without days cannot keep a day filter.
+                      if (!filtersFor(dataset).day) updateFilters({ day: null });
                     }}
                   >
                     {DATASETS.map((entry) => (
@@ -276,6 +278,7 @@ function ReportBuilder() {
           <Panel>
             <PanelHeader title="Filters" description="Fixed filters are part of the sheet. Asked filters show a control when the sheet is opened." />
             <PanelBody className="grid gap-4">
+              {allowed.day && (
               <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
                 <Field label="Day">
                   {({ id: fieldId }) => (
@@ -312,6 +315,7 @@ function ReportBuilder() {
                   </Field>
                 )}
               </div>
+              )}
 
               <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
                 <Field label="Stake">
@@ -379,7 +383,9 @@ function ReportBuilder() {
                 <Field label="Sort by">
                   {({ id: fieldId }) => (
                     <Select id={fieldId} value={definition.sort?.key || 'rank'} onChange={(event) => update({ sort: { key: event.target.value, direction: definition.sort?.direction || 'asc' } })}>
-                      <option value="rank">{definition.dataset === 'dogs' ? 'Ranking (points, then the tie-break)' : 'Natural order (day, then time)'}</option>
+                      <option value="rank">
+                        {definition.dataset === 'dogs' ? 'Ranking (points, then the tie-break)' : definition.dataset === 'awards' ? 'Natural order (award, then dog number)' : 'Natural order (day, then time)'}
+                      </option>
                       {catalogue.map((column) => (
                         <option key={column.key} value={column.key}>
                           {column.group ? `${column.group}: ${column.label}` : column.label}

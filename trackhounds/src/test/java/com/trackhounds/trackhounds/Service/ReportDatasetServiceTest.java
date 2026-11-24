@@ -47,6 +47,8 @@ class ReportDatasetServiceTest {
   private DaysRepository daysRepository;
   @Autowired
   private HuntRepository huntRepository;
+  @Autowired
+  private AwardService awardService;
 
   @BeforeEach
   void setUp() {
@@ -186,6 +188,27 @@ class ReportDatasetServiceTest {
     assertEquals(5, rows.get(0).get("totalScores"));
     assertEquals("PIN1", rows.get(0).get("memberPin"));
     assertEquals(1, rows.get(1).get("scratches"));
+  }
+
+  @Test
+  void awardsDatasetListsEveryAwardWithItsDog() {
+    dualHunt();
+    awardService.createAward(new com.trackhounds.trackhounds.Entity.Award("Classiest Hound", "101", "Unanimous"));
+    awardService.createAward(new com.trackhounds.trackhounds.Entity.Award("Best Mouth", "2", null));
+    awardService.createAward(new com.trackhounds.trackhounds.Entity.Award("Best Mouth", "102", null));
+
+    Map<String, Object> dataset = datasets.dataset("awards", null, null, null, null, null);
+    assertEquals(List.of("title", "dogNumber", "dogName", "stake", "owner", "sire", "dam", "scratched", "notes"), columnKeys(dataset));
+    List<Map<String, Object>> rows = rows(dataset);
+    assertEquals(List.of("Best Mouth 2", "Best Mouth 102", "Classiest Hound 101"), rows.stream().map(r -> r.get("title") + " " + r.get("dogNumber")).toList());
+    assertEquals("Bravo", rows.get(0).get("dogName"));
+    assertEquals("Owner B", rows.get(0).get("owner"));
+    assertEquals(true, rows.get(1).get("scratched"), "a scratched dog keeps its award and is marked");
+    assertEquals("Unanimous", rows.get(2).get("notes"));
+    assertFalse(rows.get(0).containsKey("id"));
+
+    assertEquals(2, rows(datasets.dataset("awards", null, StakeType.DERBY, null, null, null)).size());
+    assertEquals(1, rows(datasets.dataset("awards", null, StakeType.ALL_AGE, null, null, null)).size());
   }
 
   @Test

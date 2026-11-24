@@ -1,4 +1,5 @@
 import ReportService from '../../services/ReportService';
+import { huntLocation, ladderPreview } from '../../lib/hunt';
 import { STAKE_LABELS } from '../ui';
 import { dogLabel } from './format';
 
@@ -10,23 +11,31 @@ const stakeLabel = (stake) => STAKE_LABELS[stake] || String(stake || '');
  */
 const HuntSummaryReport = {
   title: 'Hunt summary',
-  description: 'One page with the hunt settings, entries, each day at a glance, the top placings and the scratches.',
+  description: 'One page with the hunt details and settings, entries, each day at a glance, the top placings, the special awards and the scratches.',
 
   fetchData: async () => {
     const title = 'Hunt summary';
     try {
       const summary = await ReportService.getHuntSummary();
       if (!summary || !summary.hunt) return { title, data: [] };
-      const { hunt, counts = {}, days = [], placings = [], scratches = [] } = summary;
+      const { hunt, counts = {}, days = [], placings = [], scratches = [], awards = [] } = summary;
       const dual = hunt.stake === 'DUAL';
 
       const facts = [
         { label: 'Hunt', value: hunt.title },
         { label: 'Dates', value: hunt.dates },
+        { label: 'Location', value: huntLocation(hunt) },
+        { label: 'President', value: hunt.president },
+        { label: 'Master of Hounds', value: hunt.masterOfHounds },
         { label: 'Stake', value: stakeLabel(hunt.stake) },
         { label: 'Days', value: hunt.huntDays },
         { label: 'Scoring interval', value: `${hunt.huntInterval} min` },
-        { label: 'Points', value: `${hunt.firstDogPoints} for the first dog, ${hunt.pointStep} less each` },
+        {
+          label: hunt.packScoring ? 'Points (pack scoring)' : 'Points',
+          value: hunt.packScoring
+            ? `${ladderPreview(hunt.firstDogPoints, hunt.pointStep, hunt.packMinimumPoints, 6)}: never below ${hunt.packMinimumPoints}`
+            : `${hunt.firstDogPoints} for the first dog, ${hunt.pointStep} less each`,
+        },
         { label: 'Dogs entered', value: dual ? `${counts.dogs} (${counts.allAgeDogs} all age, ${counts.derbyDogs} derby)` : counts.dogs },
         { label: 'Judges', value: counts.judges },
         { label: 'Crosses recorded', value: `${counts.crosses} (${counts.scores} dog placings)` },
@@ -61,6 +70,18 @@ const HuntSummaryReport = {
             ]),
           },
           ...placingSections,
+          {
+            title: `Special awards (${awards.length})`,
+            columns: dual ? ['Award', 'Dog', 'Name', 'Stake', 'Owner', 'Notes'] : ['Award', 'Dog', 'Name', 'Owner', 'Notes'],
+            data: awards.map((row) => {
+              const name = dogLabel({ dogName: row.dogName || '', scratched: row.scratched });
+              const cells = [row.title || '', String(row.dogNumber ?? ''), name];
+              if (dual) cells.push(stakeLabel(row.stake));
+              cells.push(row.owner || '', row.notes || '');
+              return cells;
+            }),
+            emptyText: 'No special award has been entered.',
+          },
           {
             title: `Scratches (${scratches.length})`,
             columns: ['Day', 'Dog', 'Name', 'Time', 'Judge', 'Reason'],

@@ -1,17 +1,27 @@
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
-import { MAX_DAYS } from '../lib/hunt';
+import { MAX_DAYS, ladderPreview } from '../lib/hunt';
 import { Alert, Button, Field, Input, Panel, PanelBody, PanelFooter, PanelHeader, STAKE_LABELS, SegmentedControl, Select } from './ui';
 
 const STAKES = ['ALL_AGE', 'DERBY', 'DUAL'].map((value) => ({ value, label: STAKE_LABELS[value] }));
 const RANGE_STAKES = ['ALL_AGE', 'DERBY'];
+const SCORING = [
+  { value: 'STANDARD', label: 'Standard scoring' },
+  { value: 'PACK', label: 'Pack scoring' },
+];
 
 export const emptyHunt = {
   title: '',
   dates: '',
+  city: '',
+  state: '',
+  president: '',
+  masterOfHounds: '',
   huntInterval: 5,
   pointStep: 5,
   firstDogPoints: 35,
+  packScoring: false,
+  packMinimumPoints: 15,
   huntDays: 4,
   stake: 'ALL_AGE',
   stakeTypeRange: ['ALL_AGE', 'ALL_AGE', 'ALL_AGE', 'ALL_AGE'],
@@ -24,6 +34,10 @@ function validate(values) {
   if (Number(values.huntInterval) < 0) errors.interval = 'The interval cannot be negative.';
   if (Number(values.pointStep) < 0) errors.pointStep = 'The point step cannot be negative.';
   if (Number(values.firstDogPoints) < 0) errors.firstDogPoints = 'The first-dog points cannot be negative.';
+  if (values.packScoring) {
+    if (values.packMinimumPoints === '' || Number(values.packMinimumPoints) < 0) errors.packMinimumPoints = 'Enter the minimum points, 0 or more.';
+    else if (Number(values.packMinimumPoints) > Number(values.firstDogPoints)) errors.packMinimumPoints = 'The minimum cannot be higher than the first-dog points.';
+  }
   if (Number(values.huntDays) < 1 || Number(values.huntDays) > MAX_DAYS) errors.huntDays = `A hunt has between 1 and ${MAX_DAYS} days.`;
   values.stakeRange.forEach((start, index) => {
     if (Number(start) < 0) errors[`startingNumber${index + 1}`] = 'Starting numbers cannot be negative.';
@@ -34,6 +48,26 @@ function validate(values) {
     if (!hasAllAge || !hasDerby) errors.stake = 'A dual stake needs at least one all-age range and one derby range.';
   }
   return errors;
+}
+
+/** What the chosen scoring does to a cross, in words and with this hunt's own numbers. */
+function scoringDescription(values) {
+  const first = Number(values.firstDogPoints) || 0;
+  const step = Number(values.pointStep) || 0;
+  if (!values.packScoring) {
+    return (
+      <>
+        Every dog in a cross gets {step} fewer points than the dog ahead of it, down to zero: <span className="tabular text-ink">{ladderPreview(first, step, 0)}</span>.
+      </>
+    );
+  }
+  const minimum = Math.max(0, Number(values.packMinimumPoints) || 0);
+  return (
+    <>
+      Points count down from {first} to {minimum}, and every dog after that also receives {minimum}:{' '}
+      <span className="tabular text-ink">{ladderPreview(first, step, minimum)}</span> and so on.
+    </>
+  );
 }
 
 /**
@@ -77,10 +111,17 @@ function HuntForm({ initial = emptyHunt, onSubmit, onCancel, submitLabel = 'Save
     const payload = {
       title: values.title.trim(),
       dates: values.dates,
+      city: values.city.trim(),
+      state: values.state.trim(),
+      president: values.president.trim(),
+      masterOfHounds: values.masterOfHounds.trim(),
       stake: values.stake,
       huntInterval: Number(values.huntInterval),
       pointStep: Number(values.pointStep),
       firstDogPoints: Number(values.firstDogPoints),
+      packScoring: Boolean(values.packScoring),
+      // Kept when pack scoring is off, so switching it back on brings the same minimum.
+      packMinimumPoints: Math.max(0, Number(values.packMinimumPoints) || 0),
       huntDays: Number(values.huntDays),
       stakeTypeRange: values.stakeTypeRange,
       stakeRange: values.stakeRange.map(Number),
@@ -118,6 +159,28 @@ function HuntForm({ initial = emptyHunt, onSubmit, onCancel, submitLabel = 'Save
                   )}
                 </Field>
               </div>
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
+                <Field label="City" hint="Where the hunt is held. Printed with the state on every report.">
+                  {({ id }) => <Input id={id} value={values.city} onChange={set('city')} placeholder="Ocala" />}
+                </Field>
+                <Field label="State">
+                  {({ id }) => <Input id={id} value={values.state} onChange={set('state')} placeholder="FL" />}
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="President" hint="Printed on the hunt summary.">
+                  {({ id }) => <Input id={id} value={values.president} onChange={set('president')} />}
+                </Field>
+                <Field label="Master of Hounds" hint="Printed on the hunt summary.">
+                  {({ id }) => <Input id={id} value={values.masterOfHounds} onChange={set('masterOfHounds')} />}
+                </Field>
+              </div>
+            </PanelBody>
+          </Panel>
+
+          <Panel>
+            <PanelHeader title="Scoring" description="How crosses are scored in this hunt" />
+            <PanelBody className="flex flex-col gap-4">
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field
                   label="Scoring interval (minutes)"
@@ -146,6 +209,36 @@ function HuntForm({ initial = emptyHunt, onSubmit, onCancel, submitLabel = 'Save
                     <Input id={id} type="number" numeric min={0} invalid={invalid} value={values.pointStep} onChange={set('pointStep')} />
                   )}
                 </Field>
+              </div>
+              <div className="flex flex-col gap-3 border-t border-line pt-4">
+                <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
+                  <SegmentedControl
+                    label="Scoring method"
+                    options={SCORING}
+                    value={values.packScoring ? 'PACK' : 'STANDARD'}
+                    onChange={(method) => setValues((current) => ({ ...current, packScoring: method === 'PACK' }))}
+                    className="shrink-0"
+                  />
+                  <p className="min-w-[16rem] flex-1 text-small text-ink-muted" aria-live="polite">
+                    {scoringDescription(values)}
+                  </p>
+                </div>
+                {values.packScoring && (
+                  <Field
+                    label="Minimum points"
+                    hint="The lowest points a dog in a cross receives. Normally 15."
+                    error={errors.packMinimumPoints}
+                    className="sm:w-1/3"
+                  >
+                    {({ id, invalid }) => (
+                      <Input id={id} type="number" numeric min={0} invalid={invalid} value={values.packMinimumPoints} onChange={set('packMinimumPoints')} />
+                    )}
+                  </Field>
+                )}
+                <p className="text-small text-ink-muted">
+                  The method sets the points proposed when a cross is entered; a judge&apos;s own figure can still be typed over any of them. Changing it later
+                  does not alter crosses already saved.
+                </p>
               </div>
             </PanelBody>
           </Panel>
@@ -226,9 +319,15 @@ HuntForm.propTypes = {
   initial: PropTypes.shape({
     title: PropTypes.string,
     dates: PropTypes.string,
+    city: PropTypes.string,
+    state: PropTypes.string,
+    president: PropTypes.string,
+    masterOfHounds: PropTypes.string,
     huntInterval: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     pointStep: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     firstDogPoints: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    packScoring: PropTypes.bool,
+    packMinimumPoints: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     huntDays: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     stake: PropTypes.string,
     stakeTypeRange: PropTypes.arrayOf(PropTypes.string),

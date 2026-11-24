@@ -155,15 +155,24 @@ The judges of the hunt. Adding and editing happens in a small dialog; scores are
 #### Scores
 
 - **Enter scores**: one cross at a time. Pick the day, enter the start time (the first cross of the day sets it), the
-  cross time and the judge, then the dogs in crossing order. Points fill in from the first-dog points and the interval
-  and can be changed per dog. Everything is reachable with the arrow keys and Enter.
-- **View scores**: every cross recorded, filterable by day, dog or judge, with whether the score counted.
+  cross time and the judge, then the dogs in crossing order. Times can be typed without the colon (0600, 1300). Points
+  fill in from the hunt's scoring (standard, or pack scoring with a minimum) and can be changed per dog. Enter moves to
+  the next box and the arrow keys move in every direction. The crosses typed in last are listed under the form.
+- **View scores**: every cross recorded with its dogs grouped under it, filterable by day, judge, dog or stake, with
+  whether each score counted. A cross is edited or deleted as a whole.
+
+![Scores grouped by cross](docs/screenshots/scores.png)
 
 ![Entering a cross](docs/screenshots/score-entry.png)
 
 #### Scratch sheet
 
 Dogs withdrawn from the hunt, with the time, the judge and the reason, and the form to record a new scratch.
+
+#### Awards
+
+Special awards given to a dog outside the scoring, such as Best Mouth or Classiest Hound: the name of the award, the
+dog that won it and an optional note. They print on the Special awards sheet and on the hunt summary.
 
 #### Backups
 

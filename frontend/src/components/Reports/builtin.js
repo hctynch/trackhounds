@@ -98,6 +98,15 @@ const builtinReports = [
     sort: { key: 'rank', direction: 'asc' },
     title: 'Scratches',
   }),
+  define('special-awards', 'Whole hunt', {
+    name: 'Special awards',
+    description: 'The awards given outside the scoring, such as Best Mouth and Classiest Hound, with the dog and its owner.',
+    dataset: 'awards',
+    columns: [{ key: 'title' }, { key: 'dogNumber' }, { key: 'dogName' }, { key: 'stake', auto: true }, { key: 'owner' }, { key: 'notes' }],
+    filters: { day: null, stake: 'ALL', limit: null, splitByStake: false },
+    sort: { key: 'rank', direction: 'asc' },
+    title: 'Special awards',
+  }),
   define('judge-summary', 'Whole hunt', {
     name: 'Judge summary',
     description: 'Crosses and dogs scored by every judge, per day, with the scratches they recorded.',

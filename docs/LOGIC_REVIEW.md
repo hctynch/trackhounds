@@ -12,8 +12,11 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
 ## 1. How scoring works today (as implemented)
 
 - A **cross** is entered with a day, a start time, a cross time, a judge and the dogs in crossing order.
-  The UI proposes points for each dog as `firstDogPoints - position * pointStep` (35, 30, 25, ...), both set per hunt; the
-  judge can overwrite any value. The points sent to the server are what is stored.
+  The server proposes points for each dog as `firstDogPoints - position * pointStep` (35, 30, 25, ...), both set per hunt,
+  never below zero; with **pack scoring** (a hunt setting) never below the hunt's minimum, normally 15, so every dog
+  after the 15-point place also gets 15. The judge can overwrite any value. The points sent to the server are what is stored.
+- A cross is stored as a row of its own (day, time, judge) and each dog's score carries the cross's id and the
+  dog's place in it, so a cross can be listed, corrected and deleted as a whole.
 - Each dog has one `DailyScore` per hunt day. A day's crosses are placed in **time buckets** of
   `huntInterval` minutes (the hunt's scoring interval) counted from the day's start time (`bucket = minutesSinceStart / interval`).
   Within one bucket only the dog's **highest** cross counts (`HighestScore`); the others are stored but
@@ -45,7 +48,7 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
 | Q9 | A dog that is not registered is shown with an explicit message and two choices: **register it on the spot** or **skip it**. | Score entry shows "Dog N is not registered" with "Register dog N" (a small dialog; the stake is pre-filled from the number ranges) and "Skip" (the row is excluded from the cross; the other dogs keep their places). The server still rejects unknown dogs, so a skipped row is never sent. |
 | Q10 | A day's start time **can be changed** and the day's crosses are re-sorted into intervals. | "Change" next to the start time opens a dialog; `PUT /dogs/day/{day}` re-buckets every cross of the day (`DailyScore.rebucket`) and recalculates points. The new time cannot be later than the day's first cross. |
 | Q11 | The **first-dog points** are set per hunt. | `HuntEntity.firstDogPoints` (default 35); the hunt form has the field and score entry prefills it. |
-| Q12 | Scores are **not edited in place**; delete and re-enter. | No change. |
+| Q12 | Scores are **not edited in place**; delete and re-enter. | Replaced on 2026-11-24 by Q18: a cross is corrected as a whole. |
 | Q13 | The judge **member PIN** is a reference number only. | Kept as an optional field. |
 | Q14 | Scratch reasons are a **fixed list plus "Other"** with free text. | `SCRATCH_REASONS` in `frontend/src/lib/hunt.js`: injured, withdrawn by owner, not found, disqualified, other. Adjust the list there. |
 | Q15 | Dog numbers are **combinations of digits** and leading zeros are significant: "0" and "00" are two different dogs. | The dog number is a text key (digits only, up to six). Numbers order by value, then by length ("0", "00", "1", "01"). Every screen sends and shows numbers as text. Databases from the release candidates are upgraded on first start (see F18). |
@@ -53,9 +56,36 @@ Reviewed on 2026-09-10 against `trackhounds/src/main/java/.../Service/DogService
 Also confirmed: **dual stake** hunts must score all-age and derby dogs separately within one cross. That is
 what `getCrossInfo` does (two point ladders); it stays and is covered by `testGetCrossInfo`.
 
+### From the first test hunt (2026-11-24, [FIRST_NOTES.md](FIRST_NOTES.md))
+
+| # | Decision | Implemented as |
+| - | -------- | -------------- |
+| Q16 | **Pack scoring** is an option chosen when the hunt is set up: points count down from 35 to 15 and every dog after the 15-point place also receives 15. | `HuntEntity.packScoring` and `packMinimumPoints` (default 15). `DogService.ladderPoints` is the one formula, `max(lowest, firstDogPoints - pointStep * position)`, with `lowest` the pack minimum or 0. The hunt form explains the choice with the hunt's own numbers. |
+| Q17 | A time may be typed **without the colon**: 0600, 1300. | `parseTime` on the page (`lib/time.js`) and on the server (`DogService.parseTime`): with digits only, the last two are the minutes. |
+| Q18 | The scores of one crossing are shown **together**, and a crossing can be **opened and corrected**. | `CrossEntity` (table `crosses`), `Score.crossId` and `crossPosition`. `DogService.updateCross` replaces the scores of a cross under the same id after the same checks as a new cross; `deleteCross` removes it whole. View scores groups by cross. |
+| Q19 | The operator sees **the last cross they entered**, not the day's latest cross by time. | Cross ids grow in the order of entry; the score entry page lists the three highest. A corrected cross keeps its id, so correcting an old cross does not move it to the top. |
+| Q20 | **Special awards** (Best Mouth, Classiest Hound) are entered for specific dogs and printed. | `Award` (title, dog number, notes), free-text title. The same title can go to several dogs but not twice to one. Printed on the Special awards sheet and the hunt summary. |
+
+The notes left several points open. They were built on an assumption first and then put to the author,
+who answered all of them on 2026-11-24:
+
+| # | Decision | Implemented as |
+| - | -------- | -------------- |
+| Q21 | The pack **minimum is a hunt setting**, 15 unless the hunt changes it. | `HuntEntity.packMinimumPoints`, shown on the hunt form when pack scoring is chosen. As built. |
+| Q22 | In a **dual** hunt with pack scoring, all age and derby each count down to the minimum on their **own ladder**. | `DogService.getCrossInfo`: one place counter per stake. As built. |
+| Q23 | Pack scoring changes **only the points of a cross**. The scoring interval, the highest cross per interval and endurance are the same as under standard scoring. | Nothing but `ladderPoints` reads the setting. As built. |
+| Q24 | Without pack scoring, the **eighth dog** of a cross and every dog after it gets **0** and is still recorded. | `ladderPoints` with a lowest of 0. As built. |
+| Q25 | When a dog is **taken out of a saved cross**, the dogs behind it **move up a place**; points a judge typed in by hand stay as typed. | Score entry in edit mode: proposed points follow the dogs as they stand, typed-in points are kept (`autoPoints`, `customPoints`). As built. |
+| Q26 | **Enter skips the points boxes**: time, judge, then down the dog numbers. Tab and the arrow keys reach the points. | `ScoreEntry.enterTarget`. As built. |
+| Q27 | A cross is corrected or deleted **as a whole**; there is no delete button per dog. | View scores has Edit and Delete on the cross only. As built. |
+| Q28 | "The last cross entered" is the **last three crosses typed in, on any day**, newest first. | Score entry, `lastEntered`. As built. |
+| Q29 | Special awards print in **four places**: their own sheet, the hunt summary, next to the dog on the final standings, and as a column the report builder can place on any dog sheet. | The first two are built. The last two are to do (section 5). |
+| Q30 | President and Master of Hounds print on the **hunt summary only**; the location prints on every sheet. | `HuntSummaryReport` facts; `ReportGenerator` header. As built. |
+
 ## 3. Questions still open
 
-None at the moment. New questions go here with the code location they affect.
+None at the moment. The six points the first-hunt notes left open were answered on 2026-11-24 and are
+decisions Q21 to Q30 above. New questions go here with the code location they affect.
 
 ## 4. Fixed in iteration 6 so far
 
@@ -81,6 +111,11 @@ None at the moment. New questions go here with the code location they affect.
 | F18 | Dog numbers were integers (Q15) and the schema had no migration path. | `LegacySchemaMigration` runs before Hibernate on start-up: backs the database up to `backups/`, moves the score links onto the scores, drops the join tables and rebuilds the four dog-number columns with text affinity (SQLite would coerce "00" to 0 in an integer column). Covered by `LegacySchemaMigrationTest` against a copy of the release-candidate schema. |
 | F19 | A dog's number could not be corrected once it had scores; the only way was delete and re-enter everything. | `PUT /dogs/{number}/number` rewrites the key in place across `dogs`, `daily_score`, `score` and `scratch` in one transaction (score and scratch ids are kept). The Edit dog page exposes it. |
 | F20 | No sheet said what each judge had recorded, and there was no front page for the hunt's paperwork. | `ReportService`: `GET /reports/judges` (crosses and dog placings per judge per day, scratches recorded) and `GET /reports/hunt-summary` (settings, entries, each day, top five placings per stake, scratches). A "cross" is one judge's entry at one time on one day. |
+| F21 | On score entry the proposed points of a row were frozen by the first answer from the server: retyping a number, or in a dual hunt typing a dog of the other stake over it, kept the old points, and changing First dog points did nothing for rows already filled. | The page keeps proposed points and typed-in points apart (`autoPoints`, `customPoints`); emptying a points box goes back to the proposal. |
+| F22 | `getCrossInfo` proposed negative points from the eighth dog on (35 - 5 × 8), which `createScore` then refused. | `ladderPoints` never goes below zero (or the pack minimum). |
+| F23 | A cross typed and saved from the keyboard faster than the proposal came back was saved with the page's own estimate, which is wrong in a dual hunt. Server messages per dog (`dogNumbers2`) were shown on the wrong row when a row above was empty or skipped. | The save asks for a fresh proposal for exactly the dogs being saved, and row messages are mapped back to the rows they belong to. |
+| F24 | A dog whose only cross of a day was deleted kept an empty daily score and was still listed as scored that day (a place and 0 points on the daily sheets). | `getDogScoresByDay` skips a day without crosses. |
+| F25 | Crosses were counted as distinct (day, judge, time), so two crosses by one judge in the same minute counted once. | Counted by cross id (`ReportService.crossKey`). |
 
 ## 5. Still to do (defects and rough edges that do not need a rules decision)
 
@@ -90,8 +125,15 @@ None at the moment. New questions go here with the code location they affect.
   `/dogs/scores/day/{day}` (per-dog summaries). Rename for clarity when the API is next touched.
 - `Days` has no link to the hunt; `Score.day` duplicates `DailyScore.day`. Fine for one hunt at a time,
   a problem for multiple hunts (iteration 7).
-- There is no way to **edit** a score (only delete and re-enter, by decision Q12) and no way to edit a scratch.
+- There is no way to edit a scratch (delete it and record it again). A score is corrected by editing its cross (Q18).
+- `DELETE /dogs/{number}/scores/{id}` (one score) is no longer used by the UI; drop it or keep it for scripts when the
+  API is next tidied.
+- `Score` still carries its own copy of the day, time and judge next to `crosses`. They are written together and cannot
+  drift today, but one of the two should go.
 - `GET /dogs/{number}` answers `400` for an unknown dog; `404` would be the honest answer.
+- **Awards on the final standings and in the report builder** (Q29): the `dogs` dataset needs an `awards` column
+  (the dog's award titles), and Overall speed and drive and Top dogs overall should carry it next to the name,
+  left out when no dog on the sheet has an award.
 
 ## 6. User-flow notes (to smooth out)
 
@@ -100,9 +142,15 @@ None at the moment. New questions go here with the code location they affect.
 - **Creating a new hunt wipes everything.** Done: "New hunt" now asks for confirmation naming the current
   hunt before leaving the dashboard, and the create page repeats the warning. Keeping old hunts readable
   is iteration 7 (export / multiple hunts).
-- **Score entry**: done. The judge number is kept between crosses, the last three crosses of the day are
-  listed under the form (newest first, uncounted scores greyed) and the cross time warns when it is earlier
-  than that judge's last cross.
+- **Score entry**: done. The judge number is kept between crosses and the cross time warns when it is earlier
+  than that judge's last cross, or when that judge already has a cross at that time. Since 2026-11-24: times are
+  typed with or without the colon, Enter moves forward through the cross (time, judge, dog numbers, Save), and the
+  list under the form is the last three crosses **entered** (any day, newest first, uncounted scores greyed) with
+  an Edit link on each.
+- **Correcting a cross**: done (2026-11-24). View scores groups the scores under their cross; Edit opens the cross
+  on the score entry page as it was saved, and saving replaces it. Delete removes the whole cross.
+- **Special awards**: done (2026-11-24). The Awards page takes the award's name and the dog's number; printed on
+  the Special awards sheet and the hunt summary.
 - **Unknown dog in a cross**: now blocked (F3). If that is too strict at a real hunt (Q9), offer
   "register dog N now" inline.
 - **Scratch sheet**: no day (Q5); the reason is free text while hunts probably use a fixed set of

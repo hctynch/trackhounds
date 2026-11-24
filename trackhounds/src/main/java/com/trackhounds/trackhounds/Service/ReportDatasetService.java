@@ -44,7 +44,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class ReportDatasetService {
 
-  public static final Set<String> DATASETS = Set.of("dogs", "scores", "scratches", "judges");
+  public static final Set<String> DATASETS = Set.of("dogs", "scores", "scratches", "judges", "awards");
 
   private final HuntRepository huntRepository;
   private final DogRepository dogRepository;
@@ -53,11 +53,12 @@ public class ReportDatasetService {
   private final ScratchRepository scratchRepository;
   private final DogService dogService;
   private final ReportService reportService;
+  private final AwardService awardService;
 
   /**
    * One dataset, filtered.
    *
-   * @param name   {@code dogs}, {@code scores}, {@code scratches} or {@code judges}
+   * @param name   {@code dogs}, {@code scores}, {@code scratches}, {@code judges} or {@code awards}
    * @param day    a day of the hunt, or null for the whole hunt
    * @param stake  {@code ALL_AGE} or {@code DERBY}, or null for every dog
    * @param limit  at most this many rows (after ranking), or null
@@ -67,7 +68,7 @@ public class ReportDatasetService {
   public Map<String, Object> dataset(String name, Integer day, StakeType stake, Integer limit, String dog, Integer judge) {
     if (name == null || !DATASETS.contains(name)) {
       throw new TrackHoundsAPIException(HttpStatus.NOT_FOUND, "There is no dataset called " + name + ".",
-          Map.of("dataset", "One of: dogs, scores, scratches, judges."));
+          Map.of("dataset", "One of: dogs, scores, scratches, judges, awards."));
     }
     HuntEntity hunt = huntRepository.findAll().stream().findFirst().orElse(null);
     int dayCount = hunt == null ? HuntService.MAX_DAYS : hunt.getHuntDays();
@@ -88,6 +89,10 @@ public class ReportDatasetService {
       case "scratches" -> {
         columns = scratchColumns();
         rows = scratchRows(day, stake, judge);
+      }
+      case "awards" -> {
+        columns = awardColumns();
+        rows = awardRows(stake);
       }
       default -> {
         columns = judgeColumns(dayCount);
@@ -344,6 +349,35 @@ public class ReportDatasetService {
       row.put("totalCrosses", summary.get("totalCrosses"));
       row.put("totalScores", summary.get("totalScores"));
       row.put("scratches", summary.get("scratches"));
+      rows.add(row);
+    }
+    return rows;
+  }
+
+  // ---------------------------------------------------------------- awards
+
+  private static List<Map<String, Object>> awardColumns() {
+    List<Map<String, Object>> columns = new ArrayList<>();
+    columns.add(column("title", "Award", false, null));
+    columns.add(column("dogNumber", "Dog", true, null));
+    columns.add(column("dogName", "Name", false, null));
+    columns.add(column("stake", "Stake", false, null));
+    columns.add(column("owner", "Owner", false, null));
+    columns.add(column("sire", "Sire", false, null));
+    columns.add(column("dam", "Dam", false, null));
+    columns.add(column("scratched", "Scratched", false, null));
+    columns.add(column("notes", "Notes", false, null));
+    return columns;
+  }
+
+  /** The special awards, by title then dog number; the award service already joins the dog. */
+  private List<Map<String, Object>> awardRows(StakeType stake) {
+    List<Map<String, Object>> rows = new ArrayList<>();
+    for (Map<String, Object> award : awardService.getAwards()) {
+      if (stake != null && award.get("stake") != stake)
+        continue;
+      Map<String, Object> row = new LinkedHashMap<>(award);
+      row.remove("id");
       rows.add(row);
     }
     return rows;

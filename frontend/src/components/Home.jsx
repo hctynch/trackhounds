@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { LuCircle, LuCircleCheck, LuPencil, LuPlus, LuTrophy } from 'react-icons/lu';
 import { Link, useNavigate } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
-import { dayOptions, isDualHunt, showsStake, STAKE_VIEWS } from '../lib/hunt';
+import { dayOptions, huntLocation, isDualHunt, showsStake, STAKE_VIEWS } from '../lib/hunt';
 import DataService from '../services/DataService';
 import DogService from '../services/DogService';
 import JudgeService from '../services/JudgeService';
@@ -226,7 +226,14 @@ function Home() {
     <>
       <PageHeader
         title={hunt?.title || 'Hunt'}
-        description={hunt?.dates}
+        description={[hunt?.dates, huntLocation(hunt)].filter(Boolean).join(' · ') || undefined}
+        meta={
+          hunt?.president || hunt?.masterOfHounds ? (
+            <p className="text-small text-ink-muted">
+              {[hunt.president && `President ${hunt.president}`, hunt.masterOfHounds && `Master of Hounds ${hunt.masterOfHounds}`].filter(Boolean).join(' · ')}
+            </p>
+          ) : null
+        }
         actions={
           <>
             <Button icon={LuPencil} onClick={() => navigate('/hunt/edit')}>
@@ -274,7 +281,7 @@ function Home() {
         <Fact label="Judges" value={judgeTotal} />
         <Fact label="Stake" value={STAKE_LABELS[hunt?.stake] || 'Not set'} />
         <Fact label="Scoring interval" value={`${hunt?.huntInterval ?? 0} min`} />
-        <Fact label="Point step" value={hunt?.pointStep ?? 5} />
+        <Fact label={hunt?.packScoring ? 'Pack scoring' : 'Point step'} value={hunt?.packScoring ? `${hunt.firstDogPoints} to ${hunt.packMinimumPoints}` : (hunt?.pointStep ?? 5)} />
       </Panel>
 
       {dual && (

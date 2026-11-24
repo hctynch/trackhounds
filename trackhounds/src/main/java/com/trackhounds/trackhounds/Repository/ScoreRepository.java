@@ -59,4 +59,20 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
      * @return List of scores ordered by time
      */
     List<Score> findByDayOrderByTimeAsc(int day);
+
+    /**
+     * The dogs of one cross in crossing order
+     *
+     * @param crossId Id of the cross
+     * @return List of scores, first dog across first
+     */
+    List<Score> findByCrossIdOrderByCrossPositionAscIdAsc(Long crossId);
+
+    /**
+     * How many scores a cross still has
+     *
+     * @param crossId Id of the cross
+     * @return number of scores
+     */
+    long countByCrossId(Long crossId);
 }

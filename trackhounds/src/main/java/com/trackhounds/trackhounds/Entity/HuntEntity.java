@@ -62,6 +62,25 @@ public class HuntEntity {
     /** Number of hunt days (1 to 4). Day selectors and reports only offer these days. */
     @org.hibernate.annotations.ColumnDefault("4")
     private int huntDays = 4;
+    /** City the hunt is held in. Printed with the state on the hunt summary and in report headers. */
+    private String city;
+    /** State the hunt is held in. */
+    private String state;
+    /** President of the club or association running the hunt. Printed on the hunt summary. */
+    private String president;
+    /** Master of Hounds for the hunt. Printed on the hunt summary. */
+    private String masterOfHounds;
+    /**
+     * Pack scoring: the points proposed for a cross count down from the first-dog
+     * points to {@link #packMinimumPoints} and every dog after that also receives
+     * the minimum (35, 30, 25, 20, 15, 15, 15, ...). Off, the points keep counting
+     * down to zero.
+     */
+    @org.hibernate.annotations.ColumnDefault("false")
+    private boolean packScoring = false;
+    /** The lowest points a dog in a cross receives under pack scoring. Normally 15. */
+    @org.hibernate.annotations.ColumnDefault("15")
+    private int packMinimumPoints = 15;
     /**
      * The stake type range of the hunt.
      */
@@ -87,6 +106,14 @@ public class HuntEntity {
         this.stakeRange = new int[] { 0, 0, 0, 0 };
         this.stakeTypeRange = new StakeType[] { StakeType.ALL_AGE, StakeType.ALL_AGE, StakeType.ALL_AGE,
                 StakeType.ALL_AGE };
+    }
+
+    /**
+     * The lowest points a cross proposes for a dog: the pack minimum under pack
+     * scoring, otherwise zero (points never go negative).
+     */
+    public int lowestCrossPoints() {
+        return packScoring ? Math.max(0, packMinimumPoints) : 0;
     }
 
 }

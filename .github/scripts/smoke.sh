@@ -48,7 +48,7 @@ expect "CSV template"           200 "$BASE/dogs-template.csv"
 expect "no hunt yet"            404 "$BASE/hunt"
 expect "empty dog list"         200 "$BASE/dogs"
 grep -q '"version":"' <(curl -s "$BASE/app/info") || { echo "app info has no version"; exit 1; }
-grep -q "Successfully applied 1 migration" "$DATA/run-first.log" || { echo "V1 was not applied on the empty database"; cat "$DATA/run-first.log"; exit 1; }
+grep -Eq "Successfully applied [0-9]+ migrations?" "$DATA/run-first.log" || { echo "the schema scripts were not applied on the empty database"; cat "$DATA/run-first.log"; exit 1; }
 stop
 
 start second

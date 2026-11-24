@@ -98,7 +98,7 @@ function Docs() {
             <PanelBody className="space-y-5">
               <QuickStartPhase title="Before the hunt">
                 <li>
-                  <span className="font-medium">Create the hunt</span> from Home: title, dates, number of days (1 to 4), scoring interval in minutes, first-dog points, point step and stake. In a dual stake hunt, number ranges give every dog its stake from its number.
+                  <span className="font-medium">Create the hunt</span> from Home: title, dates, city and state, president and Master of Hounds, number of days (1 to 4), scoring interval in minutes, first-dog points, point step, standard or pack scoring, and stake. In a dual stake hunt, number ranges give every dog its stake from its number.
                 </li>
                 <li>
                   <span className="font-medium">Add the judges</span> with their numbers. The member PIN is only a reference.
@@ -112,7 +112,7 @@ function Docs() {
                   <span className="font-medium">Set the start time</span> with the first cross of the day on Enter scores. Every later cross that day is scored in intervals from it.
                 </li>
                 <li>
-                  <span className="font-medium">Enter each cross</span>: day, cross time, judge, then the dogs in crossing order. Points fill in from the hunt&apos;s first-dog points and point step and can be overridden. Enter moves through the rows and saves. An unregistered dog can be registered on the spot or skipped, and the other dogs keep their places.
+                  <span className="font-medium">Enter each cross</span>: day, cross time, judge, then the dogs in crossing order. Times can be typed without the colon (<Code>0600</Code>, <Code>1300</Code>). Enter moves to the next box: from the time to the judge, then down the dog numbers; on an empty dog row it moves to Save cross, and Enter there saves. Points fill in from the hunt&apos;s scoring and can be typed over. An unregistered dog can be registered on the spot or skipped, and the other dogs keep their places. The crosses typed in last are listed under the form.
                 </li>
                 <li>
                   <span className="font-medium">Scratch</span> any dog withdrawn from the hunt on the scratch sheet, with the day, time, judge and reason.
@@ -123,7 +123,10 @@ function Docs() {
               </QuickStartPhase>
               <QuickStartPhase title="End of the hunt">
                 <li>
-                  <span className="font-medium">Print the final sheets</span>: Hunt summary (one page with settings, entries, placings and scratches), Overall speed and drive, All dogs all days, Scratches and Judge summary.
+                  <span className="font-medium">Enter the special awards</span> on the <Link to="/awards" className="font-medium text-pine-700 hover:underline">Awards</Link> page: the name of the award (Best Mouth, Classiest Hound, or your own) and the number of the dog that won it.
+                </li>
+                <li>
+                  <span className="font-medium">Print the final sheets</span>: Hunt summary (one page with the hunt details, settings, entries, placings, special awards and scratches), Overall speed and drive, All dogs all days, Special awards, Scratches and Judge summary.
                 </li>
                 <li>
                   <span className="font-medium">Save a backup</span> on the <Link to="/data" className="font-medium text-pine-700 hover:underline">Backups</Link> page, or download a copy to another drive. The same page keeps finished hunts as past hunts, so a hunt can be opened again later.
@@ -139,8 +142,10 @@ function Docs() {
             <PanelHeader title="Fixing mistakes" />
             <PanelBody>
               <dl className="grid gap-x-6 gap-y-3 text-body sm:grid-cols-[auto_1fr]">
-                <dt className="font-medium">A wrong score</dt>
-                <dd className="text-ink-muted">Delete the line on View scores and enter the cross again. Scores cannot be edited in place; every dog&apos;s points are recalculated.</dd>
+                <dt className="font-medium">A wrong cross</dt>
+                <dd className="text-ink-muted">
+                  View scores lists every cross with its dogs. Choose Edit on the cross to correct its day, time, judge, dogs or points; to take one dog out, empty its row. Delete removes the whole cross. Every dog&apos;s points are recalculated.
+                </dd>
                 <dt className="font-medium">A wrong start time</dt>
                 <dd className="text-ink-muted">Use Change start time on Enter scores. The day&apos;s crosses are re-sorted into intervals from the new time.</dd>
                 <dt className="font-medium">A wrong dog number</dt>
@@ -157,7 +162,7 @@ function Docs() {
             <PanelHeader title="How scoring works" />
             <PanelBody className="space-y-3 text-body">
               <p>
-                Each cross awards the first dog the first-dog points and every following dog the point step less (normally 5 points). Separately, the hunt has a scoring interval in minutes: counted from the day&apos;s start time, only a dog&apos;s highest cross within each interval is scored. A scratched dog keeps its points, stays in the standings and is marked as scratched on every report.
+                Each cross awards the first dog the first-dog points and every following dog the point step less (normally 5 points), down to zero. With pack scoring, chosen when the hunt is created, the points stop at the hunt&apos;s minimum instead and every dog after that also receives it: 35, 30, 25, 20, 15, 15, 15. Separately, the hunt has a scoring interval in minutes: counted from the day&apos;s start time, only a dog&apos;s highest cross within each interval is scored. A scratched dog keeps its points, stays in the standings and is marked as scratched on every report.
               </p>
               <p>
                 Daily standings show speed and drive (the counted points for the day) and endurance, which adds ten percent per day: day 1 adds 10%, day 2 adds 20%, and so on. Overall standings add every day together.

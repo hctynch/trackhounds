@@ -70,7 +70,9 @@ public final class JavaFxWindow {
     static final String[][] CAPTURE_ROUTES = {
             { "home", "/" }, { "dogs", "/dogs/all" }, { "add-dogs", "/dogs/add" }, { "judges", "/judges/all" },
             { "score-entry", "/score-entry/enter" }, { "scores", "/score-entry/view" },
-            { "scratch-sheet", "/scratch-sheet/view" }, { "reports", "/reports" },
+            { "edit-cross", "/score-entry/view/1" },
+            { "scratch-sheet", "/scratch-sheet/view" }, { "awards", "/awards" }, { "reports", "/reports" },
+            { "report-special-awards", "/reports/special-awards" },
             { "report-daily-speed-and-drive", "/reports/daily-speed-and-drive" },
             { "report-hunt-summary", "/reports/hunt-summary" }, { "report-all-dogs", "/reports/all-dogs-all-days" },
             { "report-builder", "/reports/builder?from=daily-speed-and-drive" },

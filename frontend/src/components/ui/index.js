@@ -4,7 +4,7 @@ export { default as Button, IconButton } from './Button';
 export { default as DataTable } from './DataTable';
 export { ConfirmDialog, Dialog } from './Dialog';
 export { default as EmptyState } from './EmptyState';
-export { CellInput, Field, Input, Select } from './Field';
+export { CellInput, Field, Input, Select, TimeInput } from './Field';
 export { default as PageHeader } from './PageHeader';
 export { Panel, PanelBody, PanelFooter, PanelHeader } from './Panel';
 export { default as SearchInput } from './SearchInput';

@@ -59,6 +59,10 @@ public class HuntService {
         if (huntRepository.count() > 0) {
             clearOldHunt();
         }
+        hunt.setCity(tidy(hunt.getCity()));
+        hunt.setState(tidy(hunt.getState()));
+        hunt.setPresident(tidy(hunt.getPresident()));
+        hunt.setMasterOfHounds(tidy(hunt.getMasterOfHounds()));
         return huntRepository.save(hunt);
     }
 
@@ -75,6 +79,20 @@ public class HuntService {
         if (hunt.getFirstDogPoints() < 0) {
             errs.put("firstDogPoints", "The first-dog points cannot be negative.");
         }
+        if (hunt.getPackMinimumPoints() < 0) {
+            errs.put("packMinimumPoints", "The minimum points cannot be negative.");
+        } else if (hunt.isPackScoring() && hunt.getPackMinimumPoints() > hunt.getFirstDogPoints()) {
+            errs.put("packMinimumPoints", "The minimum points cannot be higher than the first-dog points.");
+        }
+    }
+
+    /** Free-text details are stored trimmed; an empty value is stored as nothing. */
+    private static String tidy(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void clearOldHunt() {
@@ -132,6 +150,12 @@ public class HuntService {
         hunt.setPointStep(entity.getPointStep());
         hunt.setFirstDogPoints(entity.getFirstDogPoints());
         hunt.setHuntDays(entity.getHuntDays());
+        hunt.setCity(tidy(entity.getCity()));
+        hunt.setState(tidy(entity.getState()));
+        hunt.setPresident(tidy(entity.getPresident()));
+        hunt.setMasterOfHounds(tidy(entity.getMasterOfHounds()));
+        hunt.setPackScoring(entity.isPackScoring());
+        hunt.setPackMinimumPoints(entity.getPackMinimumPoints());
         hunt.setStakeRange(entity.getStakeRange());
         hunt.setStakeTypeRange(entity.getStakeTypeRange());
         return huntRepository.save(hunt);

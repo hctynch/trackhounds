@@ -6,8 +6,9 @@ the next iterations are**. Keep it up to date: when an iteration finishes, move 
 note anything that was learned.
 
 - Status legend: ✅ done · 🔄 in progress · ⏳ planned · 💡 idea / needs a decision
-- Last updated: 2026-09-12 (iterations 1-3 and 5-9 done, 4 waiting on a second PC, 10 partly done by
-  decision, 11 in progress; all on `main`)
+- Last updated: 2026-11-24 (iterations 1-3, 5-9 and 11 done, 4 waiting on a second PC, 10 partly done by
+  decision, 12 in progress: built, checked and confirmed by the author, with two award print places still
+  to add; it is in the working tree and not committed yet)
 
 ---
 
@@ -37,7 +38,7 @@ Electron shell (Node)  ──HTTP──▶  Spring Boot in Docker  ──JDBC─
 ```
 TrackHounds.exe (jpackage launcher + private JRE)
 └── one JVM process
-    ├── Spring Boot: REST API (/dogs, /hunt, /judges, /app/info, /actuator/health)
+    ├── Spring Boot: REST API (/dogs, /hunt, /judges, /awards, /reports, /data, /app/info, /actuator/health)
     │   └── serves the compiled React UI from the jar at http://127.0.0.1:<port>/
     ├── SQLite database  %LOCALAPPDATA%\TrackHounds\trackhounds.db   (Hibernate community dialect)
     └── Desktop launcher: single-instance lock, system tray icon, application window
@@ -544,7 +545,7 @@ Also decided: no Mac or Linux work for now (iteration 10). Options as originally
   paths, nothing is built or tested for them).
 - ✅ Automated smoke test in CI (2026-09-12): `.github/scripts/smoke.sh`, run by `Build and Test` after
   `mvnw verify`, starts the jar with `--server` against an empty folder, checks `/actuator/health`,
-  `/app/info`, the UI, the CSV template, `GET /hunt` (404) and `GET /dogs`, confirms V1 was applied, then
+  `/app/info`, the UI, the CSV template, `GET /hunt` (404) and `GET /dogs`, confirms the schema scripts were applied, then
   starts it again and confirms the schema is found current with no backup taken. Runs locally too.
 
 ### ✅ Iteration 11: stakes made visible, and a report builder
@@ -702,6 +703,138 @@ Decisions taken 2026-09-14 (the recommended option in each case):
    order, the judge's card transcribed) is the likely fifth.
 4. Column reordering with up and down buttons first; drag and drop only if that proves too slow to use.
 
+### 🔄 Iteration 12: notes from the first test hunt
+
+Context from the author (2026-11-24): the application was used at a first test hunt and the notes that
+came back are in [FIRST_NOTES.md](FIRST_NOTES.md): five groups, all implemented here. The rule
+questions they raise, and the assumptions made where the notes do not say, are in
+[LOGIC_REVIEW.md](LOGIC_REVIEW.md) (decisions Q16 to Q30). The assumptions were put to the author the
+same day and every one was confirmed as built; the one addition is where the awards print (Q29).
+
+Done 2026-11-24:
+
+- **Hunt details (note 1).** `HuntEntity` gains `city`, `state`, `president` and `masterOfHounds`
+  (free text, stored trimmed, empty stored as nothing). The hunt form has the four fields; the location
+  ("City, State") is printed in the header of every sheet and shown on Home and in the rail; president
+  and Master of Hounds are on Home and on the hunt summary.
+- **Pack scoring (note 2).** A hunt setting, `packScoring` with `packMinimumPoints` (default 15),
+  chosen on the hunt form with a description that uses the hunt's own numbers ("35, 30, 25, 20, 15, 15,
+  15"). The ladder is `max(lowest, firstDogPoints - pointStep * position)` and lives in one place,
+  `DogService.ladderPoints`, used by `getCrossInfo`, which is what proposes the points on the score
+  entry page; in a dual hunt each stake keeps its own ladder. Standard scoring is the same formula with
+  a lowest of zero, so the eighth dog of a cross is now proposed 0 points instead of -5, which the save
+  refused. The setting only proposes: a judge's figure can still be typed over, and crosses already
+  saved are not touched when it is changed.
+- **Times without the colon (note 3.1).** `0600`, `600`, `6:00` and `06:00` are the same time
+  everywhere a time is typed (cross time, start time, change start time, scratch time). The fields are
+  text boxes (`TimeInput`, read with `lib/time.js`) that rewrite a readable time as `HH:MM` when left;
+  the server reads the same forms (`DogService.parseTime`), so the rule does not depend on the page.
+  This also retires the old limitation that the JavaFX window had no time picker: there is none in any
+  window now.
+- **Enter moves to the next box (note 3.2).** On score entry Enter goes from the cross time to the
+  judge and then down the dog numbers; the points fill in by themselves and are skipped (Tab and the
+  arrow keys still reach them). Enter on an empty dog row moves to Save cross, Enter there saves, and on
+  the last row it adds a row. A whole cross is typed without the mouse.
+- **The last cross entered (note 3.3).** The panel under the form is now "Last crosses entered": the
+  three crosses typed in most recently, newest first, whatever their day or cross time, each with an
+  Edit link. It used to list the selected day's crosses by cross time, so a card entered late never
+  showed up.
+- **Crosses grouped and editable (note 4).** A cross is now a row of its own (`crosses`: day, time,
+  judge) and every score carries its `cross_id` and its place in the cross (`cross_position`).
+  - `GET /dogs/crosses[?day=]`, `GET|PUT|DELETE /dogs/crosses/{id}`. A correction replaces the scores
+    of the cross under the same id (`DogService.updateCross`): it is checked exactly like a new cross
+    before anything changes, and every affected dog's points are recalculated.
+  - View scores lists every cross with its dogs under it (place, dog, name, stake tag, points, counted)
+    with Edit and Delete on the cross, filters for day, judge, stake and dog number, and an order switch
+    (by cross time, or last entered first). Edit opens the cross on the score entry page
+    (`/score-entry/view/{id}`) filled in as it was saved; Delete removes the whole cross.
+  - Deleting a single score from the list is gone from the UI (the endpoint stays): take a dog out by
+    editing the cross and emptying its row. This replaces decision Q12 ("delete and re-enter").
+- **Special awards (note 5).** `award` (title, dog number, notes), `GET|POST /awards`,
+  `PUT|DELETE /awards/{id}`, and an **Awards** page in the rail: the award's name (Best Mouth and
+  Classiest Hound are offered, any name can be typed), the dog's number (the dog's name appears as it is
+  typed) and an optional note. For printing there is an `awards` dataset in the report builder, a
+  built-in **Special awards** sheet and a section on the hunt summary. Awards follow a dog that is
+  renumbered, go when the dog is deleted, and a new hunt starts without them.
+- **Schema: `V2__first_hunt_notes.sql`**, the first real Flyway script after the baseline. It adds the
+  hunt columns, `crosses`, the two score columns and `award`, and turns existing scores into crosses
+  (one per day, judge and time, numbered in the order of entry). An existing database is copied to
+  `backups/trackhounds-before-upgrade-*.db` first, as designed in iteration 8.
+
+Fixed on the way (details in the logic review, F21 to F25):
+
+- The proposed points of a row were frozen the first time the server answered, so a number retyped
+  (or, in a dual hunt, a dog of the other stake) kept the points of what was there before, and changing
+  First dog points did nothing for rows already filled. Proposed and typed-in points are now kept apart.
+- A cross saved from the keyboard faster than the proposal came back was saved with the page's own
+  estimate. The save now asks for a fresh proposal for exactly the dogs being saved.
+- Messages the server gives per dog were shown on the wrong row when a row above was empty or skipped.
+- A dog whose only cross of a day was deleted still counted as scored that day (place and 0 points on
+  the daily sheets).
+- Two crosses by one judge at the same minute were counted as one on the judge and hunt summaries.
+
+Verification:
+
+- 139 backend tests pass (`CrossServiceTest`, `AwardServiceTest`, `AwardControllerTest` and additions
+  to the hunt, report, controller and migration tests), including `SchemaMatchesEntitiesTest` against
+  V2 and a migration test that builds a 3.0 database with scores and checks the crosses it gets.
+  `npm run lint` reports no errors.
+- From the built jar, against a seeded hunt in a scratch data folder: every changed page screenshotted
+  with headless Edge (single-stake and dual), and a keyboard-driven run through the DevTools protocol
+  with real key events: 29 checks covering the Enter flow, `0731` becoming `07:31`, rows added by
+  Enter, pack scoring past the minimum, the unregistered-dog stop and skip, correcting and deleting a
+  cross, adding an award and a scratch with `1045`. All passed.
+- The same pages captured from the JavaFX window (`-Dtrackhounds.desktop.capture`, which now also
+  visits the award and edit-cross pages) render like the Edge ones. The keyboard flow itself was not
+  driven inside the JavaFX window; it uses the same key events as the arrow-key navigation that was
+  already there.
+- A copy of this machine's installed database (version 1, no hunt in it) upgraded to version 2 on start
+  with the backup taken.
+- `docs/screenshots/`: home, hunt-edit, score-entry, scores and report-hunt-summary retaken, and
+  awards and edit-cross added. The other pictures there still show the interface of earlier iterations.
+
+Learned:
+
+- A plain `./mvnw compile` runs `npm ci`, which empties `frontend/node_modules` first. Once in this
+  session that failed half-way (`ENOTEMPTY` on a folder, with VS Code open on the project) and left
+  `node_modules` incomplete; `npm ci` in `frontend/` repaired it, and the full `./mvnw verify` at the end
+  of the session went through. For backend-only work use `-DskipFrontend=true` (cheat sheet), which
+  skips the UI install and build altogether.
+- The test that stands in for "a database written by 3.0" used to build the current schema and drop the
+  history table. That stops being a 3.0 database the moment a V2 exists; it is now built from the
+  tables of `V1__baseline.sql`.
+- Hibernate gives a bulk `delete` a table alias, which SQLite's `DELETE` syntax may not take, so the
+  one bulk delete here (crosses left without a score) is native SQL, like the renumbering.
+
+Confirmed by the author (2026-11-24), twelve questions, all answered:
+
+- As built: the pack minimum as a hunt setting (15), separate ladders per stake in a dual hunt, pack
+  scoring changing nothing but the points of a cross, 0 points from the eighth dog under standard
+  scoring, dogs moving up when one is taken out of a saved cross, Enter skipping the points boxes,
+  crosses corrected and deleted as a whole, the last three crosses entered on any day, and president and
+  Master of Hounds on the hunt summary only.
+- To add: the awards also print next to the dog on the final standings and are a column the report
+  builder can use (Q29).
+- The first test hunt's data is on another computer; the author brings a copy for the upgrade check.
+
+Next, in this order:
+
+1. **Commit** the work as it stands, which is the state that was verified above.
+2. **Awards in two more places.** An `awards` column in the `dogs` dataset (the dog's award titles,
+   comma separated), which makes it available in the report builder. Overall speed and drive and Top dogs
+   overall carry it right after the name, left out when no dog on the sheet has an award, so a sheet
+   printed before the awards are decided looks as it does today (a column option beside `auto`). Tests in
+   `ReportDatasetServiceTest`, a check from the jar, second commit.
+3. **The author tries it in the real window**: a cross typed with Enter only and a time without the
+   colon, correcting and deleting a cross from View scores, an award, and printing the hunt summary and
+   the Special awards sheet. The Enter flow has only been driven in Edge so far.
+4. **Upgrade check on real data.** The author brings `trackhounds.db` (or a downloaded backup) from the
+   hunt computer. The new jar is started on a copy in a scratch folder; the overall standings must be
+   identical before and after, every score must belong to a cross, and the crosses on View scores must
+   read like the judges' cards.
+5. **Release** once 3 and 4 pass: a release candidate tag for the CI-built installer, which is also the
+   install test still open under iteration 4.
+
 ### 💡 Ideas / parking lot
 
 - Replace `int[]`/`StakeType[]` columns on `HuntEntity` with explicit columns for readability of the
@@ -718,6 +851,7 @@ Decisions taken 2026-09-14 (the recommended option in each case):
 ```bash
 cd trackhounds
 ./mvnw verify                                  # UI + backend + tests
+./mvnw test -DskipFrontend=true                # backend tests only: no npm ci, no UI build
 ./mvnw spring-boot:run                         # desktop mode from source
 ./mvnw spring-boot:run -Dspring-boot.run.arguments=--server   # server only (UI dev with `npm run dev`)
 ./mvnw package -DskipTests -Papp-image         # target/dist/TrackHounds/TrackHounds.exe
@@ -736,8 +870,8 @@ every page from the JavaFX window and quits.
 - The application window is a JavaFX WebView and needs no browser. Only if JavaFX cannot start (which
   has not been seen on Windows) does the UI open in Edge or Chrome app mode, or in the default browser,
   where the app is closed from the tray icon.
-- Time fields in the JavaFX window are plain text boxes (WebKit has no time picker); they show an
-  `HH:MM` placeholder and a badly formed time is reported when the cross is saved.
+- Time fields are plain text boxes in every window (there is no time picker): a time is typed as
+  `0600` or `06:00` and a badly formed one is reported before the cross is saved.
 - One writer at a time (SQLite): fine for a single operator; not designed for several scorers entering
   data at once from different computers.
 - Data from version 2 (Docker volume) is not migrated.

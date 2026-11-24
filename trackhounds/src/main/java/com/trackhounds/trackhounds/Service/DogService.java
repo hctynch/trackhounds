@@ -2,12 +2,16 @@ package com.trackhounds.trackhounds.Service;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.trackhounds.trackhounds.Dto.ScoreDto;
+import com.trackhounds.trackhounds.Entity.CrossEntity;
 import com.trackhounds.trackhounds.Entity.DailyScore;
 import com.trackhounds.trackhounds.Entity.Days;
 import com.trackhounds.trackhounds.Entity.DogEntity;
@@ -25,6 +30,8 @@ import com.trackhounds.trackhounds.Entity.Score;
 import com.trackhounds.trackhounds.Entity.Scratch;
 import com.trackhounds.trackhounds.Enums.StakeType;
 import com.trackhounds.trackhounds.Exception.TrackHoundsAPIException;
+import com.trackhounds.trackhounds.Repository.AwardRepository;
+import com.trackhounds.trackhounds.Repository.CrossRepository;
 import com.trackhounds.trackhounds.Repository.DailyScoreRepository;
 import com.trackhounds.trackhounds.Repository.DaysRepository;
 import com.trackhounds.trackhounds.Repository.DogRepository;
@@ -93,6 +100,18 @@ public class DogService {
   private HuntRepository huntRepository;
 
   /**
+   * Cross Repository
+   */
+  @Autowired
+  private CrossRepository crossRepository;
+
+  /**
+   * Award Repository
+   */
+  @Autowired
+  private AwardRepository awardRepository;
+
+  /**
    * Entity manager, used where a change has to bypass the entity mapping
    * (renumbering a dog rewrites its primary key).
    */
@@ -146,7 +165,17 @@ public class DogService {
    */
   public List<DogEntity> deleteDog(String number) {
     dogRepository.deleteById(number);
+    // The dog's scores go with it; its awards and any cross left without a dog go too.
+    awardRepository.deleteAll(awardRepository.findByDogNumber(number));
+    removeEmptyCrosses();
     return getDogs();
+  }
+
+  /** Delete the crosses that no longer have a score (their last dog was removed). */
+  private void removeEmptyCrosses() {
+    entityManager.flush();
+    entityManager.createNativeQuery("delete from crosses where not exists (select 1 from score where score.cross_id = crosses.id)")
+        .executeUpdate();
   }
 
   public List<DogEntity> deleteDog(int number) {
@@ -209,13 +238,14 @@ public class DogService {
     if (!errs.isEmpty())
       throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid fields", errs);
 
-    // The number is a primary key referenced from three tables; rewriting it in
-    // place keeps every row's identity (score ids, scratch ids) unchanged.
+    // The number is a primary key referenced from four tables; rewriting it in
+    // place keeps every row's identity (score ids, scratch ids, award ids) unchanged.
     String source = dog.getNumber();
     entityManager.flush();
     entityManager.clear();
     for (String[] column : List.of(new String[] { "dogs", "number" }, new String[] { "daily_score", "dog_number" },
-        new String[] { "score", "dog_number" }, new String[] { "scratch", "dog_number" })) {
+        new String[] { "score", "dog_number" }, new String[] { "scratch", "dog_number" },
+        new String[] { "award", "dog_number" })) {
       entityManager.createNativeQuery(String.format("update %s set %s = :target where %s = :source", column[0], column[1], column[1]))
           .setParameter("target", target)
           .setParameter("source", source)
@@ -266,79 +296,76 @@ public class DogService {
     if (huntRepository.count() == 0)
       return crossInfo;
     HuntEntity hunt = huntRepository.findAll().get(0);
-    if (stakeType != StakeType.DUAL) {
-      for (int i = 0; i < numbers.length; i++) {
-        Optional<DogEntity> dogRetrieval = dogRepository.findById(numbers[i]);
-        Map<String, Object> dogInfo = new HashMap<>();
-        if (dogRetrieval.isEmpty()) {
-          dogInfo.put("dogNumber", numbers[i]);
-          dogInfo.put("error", "Dog does not exist. Skipping.");
-          crossInfo.add(dogInfo);
-          continue;
-        }
-        DogEntity dog = dogRetrieval.get();
-        dogInfo.put("dogNumber", dog.getNumber());
-        dogInfo.put("stake", dog.getStake());
-        dogInfo.put("scratched", dog.isScratched());
-        dogInfo.put("points", startingPoints - (interval * i));
+    // Under pack scoring the ladder stops at the hunt's minimum and every later dog gets it;
+    // otherwise it stops at zero.
+    int lowest = hunt.lowestCrossPoints();
+    boolean dual = stakeType == StakeType.DUAL;
+    // Places already taken: one ladder, or one per stake in a dual hunt.
+    int placed = 0;
+    int placedDerby = 0;
+    for (int i = 0; i < numbers.length; i++) {
+      Optional<DogEntity> dogRetrieval = dogRepository.findById(numbers[i]);
+      Map<String, Object> dogInfo = new HashMap<>();
+      if (dogRetrieval.isEmpty()) {
+        // A dog that is not registered still takes its place in the cross.
+        dogInfo.put("dogNumber", numbers[i]);
+        dogInfo.put("error", "Dog does not exist. Skipping.");
         crossInfo.add(dogInfo);
-      }
-    } else {
-      int sp1 = startingPoints;
-      int sp2 = startingPoints;
-      for (int i = 0; i < numbers.length; i++) {
-        Optional<DogEntity> dogRetrieval = dogRepository.findById(numbers[i]);
-        Map<String, Object> dogInfo = new HashMap<>();
-        if (dogRetrieval.isEmpty()) {
-          dogInfo.put("dogNumber", numbers[i]);
-          dogInfo.put("error", "Dog does not exist. Skipping.");
-          crossInfo.add(dogInfo);
-          if (hunt.getStakeRange() != null && hunt.getStakeTypeRange() != null) {
-            long value = DogEntity.numericValue(numbers[i]);
-            if (value < hunt.getStakeRange()[1]) {
-              if (hunt.getStakeTypeRange()[0] == StakeType.ALL_AGE) {
-                sp1 -= interval;
-              } else {
-                sp2 -= interval;
-              }
-            } else if (value < hunt.getStakeRange()[2]) {
-              if (hunt.getStakeTypeRange()[1] == StakeType.ALL_AGE) {
-                sp1 -= interval;
-              } else {
-                sp2 -= interval;
-              }
-            } else if (value < hunt.getStakeRange()[3]) {
-              if (hunt.getStakeTypeRange()[2] == StakeType.ALL_AGE) {
-                sp1 -= interval;
-              } else {
-                sp2 -= interval;
-              }
-            } else {
-              if (hunt.getStakeTypeRange()[3] == StakeType.ALL_AGE) {
-                sp1 -= interval;
-              } else {
-                sp2 -= interval;
-              }
-            }
-          }
-          continue;
-        }
-        DogEntity dog = dogRetrieval.get();
-        dogInfo.put("dogNumber", dog.getNumber());
-        dogInfo.put("stake", dog.getStake());
-        dogInfo.put("scratched", dog.isScratched());
-        if (dog.getStake() == StakeType.ALL_AGE) {
-          dogInfo.put("points", sp1);
-          sp1 -= interval;
+        if (!dual) {
+          placed++;
         } else {
-          dogInfo.put("points", sp2);
-          sp2 -= interval;
+          Boolean derby = derbyByNumberRange(hunt, numbers[i]);
+          if (derby != null && derby) {
+            placedDerby++;
+          } else if (derby != null) {
+            placed++;
+          }
         }
-        crossInfo.add(dogInfo);
+        continue;
       }
+      DogEntity dog = dogRetrieval.get();
+      dogInfo.put("dogNumber", dog.getNumber());
+      dogInfo.put("stake", dog.getStake());
+      dogInfo.put("scratched", dog.isScratched());
+      if (dual && dog.getStake() != StakeType.ALL_AGE) {
+        dogInfo.put("points", ladderPoints(startingPoints, interval, placedDerby++, lowest));
+      } else {
+        dogInfo.put("points", ladderPoints(startingPoints, interval, placed++, lowest));
+      }
+      crossInfo.add(dogInfo);
     }
 
     return crossInfo;
+  }
+
+  /**
+   * Points for a place in a cross: the first-dog points less the point step
+   * for every dog ahead, never below {@code lowest}.
+   *
+   * @param startingPoints points of the first dog
+   * @param step           points between two dogs
+   * @param position       dogs ahead in the same ladder (0 for the first dog)
+   * @param lowest         the pack minimum, or 0 without pack scoring
+   * @return points for that place
+   */
+  public static int ladderPoints(int startingPoints, int step, int position, int lowest) {
+    return Math.max(lowest, startingPoints - step * position);
+  }
+
+  /**
+   * Which ladder of a dual hunt a number belongs to by the hunt's number
+   * ranges: {@code true} for derby, {@code false} for all age, {@code null}
+   * when the hunt has no ranges.
+   */
+  private static Boolean derbyByNumberRange(HuntEntity hunt, String number) {
+    int[] range = hunt.getStakeRange();
+    StakeType[] types = hunt.getStakeTypeRange();
+    if (range == null || types == null || range.length < 4 || types.length < 4) {
+      return null;
+    }
+    long value = DogEntity.numericValue(number);
+    int index = value < range[1] ? 0 : value < range[2] ? 1 : value < range[3] ? 2 : 3;
+    return types[index] != StakeType.ALL_AGE;
   }
 
   /**
@@ -395,11 +422,49 @@ public class DogService {
     daysRepository.deleteAll();
     scoreRepository.deleteAll();
     scratchRepository.deleteAll();
+    crossRepository.deleteAll();
+    awardRepository.deleteAll();
+  }
+
+  /** {@code 06:05}, {@code 6:05} or {@code 06:05:00}. */
+  private static final Pattern TIME_WITH_COLON = Pattern.compile("(\\d{1,2}):(\\d{2})(?::(\\d{2}))?");
+  /** {@code 0605} or {@code 605}: the last two digits are the minutes. */
+  private static final Pattern TIME_DIGITS = Pattern.compile("(\\d{1,2})(\\d{2})");
+
+  /**
+   * Read a time the way operators type it: with a colon ({@code 06:05},
+   * {@code 6:05}, {@code 06:05:00}) or as digits only ({@code 0605},
+   * {@code 605}, {@code 1300}).
+   *
+   * @param text what was typed
+   * @return the time
+   * @throws IllegalArgumentException if the text is not a time of day
+   */
+  public static LocalTime parseTime(String text) {
+    String value = text == null ? "" : text.trim();
+    Matcher colon = TIME_WITH_COLON.matcher(value);
+    Matcher digits = TIME_DIGITS.matcher(value);
+    try {
+      if (colon.matches()) {
+        return LocalTime.of(Integer.parseInt(colon.group(1)), Integer.parseInt(colon.group(2)),
+            colon.group(3) == null ? 0 : Integer.parseInt(colon.group(3)));
+      }
+      if (digits.matches()) {
+        return LocalTime.of(Integer.parseInt(digits.group(1)), Integer.parseInt(digits.group(2)));
+      }
+    } catch (java.time.DateTimeException e) {
+      throw new IllegalArgumentException("Not a time of day: " + value, e);
+    }
+    throw new IllegalArgumentException("Not a time of day: " + value);
+  }
+
+  /** The times of a submitted cross once it has passed every check. */
+  private record CheckedCross(LocalTime startTime, LocalTime crossTime) {
   }
 
   /**
    * Create a score
-   * 
+   *
    * @param score Score to create
    * @throws TrackHoundsAPIException if judge does not exist, dog does not exist,
    *                                 scores
@@ -410,6 +475,19 @@ public class DogService {
    *                                 start time.
    */
   public void createScore(ScoreDto score) {
+    CheckedCross checked = checkCross(score);
+    CrossEntity cross = crossRepository.save(new CrossEntity(score.getDay(), checked.crossTime(), score.getJudge()));
+    writeScores(cross, score, checked);
+  }
+
+  /**
+   * Check a submitted cross without changing anything.
+   *
+   * @param score the cross as entered
+   * @return the start time of the day and the cross time
+   * @throws TrackHoundsAPIException with one message per field that is wrong
+   */
+  private CheckedCross checkCross(ScoreDto score) {
     Map<String, String> errs = new HashMap<>();
     if (judgeRepository.findById(score.getJudge()).isEmpty())
       errs.put("judge", "Judge does not exist.");
@@ -444,24 +522,24 @@ public class DogService {
     Optional<Days> existingDay = daysRepository.findById(score.getDay());
     LocalTime startTime = existingDay.map(Days::getStartTime).orElse(null);
     if (startTime == null) {
-      if (score.getStartTime() == null || score.getStartTime().isEmpty()) {
+      if (score.getStartTime() == null || score.getStartTime().isBlank()) {
         errs.put("startTime", "Start time cannot be empty.");
       } else {
         try {
-          startTime = LocalTime.parse(score.getStartTime());
+          startTime = parseTime(score.getStartTime());
         } catch (Exception e) {
-          errs.put("startTime", "Invalid start time.");
+          errs.put("startTime", "Invalid start time. Enter it as 0600 or 06:00.");
         }
       }
     }
     LocalTime crossTime = null;
-    if (score.getCrossTime() == null || score.getCrossTime().isEmpty()) {
+    if (score.getCrossTime() == null || score.getCrossTime().isBlank()) {
       errs.put("crossTime", "Cross time cannot be empty.");
     } else {
       try {
-        crossTime = LocalTime.parse(score.getCrossTime());
+        crossTime = parseTime(score.getCrossTime());
       } catch (Exception e) {
-        errs.put("crossTime", "Invalid cross time.");
+        errs.put("crossTime", "Invalid cross time. Enter it as 0600 or 06:00.");
       }
     }
     if (crossTime != null && startTime != null && crossTime.isBefore(startTime))
@@ -469,8 +547,16 @@ public class DogService {
 
     if (errs.size() > 0)
       throw new TrackHoundsAPIException(HttpStatus.BAD_REQUEST, "Invalid Fields", errs);
+    return new CheckedCross(startTime, crossTime);
+  }
 
-    Days day = existingDay.orElse(new Days(score.getDay(), startTime));
+  /**
+   * Store the dogs of a checked cross: one score per dog, in crossing order,
+   * each added to the dog's day and counted or not by the scoring interval.
+   */
+  private void writeScores(CrossEntity cross, ScoreDto score, CheckedCross checked) {
+    LocalTime startTime = checked.startTime();
+    Days day = daysRepository.findById(score.getDay()).orElse(new Days(score.getDay(), startTime));
     if (day.getStartTime() == null)
       day.setStartTime(startTime);
     day = daysRepository.save(day);
@@ -489,11 +575,153 @@ public class DogService {
         dailyScore = dailyScoreRepository.save(new DailyScore(day, dog));
         dog.getScores().add(dailyScore);
       }
-      Score s = new Score(score.getScores()[i], crossTime, false, score.getJudge(), dog.getNumber(), day.getDay());
+      Score s = new Score(score.getScores()[i], checked.crossTime(), false, score.getJudge(), dog.getNumber(), day.getDay());
+      s.setCrossId(cross.getId());
+      s.setCrossPosition(i);
       s = scoreRepository.save(s);
       dailyScore.addScore(s, startTime, scoringInterval);
       scoreRepository.save(s);
       dailyScoreRepository.save(dailyScore);
+      dog.setPoints(calculateTotalPoints(dog));
+      dogRepository.save(dog);
+    }
+  }
+
+  /**
+   * Every cross of the hunt with its dogs in crossing order, by day, then
+   * cross time, then order of entry. Ids grow with the order of entry, so the
+   * highest id is the cross entered last.
+   *
+   * @param day only this day, or null for every day
+   * @return one row per cross: id, day, time, judge, and its scores
+   */
+  public List<Map<String, Object>> getCrosses(Integer day) {
+    Map<Long, List<Score>> scoresByCross = new HashMap<>();
+    for (Score score : scoreRepository.findAll()) {
+      if (score.getCrossId() != null)
+        scoresByCross.computeIfAbsent(score.getCrossId(), id -> new ArrayList<>()).add(score);
+    }
+    Map<String, DogEntity> dogs = new HashMap<>();
+    for (DogEntity dog : dogRepository.findAll())
+      dogs.put(dog.getNumber(), dog);
+    Map<Integer, JudgeEntity> judges = new HashMap<>();
+    for (JudgeEntity judge : judgeRepository.findAll())
+      judges.put(judge.getNumber(), judge);
+
+    List<Map<String, Object>> crosses = new ArrayList<>();
+    for (CrossEntity cross : crossRepository.findAllByOrderByDayAscTimeAscIdAsc()) {
+      if (day != null && cross.getDay() != day)
+        continue;
+      crosses.add(describeCross(cross, scoresByCross.getOrDefault(cross.getId(), List.of()), dogs, judges));
+    }
+    return crosses;
+  }
+
+  /**
+   * One cross with its dogs in crossing order.
+   *
+   * @param crossId id of the cross
+   * @throws TrackHoundsAPIException if the cross does not exist
+   */
+  public Map<String, Object> getCross(Long crossId) {
+    CrossEntity cross = findCross(crossId);
+    Map<String, DogEntity> dogs = new HashMap<>();
+    List<Score> scores = scoreRepository.findByCrossIdOrderByCrossPositionAscIdAsc(crossId);
+    for (Score score : scores)
+      dogRepository.findById(score.getDogNumber()).ifPresent(dog -> dogs.put(dog.getNumber(), dog));
+    Map<Integer, JudgeEntity> judges = new HashMap<>();
+    judgeRepository.findById(cross.getJudgeNumber()).ifPresent(judge -> judges.put(judge.getNumber(), judge));
+    return describeCross(cross, scores, dogs, judges);
+  }
+
+  private CrossEntity findCross(Long crossId) {
+    return crossRepository.findById(crossId == null ? -1L : crossId)
+        .orElseThrow(() -> new TrackHoundsAPIException(HttpStatus.NOT_FOUND, "Cross does not exist.",
+            Map.of("cross", "This cross no longer exists. It may have been deleted.")));
+  }
+
+  private static Map<String, Object> describeCross(CrossEntity cross, List<Score> scores, Map<String, DogEntity> dogs,
+      Map<Integer, JudgeEntity> judges) {
+    JudgeEntity judge = judges.get(cross.getJudgeNumber());
+    Map<String, Object> row = new LinkedHashMap<>();
+    row.put("id", cross.getId());
+    row.put("day", cross.getDay());
+    row.put("time", cross.getTime());
+    row.put("judgeNumber", cross.getJudgeNumber());
+    row.put("judgeName", judge == null ? null : judge.getName());
+    List<Score> ordered = new ArrayList<>(scores);
+    ordered.sort(Comparator.comparingInt(Score::getCrossPosition).thenComparing(Score::getId));
+    List<Map<String, Object>> entries = new ArrayList<>();
+    for (Score score : ordered) {
+      DogEntity dog = dogs.get(score.getDogNumber());
+      Map<String, Object> entry = new LinkedHashMap<>();
+      entry.put("id", score.getId());
+      entry.put("position", entries.size() + 1);
+      entry.put("dogNumber", score.getDogNumber());
+      entry.put("dogName", dog == null ? null : dog.getName());
+      entry.put("stake", dog == null ? null : dog.getStake());
+      entry.put("scratched", dog != null && dog.isScratched());
+      entry.put("points", score.getPoints());
+      entry.put("counted", score.isCounted());
+      entry.put("interval", score.getTimeBucket() + 1);
+      entries.add(entry);
+    }
+    row.put("scores", entries);
+    return row;
+  }
+
+  /**
+   * Replace a cross with corrected values: its day, time, judge, dogs and
+   * points. The old scores are removed and the corrected ones stored under the
+   * same cross, so the cross keeps its id and its place in the order of entry;
+   * every affected dog's points are recalculated. Nothing changes when the
+   * corrected values are refused.
+   *
+   * @param crossId id of the cross to correct
+   * @param score   the corrected cross
+   * @return the cross as stored
+   * @throws TrackHoundsAPIException if the cross does not exist or a field is
+   *                                 wrong (the same checks as a new cross)
+   */
+  public Map<String, Object> updateCross(Long crossId, ScoreDto score) {
+    CrossEntity cross = findCross(crossId);
+    CheckedCross checked = checkCross(score);
+    for (Score old : scoreRepository.findByCrossIdOrderByCrossPositionAscIdAsc(crossId)) {
+      removeFromItsDay(old);
+    }
+    cross.setDay(score.getDay());
+    cross.setTime(checked.crossTime());
+    cross.setJudgeNumber(score.getJudge());
+    crossRepository.save(cross);
+    writeScores(cross, score, checked);
+    return getCross(crossId);
+  }
+
+  /**
+   * Delete a cross with every score in it; the dogs' points are recalculated.
+   *
+   * @param crossId id of the cross
+   * @throws TrackHoundsAPIException if the cross does not exist
+   */
+  public void deleteCross(Long crossId) {
+    CrossEntity cross = findCross(crossId);
+    for (Score score : scoreRepository.findByCrossIdOrderByCrossPositionAscIdAsc(crossId)) {
+      removeFromItsDay(score);
+    }
+    crossRepository.delete(cross);
+  }
+
+  /** Take one score out of its dog's day and bring the dog's points up to date. */
+  private void removeFromItsDay(Score score) {
+    DailyScore dailyScore = score.getDailyScore();
+    if (dailyScore == null) {
+      scoreRepository.delete(score);
+      return;
+    }
+    dailyScore.removeScore(score);
+    dailyScoreRepository.save(dailyScore);
+    DogEntity dog = dailyScore.getDog();
+    if (dog != null) {
       dog.setPoints(calculateTotalPoints(dog));
       dogRepository.save(dog);
     }
@@ -530,6 +758,13 @@ public class DogService {
     dailyScoreRepository.save(dailyScore);
     dog.setPoints(calculateTotalPoints(dog));
     dogRepository.save(dog);
+    // A cross whose last dog was removed is gone too.
+    Long crossId = score.getCrossId();
+    if (crossId != null) {
+      entityManager.flush();
+      if (scoreRepository.countByCrossId(crossId) == 0)
+        crossRepository.findById(crossId).ifPresent(crossRepository::delete);
+    }
   }
 
   /**
@@ -651,7 +886,8 @@ public class DogService {
 
     for (DogEntity dog : allDogs) {
       Optional<DailyScore> forDay = dog.dailyScoreFor(day);
-      if (forDay.isEmpty()) {
+      // A day whose crosses were all deleted or moved away is not a scored day.
+      if (forDay.isEmpty() || forDay.get().getScores().isEmpty()) {
         continue;
       }
       DailyScore dailyScore = forDay.get();

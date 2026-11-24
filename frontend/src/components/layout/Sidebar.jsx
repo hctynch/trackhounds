@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import {
+  LuAward,
   LuBookOpen,
   LuChevronDown,
   LuClipboardList,
@@ -13,6 +14,7 @@ import {
 } from 'react-icons/lu';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useHunt } from '../../hooks/useHunt';
+import { huntLocation } from '../../lib/hunt';
 import { STAKE_LABELS } from '../ui/Badge';
 
 const navigation = [
@@ -35,6 +37,7 @@ const navigation = [
     ],
   },
   { label: 'Scratch sheet', to: '/scratch-sheet/view', icon: LuFlag },
+  { label: 'Awards', to: '/awards', icon: LuAward },
   { label: 'Reports', to: '/reports', icon: LuFileText },
   { label: 'Backups', to: '/data', icon: LuDatabase },
 ];
@@ -148,6 +151,11 @@ function Sidebar() {
             <p className="truncate text-small text-pine-200">
               {[hunt.dates, STAKE_LABELS[hunt.stake]].filter(Boolean).join(', ')}
             </p>
+            {huntLocation(hunt) && (
+              <p className="truncate text-small text-pine-200" title={huntLocation(hunt)}>
+                {huntLocation(hunt)}
+              </p>
+            )}
           </div>
         ) : (
           <div>

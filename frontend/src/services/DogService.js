@@ -89,6 +89,64 @@ class DogService {
     }
   }
 
+  /**
+   * Every cross with its dogs in crossing order, by day, cross time, then order of entry.
+   * The highest id is the cross entered last.
+   * @param {number} [day] only this day
+   * @returns {Promise<Array|Object>} crosses, or an error body
+   */
+  async getCrosses(day) {
+    try {
+      const response = await this.api.get('/crosses', { params: day ? { day } : {} });
+      return response.data;
+    } catch (error) {
+      return error.response?.data || { message: 'The crosses could not be loaded.' };
+    }
+  }
+
+  /**
+   * One cross with its dogs in crossing order.
+   * @param {number|string} id cross id
+   * @returns {Promise<Object>} the cross, or an error body with a message
+   */
+  async getCrossById(id) {
+    try {
+      const response = await this.api.get(`/crosses/${id}`);
+      return response.data;
+    } catch (error) {
+      return error.response?.data || { message: 'The cross could not be loaded.' };
+    }
+  }
+
+  /**
+   * Correct a cross: its day, time, judge, dogs and points are replaced.
+   * @param {number|string} id cross id
+   * @param {Object} cross the corrected cross, in the shape postCross sends
+   * @returns {Promise<null|Object>} null when saved, otherwise an error body with fields
+   */
+  async updateCross(id, cross) {
+    try {
+      await this.api.put(`/crosses/${id}`, cross);
+      return null;
+    } catch (error) {
+      return error.response?.data || { message: 'The cross could not be saved.' };
+    }
+  }
+
+  /**
+   * Delete a cross with every score in it.
+   * @param {number|string} id cross id
+   * @returns {Promise<null|Object>} null when deleted, otherwise an error body
+   */
+  async removeCross(id) {
+    try {
+      await this.api.delete(`/crosses/${id}`);
+      return null;
+    } catch (error) {
+      return error.response?.data || { message: 'The cross could not be deleted.' };
+    }
+  }
+
   async getStartTime(day) {
     try {
       const response = await this.api.get(`/day/${day}`);
@@ -342,10 +400,12 @@ class DogService {
         return [];
       }
       
+      // 0 is a real value for both (a hunt can give every dog the same points), so only a
+      // missing value falls back to the usual 35 and 5.
       const request = {
         dogNumbers: filteredNumbers,
-        startingPoints: startingPoints || 35, // Default to 35 if not specified
-        interval: interval || 5,        // Default to 5 if not specified
+        startingPoints: Number.isFinite(Number(startingPoints)) ? Number(startingPoints) : 35,
+        interval: Number.isFinite(Number(interval)) ? Number(interval) : 5,
         stakeType: stakeType || 'ALL_AGE'  // Default to ALL_AGE if not specified
       };
       

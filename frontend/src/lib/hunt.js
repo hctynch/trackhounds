@@ -46,5 +46,33 @@ export const STAKE_VIEWS = [
   { value: 'DERBY', label: 'Derby' },
 ];
 
+/** Where the hunt is held, as "City, State" (either part may be missing); empty when neither is set. */
+export function huntLocation(hunt) {
+  return [hunt?.city, hunt?.state].map((part) => String(part ?? '').trim()).filter(Boolean).join(', ');
+}
+
+/** The lowest points a cross proposes: the pack minimum under pack scoring, otherwise zero. */
+export function lowestCrossPoints(hunt) {
+  return hunt?.packScoring ? Math.max(0, Number(hunt.packMinimumPoints) || 0) : 0;
+}
+
+/** Points for a place in a cross (0 for the first dog): the first-dog points less the step per dog ahead, never below `lowest`. */
+export function ladderPoints(firstDogPoints, pointStep, position, lowest = 0) {
+  return Math.max(lowest, Number(firstDogPoints) - Number(pointStep) * position);
+}
+
+/**
+ * The points of the first dogs of a cross as a sentence fragment, to show what a scoring setting
+ * does: "35, 30, 25, 20, 15, 15, 15" for pack scoring with a minimum of 15.
+ */
+export function ladderPreview(firstDogPoints, pointStep, lowest = 0, length = 8) {
+  const first = Number(firstDogPoints) || 0;
+  const step = Number(pointStep) || 0;
+  return Array.from({ length }, (_, position) => ladderPoints(first, step, position, lowest)).join(', ');
+}
+
+/** Awards most hunts give, offered as one-click names on the Awards page. Any other name can be typed. */
+export const AWARD_SUGGESTIONS = ['Best Mouth', 'Classiest Hound'];
+
 /** Reasons offered on the scratch sheet; "Other" takes free text. */
 export const SCRATCH_REASONS = ['Injured', 'Withdrawn by owner', 'Not found', 'Disqualified', 'Other'];

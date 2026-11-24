@@ -1,13 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { LuPlus, LuTriangleAlert } from 'react-icons/lu';
-import { Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { LuPencil, LuPlus, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
-import { dayOptions, showsStake, stakeForNumber } from '../lib/hunt';
+import { dayOptions, ladderPoints, lowestCrossPoints, showsStake, stakeForNumber } from '../lib/hunt';
+import { TIME_HELP, formatTime, parseTime } from '../lib/time';
 import DogService from '../services/DogService';
 import {
   Alert,
+  Badge,
   Button,
   CellInput,
+  ConfirmDialog,
   Dialog,
   Field,
   Input,
@@ -19,31 +23,69 @@ import {
   STAKE_LABELS,
   SegmentedControl,
   StakeBadge,
+  TimeInput,
   useToast,
 } from './ui';
 
 const MIN_ROWS = 7;
 const REGISTER_STAKES = ['ALL_AGE', 'DERBY'].map((value) => ({ value, label: STAKE_LABELS[value] }));
 
-const isDogNumber = (value) => /^[0-9]{1,6}$/.test(String(value ?? "").trim());
+const isDogNumber = (value) => /^[0-9]{1,6}$/.test(String(value ?? '').trim());
 const filled = (count, value) => Array.from({ length: count }, () => value);
+const padded = (values, count, value) => [...values, ...filled(Math.max(0, count - values.length), value)];
+const numberIn = (value) => String(value ?? '').trim();
+
+/** The dogs of a cross on one line: number, stake tag where it says something, and points. */
+function CrossDogs({ cross, hunt }) {
+  return (
+    <span className="flex flex-wrap gap-x-3 gap-y-1 tabular">
+      {cross.scores.map((score) => (
+        <span
+          key={score.id}
+          className={`inline-flex items-center gap-1 ${score.counted ? '' : 'text-ink-faint'}`}
+          title={`${score.dogName ? `${score.dogName}. ` : ''}${score.counted ? 'Counted' : 'Not counted: a higher cross in the same interval'}`}
+        >
+          {score.dogNumber}
+          {showsStake(hunt, score.stake) && <StakeBadge stake={score.stake} />}
+          <span className="text-ink-muted">({score.points})</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+CrossDogs.propTypes = {
+  cross: PropTypes.shape({ scores: PropTypes.array.isRequired }).isRequired,
+  hunt: PropTypes.object,
+};
 
 /**
- * The page scorekeepers live on. Everything is reachable with arrow keys and Enter, the points
- * for each dog are worked out as numbers are typed so the judge can check them, and a dog that is
- * not registered can be registered on the spot or skipped.
+ * The page scorekeepers live on. One cross at a time: the judge, the time, and the dogs in the
+ * order they crossed. Everything is reachable from the keyboard (Enter and Tab move forward, the
+ * arrow keys move in every direction), the points for each dog are proposed as numbers are typed,
+ * and a dog that is not registered can be registered on the spot or skipped.
+ *
+ * With `crossId` the page corrects a cross that was already saved instead of entering a new one.
  */
-function ScoreEntry() {
+function ScoreEntry({ crossId }) {
   const toast = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { hunt, loading: huntLoading } = useHunt();
   const huntExists = Boolean(hunt);
   const huntType = hunt?.stake || 'ALL_AGE';
   const scoringInterval = hunt?.huntInterval ?? 0;
+  const lowest = lowestCrossPoints(hunt);
+  const editing = Boolean(crossId);
+  const backTo = location.state?.from || '/score-entry/view';
 
   const [selectedDay, setSelectedDay] = useState(1);
   const [rows, setRows] = useState(MIN_ROWS);
   const [dogs, setDogs] = useState(filled(MIN_ROWS, ''));
+  // Points come from two places and are kept apart: what the scoring proposes for the dogs as
+  // they stand (autoPoints, from the server), and what the operator typed over it (customPoints).
   const [customPoints, setCustomPoints] = useState(filled(MIN_ROWS, null));
+  const [autoPoints, setAutoPoints] = useState(filled(MIN_ROWS, null));
   const [dogErrors, setDogErrors] = useState(filled(MIN_ROWS, false));
   const [dogStakes, setDogStakes] = useState(filled(MIN_ROWS, null));
   const [skipped, setSkipped] = useState(filled(MIN_ROWS, false));
@@ -56,42 +98,13 @@ function ScoreEntry() {
   const [error, setError] = useState({});
   const [saving, setSaving] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
-  const [recent, setRecent] = useState([]); // last crosses of the selected day, newest first
-  const [dogsByNumber, setDogsByNumber] = useState({}); // registered dogs, for the stake tags on recent crosses
+  const [crosses, setCrosses] = useState([]); // every cross of the hunt, with its dogs
 
-  // Reloaded after every save and registration, so a dog registered from the cross has its tag at once.
-  useEffect(() => {
-    if (!huntExists) return;
-    DogService.getDogs().then((list) => {
-      const byNumber = {};
-      (Array.isArray(list) ? list : []).forEach((dog) => {
-        byNumber[String(dog.number)] = dog;
-      });
-      setDogsByNumber(byNumber);
-    });
-  }, [huntExists, refreshTick]);
-
-  useEffect(() => {
-    if (!huntExists) return;
-    DogService.getScoresByDay(selectedDay).then((scores) => {
-      if (!Array.isArray(scores)) {
-        setRecent([]);
-        return;
-      }
-      // Group the day's scores into crosses (same judge and time), newest first.
-      const groups = new Map();
-      scores.forEach((score) => {
-        const key = `${score.judgeNumber}@${score.time}`;
-        if (!groups.has(key)) groups.set(key, { key, judge: score.judgeNumber, time: score.time, dogs: [] });
-        groups.get(key).dogs.push(score);
-      });
-      setRecent(Array.from(groups.values()).sort((a, b) => (a.time < b.time ? 1 : a.time > b.time ? -1 : 0)));
-    });
-  }, [selectedDay, huntExists, refreshTick]);
-
-  const judgesLastCross = judge ? recent.find((group) => String(group.judge) === String(judge)) : null;
-  const crossTimeSeconds = crossTime ? `${crossTime}${crossTime.length === 5 ? ':00' : ''}` : '';
-  const earlierThanLast = Boolean(judgesLastCross && crossTimeSeconds && crossTimeSeconds < judgesLastCross.time);
+  // Correcting a saved cross
+  const [original, setOriginal] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Register-on-the-spot dialog
   const [registering, setRegistering] = useState(null); // row index
@@ -106,8 +119,21 @@ function ScoreEntry() {
   const [changeSaving, setChangeSaving] = useState(false);
 
   const inputRefs = useRef({});
-  const debounceTimerRef = useRef(null);
   const resetFlagRef = useRef(false);
+  const proposalRef = useRef(0);
+  // After a saved cross is loaded, stored points that equal the proposal are automatic again.
+  const reconcileRef = useRef(false);
+
+  useEffect(() => {
+    if (!huntExists) return undefined;
+    let cancelled = false;
+    DogService.getCrosses().then((list) => {
+      if (!cancelled) setCrosses(Array.isArray(list) ? list : []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [huntExists, refreshTick]);
 
   useEffect(() => {
     if (!hunt) return;
@@ -123,55 +149,88 @@ function ScoreEntry() {
         setStartTime('');
         setDayStarted(false);
       } else {
-        setStartTime(result);
+        setStartTime(formatTime(result));
         setDayStarted(true);
       }
     });
   }, [selectedDay, huntExists, refreshTick]);
 
-  const updateCrossInfo = useCallback(() => {
-    if (!huntExists || resetFlagRef.current) return;
-    const validDogs = dogs.filter((dog) => isDogNumber(dog));
-    if (validDogs.length === 0) return;
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(async () => {
-      if (resetFlagRef.current) return;
-      try {
-        const crossInfo = await DogService.getCrossInfo(dogs, startingPoints, interval, huntType);
-        if (resetFlagRef.current || !crossInfo || crossInfo.length === 0) return;
-        const infoByDog = {};
-        crossInfo.forEach((info) => {
-          infoByDog[info.dogNumber] = info;
-        });
-        const nextPoints = [...customPoints];
-        const nextErrors = filled(rows, false);
-        const nextStakes = [...dogStakes];
-        dogs.forEach((dog, index) => {
-          if (dog && dog.toString().trim() !== '') {
-            const info = infoByDog[String(dog).trim()];
-            if (info && !info.error) {
-              nextStakes[index] = info.scratched ? `${info.stake}:scratched` : info.stake;
-              if (nextPoints[index] === null) nextPoints[index] = info.points;
-            } else {
-              nextErrors[index] = `Dog ${dog} is not registered in this hunt.`;
-              nextStakes[index] = null;
-            }
-          } else {
-            nextStakes[index] = null;
-          }
-        });
-        setDogErrors(nextErrors);
-        setCustomPoints(nextPoints);
-        setDogStakes(nextStakes);
-      } catch (err) {
-        console.error('Error updating cross info:', err);
-      }
-    }, 400);
-  }, [dogs, startingPoints, interval, huntType, customPoints, huntExists, dogStakes, rows, refreshTick]);
-
+  // Load the cross that is being corrected.
   useEffect(() => {
-    updateCrossInfo();
-  }, [dogs, startingPoints, interval, refreshTick, updateCrossInfo]);
+    if (!editing || !huntExists) return undefined;
+    let cancelled = false;
+    DogService.getCrossById(crossId).then((cross) => {
+      if (cancelled) return;
+      if (!cross || !Array.isArray(cross.scores)) {
+        setLoadError(cross?.fields?.cross || cross?.message || 'That cross could not be loaded.');
+        return;
+      }
+      const count = Math.max(MIN_ROWS, cross.scores.length + 1);
+      setOriginal(cross);
+      setSelectedDay(cross.day);
+      setCrossTime(formatTime(cross.time));
+      setJudge(String(cross.judgeNumber));
+      setRows(count);
+      setDogs(padded(cross.scores.map((score) => String(score.dogNumber)), count, ''));
+      setCustomPoints(padded(cross.scores.map((score) => score.points), count, null));
+      setAutoPoints(filled(count, null));
+      setDogErrors(filled(count, false));
+      setDogStakes(filled(count, null));
+      setSkipped(filled(count, false));
+      reconcileRef.current = true;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [editing, crossId, huntExists]);
+
+  // Ask the server what the scoring proposes for the dogs as they stand: the two ladders of a
+  // dual hunt, the pack minimum, and which numbers are not registered.
+  useEffect(() => {
+    if (!huntExists || resetFlagRef.current) return undefined;
+    const entered = dogs.map((dog, index) => ({ number: numberIn(dog), index })).filter((entry) => entry.number !== '');
+    if (entered.length === 0) return undefined;
+    const request = ++proposalRef.current;
+    const timer = setTimeout(async () => {
+      const info = await DogService.getCrossInfo(
+        entered.map((entry) => entry.number),
+        startingPoints,
+        interval,
+        huntType,
+      );
+      if (request !== proposalRef.current || resetFlagRef.current || !Array.isArray(info) || info.length !== entered.length) return;
+      const nextAuto = filled(rows, null);
+      const nextErrors = filled(rows, false);
+      const nextStakes = filled(rows, null);
+      entered.forEach((entry, position) => {
+        const row = info[position];
+        if (row && !row.error) {
+          nextAuto[entry.index] = row.points;
+          nextStakes[entry.index] = row.scratched ? `${row.stake}:scratched` : row.stake;
+        } else {
+          nextErrors[entry.index] = `Dog ${entry.number} is not registered in this hunt.`;
+        }
+      });
+      setAutoPoints(nextAuto);
+      setDogErrors(nextErrors);
+      setDogStakes(nextStakes);
+      if (reconcileRef.current) {
+        reconcileRef.current = false;
+        setCustomPoints((current) => current.map((value, index) => (value !== null && value === nextAuto[index] ? null : value)));
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [dogs, startingPoints, interval, huntType, huntExists, rows, refreshTick]);
+
+  const otherCrossesOfJudge = useMemo(
+    () => (judge ? crosses.filter((cross) => cross.day === selectedDay && String(cross.judgeNumber) === String(judge) && String(cross.id) !== String(crossId ?? '')) : []),
+    [crosses, judge, selectedDay, crossId],
+  );
+  const typedCrossTime = parseTime(crossTime);
+  const judgesLastCross = otherCrossesOfJudge.length > 0 ? otherCrossesOfJudge[otherCrossesOfJudge.length - 1] : null;
+  const sameTimeCross = typedCrossTime ? otherCrossesOfJudge.find((cross) => formatTime(cross.time) === typedCrossTime) : null;
+  const earlierThanLast = Boolean(!editing && typedCrossTime && judgesLastCross && typedCrossTime < formatTime(judgesLastCross.time));
+  const lastEntered = useMemo(() => [...crosses].sort((a, b) => b.id - a.id).slice(0, 3), [crosses]);
 
   const setAt = (setter) => (index, value) => setter((current) => current.map((entry, i) => (i === index ? value : entry)));
   const setDogAt = setAt(setDogs);
@@ -183,22 +242,27 @@ function ScoreEntry() {
   const handleDogChange = (index, value) => {
     setDogAt(index, value);
     setSkippedAt(index, false);
+    setErrorAt(index, false);
     if (!value) {
       setPointsAt(index, null);
-      setErrorAt(index, false);
       setStakeAt(index, null);
     }
   };
 
+  // An emptied points box goes back to the proposed points.
   const handleCustomPointsChange = (index, value) => setPointsAt(index, value === '' ? null : Number(value));
 
-  // Positions stand: a skipped row still occupies its place in the cross.
-  const calculatePoints = (index) => {
+  // Until the server answers: the place a row takes among the rows that hold a dog. A row that is
+  // skipped still holds its dog, so the dogs behind it keep their places.
+  const localPoints = (index) => {
+    const position = numberIn(dogs[index]) ? dogs.slice(0, index).filter((dog) => numberIn(dog) !== '').length : index;
+    return ladderPoints(startingPoints, interval, position, lowest);
+  };
+
+  const pointsFor = (index) => {
     if (customPoints[index] !== null) return customPoints[index];
-    const present = dogs.filter((dog) => dog && dog.trim() !== '');
-    const position = present.findIndex((dog) => dog === dogs[index]);
-    if (dogs[index] && position !== -1) return Math.max(0, startingPoints - position * interval);
-    return Math.max(0, startingPoints - index * interval);
+    if (numberIn(dogs[index]) && autoPoints[index] !== null) return autoPoints[index];
+    return localPoints(index);
   };
 
   const addRow = () => {
@@ -206,14 +270,52 @@ function ScoreEntry() {
     setRows(next);
     setDogs((current) => [...current, '']);
     setCustomPoints((current) => [...current, null]);
+    setAutoPoints((current) => [...current, null]);
     setDogErrors((current) => [...current, false]);
     setDogStakes((current) => [...current, null]);
     setSkipped((current) => [...current, false]);
     setTimeout(() => inputRefs.current[`dog-${next - 1}`]?.focus(), 0);
   };
 
-  // Arrow-key map between fields. Returns true when the key was handled.
+  const focusField = (fieldId) => {
+    const target = inputRefs.current[fieldId];
+    if (!target) return;
+    target.focus();
+    if (typeof target.select === 'function') target.select();
+    if (fieldId.startsWith('day-')) setSelectedDay(parseInt(fieldId.split('-')[1], 10));
+  };
+
+  /**
+   * Where Enter goes from a box: forward through the cross, the way the judge's card reads (time,
+   * judge, then down the dog numbers; the points fill in by themselves and are skipped). Enter on
+   * an empty dog row means the cross is complete and moves to Save; on the last row it adds a row.
+   * Returns undefined where Enter keeps its own meaning (buttons, the day selector).
+   */
+  const enterTarget = (fieldId) => {
+    const last = rows - 1;
+    if (fieldId === 'startTime') return 'crossTime';
+    if (fieldId === 'crossTime') return 'judge';
+    if (fieldId === 'judge') return 'dog-0';
+    if (fieldId === 'startingPoints') return 'interval';
+    if (fieldId === 'interval') return 'dog-0';
+    const row = /^(dog|points)-(\d+)$/.exec(fieldId);
+    if (!row) return undefined;
+    const index = Number(row[2]);
+    if (row[1] === 'dog' && !numberIn(dogs[index])) return 'submitButton';
+    if (index === last) return row[1] === 'dog' ? 'addRow' : 'submitButton';
+    return `dog-${index + 1}`;
+  };
+
+  // Enter moves forward and the arrow keys move between fields. Returns true when the key was handled.
   const handleKeyDown = (event, fieldId) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      const next = enterTarget(fieldId);
+      if (next === undefined) return false;
+      event.preventDefault();
+      if (next === 'addRow') addRow();
+      else focusField(next);
+      return true;
+    }
     const last = rows - 1;
     const map = {
       'day-1': { ArrowRight: 'day-2', ArrowDown: 'startTime' },
@@ -233,13 +335,11 @@ function ScoreEntry() {
         ArrowUp: i === 0 ? 'interval' : `dog-${i - 1}`,
         ArrowRight: `points-${i}`,
         ArrowDown: i === last ? 'submitButton' : `dog-${i + 1}`,
-        Enter: 'submitButton',
       };
       map[`points-${i}`] = {
         ArrowUp: i === 0 ? 'interval' : `points-${i - 1}`,
         ArrowLeft: `dog-${i}`,
         ArrowDown: i === last ? 'submitButton' : `points-${i + 1}`,
-        Enter: 'submitButton',
       };
     }
     const next = map[fieldId]?.[event.key];
@@ -255,14 +355,12 @@ function ScoreEntry() {
 
   const resetForm = () => {
     resetFlagRef.current = true;
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
+    proposalRef.current += 1;
     setRows(MIN_ROWS);
     setStartingPoints(hunt?.firstDogPoints ?? 35);
     setInterval(hunt?.pointStep ?? 5);
     setCustomPoints(filled(MIN_ROWS, null));
+    setAutoPoints(filled(MIN_ROWS, null));
     setCrossTime('');
     // The judge is kept: one judge usually reports several crosses in a row.
     setDogs(filled(MIN_ROWS, ''));
@@ -277,42 +375,106 @@ function ScoreEntry() {
   };
 
   const handleSubmit = async () => {
-    if (!huntExists) return;
-    const unresolved = dogs.findIndex((dog, index) => dog && dogErrors[index] && !skipped[index]);
-    const badFormat = dogs.findIndex((dog) => dog && dog.trim() !== "" && !isDogNumber(dog));
-    if (badFormat !== -1) {
-      setError((current) => ({ ...current, general: `Dog number "${dogs[badFormat]}" is not valid: digits only, for example 12 or 007.` }));
+    if (!huntExists || saving) return;
+    const entered = dogs.map((dog, index) => ({ number: numberIn(dog), index })).filter((entry) => entry.number !== '');
+    const badFormat = entered.find((entry) => !isDogNumber(entry.number));
+    if (badFormat) {
+      setError({ general: `Dog number "${badFormat.number}" is not valid: digits only, for example 12 or 007.` });
+      focusField(`dog-${badFormat.index}`);
       return;
     }
-    if (unresolved !== -1) {
-      setError((current) => ({ ...current, general: `Dog ${dogs[unresolved]} is not registered. Register it or skip it before saving.` }));
+    // Times may be typed without the colon; they are sent as HH:MM.
+    const found = {};
+    const time = parseTime(crossTime);
+    if (!time) found.crossTime = crossTime.trim() ? TIME_HELP : 'Enter the cross time.';
+    const start = parseTime(startTime);
+    if (!dayStarted && !start) found.startTime = startTime.trim() ? TIME_HELP : 'Enter the start time of the day.';
+    if (Object.keys(found).length > 0) {
+      setError(found);
+      focusField(found.startTime ? 'startTime' : 'crossTime');
       return;
     }
-    const included = dogs.map((dog, index) => ({ dog, index })).filter(({ dog, index }) => isDogNumber(dog) && !skipped[index]);
-    if (included.length === 0) {
-      setError((current) => ({ ...current, general: 'Enter at least one dog number.' }));
-      return;
-    }
+
     setSaving(true);
-    const result = await DogService.postCross({
+    // A fresh proposal for exactly these dogs: the one on screen may be a keystroke behind when
+    // the cross is typed and saved from the keyboard in one go.
+    const proposal = await DogService.getCrossInfo(
+      entered.map((entry) => entry.number),
+      startingPoints,
+      interval,
+      huntType,
+    );
+    const fresh = Array.isArray(proposal) && proposal.length === entered.length ? proposal : null;
+    const isUnknown = (entry, position) => (fresh ? Boolean(fresh[position]?.error) : Boolean(dogErrors[entry.index]));
+    const unknown = entered.filter((entry, position) => isUnknown(entry, position) && !skipped[entry.index]);
+    if (unknown.length > 0) {
+      setDogErrors((current) => current.map((value, index) => (unknown.some((entry) => entry.index === index) ? `Dog ${numberIn(dogs[index])} is not registered in this hunt.` : value)));
+      setError({ general: `Dog ${unknown[0].number} is not registered. Register it or skip it before saving.` });
+      setSaving(false);
+      focusField(`dog-${unknown[0].index}`);
+      return;
+    }
+    const included = entered.map((entry, position) => ({ ...entry, position })).filter((entry) => !skipped[entry.index]);
+    if (included.length === 0) {
+      setError({ general: 'Enter at least one dog number.' });
+      setSaving(false);
+      focusField('dog-0');
+      return;
+    }
+    const pointsOf = (entry) => {
+      if (customPoints[entry.index] !== null) return customPoints[entry.index];
+      if (fresh && typeof fresh[entry.position]?.points === 'number') return fresh[entry.position].points;
+      return pointsFor(entry.index);
+    };
+    const cross = {
       day: selectedDay,
-      startTime,
+      startTime: start || startTime,
       judge: Number(judge),
-      crossTime,
-      dogNumbers: included.map(({ dog }) => dog.trim()),
-      scores: included.map(({ index }) => calculatePoints(index)),
+      crossTime: time,
+      dogNumbers: included.map((entry) => entry.number),
+      scores: included.map(pointsOf),
       // Buckets use the hunt's scoring interval; the server reads it from the hunt.
       interval: scoringInterval,
-    });
+    };
+    const result = editing ? await DogService.updateCross(crossId, cross) : await DogService.postCross(cross);
     setSaving(false);
     if (result) {
-      setError(result.fields || { general: result.message || 'The cross could not be saved.' });
+      // The server numbers dogs and scores by their place in what was sent; put each message on
+      // its row, and anything the page has no box for at the top.
+      const shown = {};
+      const general = [];
+      Object.entries(result.fields || {}).forEach(([key, message]) => {
+        const perRow = /^(dogNumbers|scores)(\d+)$/.exec(key);
+        if (perRow && included[Number(perRow[2])]) shown[`${perRow[1]}${included[Number(perRow[2])].index}`] = message;
+        else if (['startTime', 'crossTime', 'judge'].includes(key)) shown[key] = message;
+        else general.push(message);
+      });
+      if (general.length > 0 || Object.keys(shown).length === 0) shown.general = general.join(' ') || result.message || 'The cross could not be saved.';
+      setError(shown);
       return;
     }
-    const skippedCount = skipped.filter((entry, index) => entry && dogs[index]).length;
-    toast.success(`Cross at ${crossTime} saved for day ${selectedDay}${skippedCount ? `, ${skippedCount} dog skipped` : ''}.`);
+    const skippedCount = skipped.filter((entry, index) => entry && numberIn(dogs[index])).length;
+    const skippedNote = skippedCount ? `, ${skippedCount} ${skippedCount === 1 ? 'dog' : 'dogs'} skipped` : '';
+    if (editing) {
+      toast.success(`Cross at ${time} on day ${selectedDay} updated${skippedNote}. Standings are recalculated.`);
+      navigate(backTo);
+      return;
+    }
+    toast.success(`Cross at ${time} saved for day ${selectedDay}${skippedNote}.`);
     setRefreshTick((tick) => tick + 1);
     resetForm();
+  };
+
+  const deleteCross = async () => {
+    setDeleting(true);
+    const result = await DogService.removeCross(crossId);
+    setDeleting(false);
+    if (result) {
+      toast.error(result.message || 'The cross could not be deleted.');
+      return;
+    }
+    toast.success(`Cross at ${formatTime(original?.time)} on day ${original?.day} deleted. Standings are recalculated.`);
+    navigate(backTo);
   };
 
   // Register a dog straight from the cross.
@@ -345,6 +507,7 @@ function ScoreEntry() {
     toast.success(`Dog ${number} registered.`);
     setErrorAt(registering, false);
     setSkippedAt(registering, false);
+    setError((current) => ({ ...current, general: undefined, [`dogNumbers${registering}`]: undefined }));
     setRegistering(null);
     setRefreshTick((tick) => tick + 1);
   };
@@ -356,13 +519,18 @@ function ScoreEntry() {
   };
   const saveStartTime = async (event) => {
     event.preventDefault();
+    const time = parseTime(newStart);
+    if (!time) {
+      setChangeError(newStart.trim() ? TIME_HELP : 'Enter the new start time.');
+      return;
+    }
     setChangeSaving(true);
-    const result = await DogService.changeStartTime(selectedDay, newStart);
+    const result = await DogService.changeStartTime(selectedDay, time);
     setChangeSaving(false);
     if (typeof result === 'string') {
-      setStartTime(result);
+      setStartTime(formatTime(result));
       setChangingStart(false);
-      toast.success(`Day ${selectedDay} now starts at ${result}. Crosses were re-sorted into scoring intervals.`);
+      toast.success(`Day ${selectedDay} now starts at ${formatTime(result)}. Crosses were re-sorted into scoring intervals.`);
       setRefreshTick((tick) => tick + 1);
       return;
     }
@@ -373,13 +541,48 @@ function ScoreEntry() {
     inputRefs.current[key] = el;
   };
 
+  if (editing && loadError) {
+    return (
+      <>
+        <PageHeader backTo={backTo} backLabel="Back to the scores" title="Edit cross" />
+        <Alert tone="danger" title="That cross could not be opened">
+          {loadError}
+        </Alert>
+      </>
+    );
+  }
+
+  const crossTimeHint = sameTimeCross ? (
+    <span className="text-warning-700">
+      Judge {judge} already has a cross at {typedCrossTime} on day {selectedDay}. Saving {editing ? 'leaves two at that time' : 'adds a second one'}.
+    </span>
+  ) : earlierThanLast ? (
+    <span className="text-warning-700">
+      Earlier than judge {judge}&apos;s last cross at {formatTime(judgesLastCross.time)}.
+    </span>
+  ) : undefined;
+
   return (
     <>
-      <PageHeader
-        title="Enter scores"
-        description="Record one cross at a time: the judge, the time, and the dogs in the order they crossed."
-        meta={huntExists && huntType === 'DUAL' ? <StakeBadge stake="DUAL" /> : null}
-      />
+      {editing ? (
+        <PageHeader
+          backTo={backTo}
+          backLabel="Back to the scores"
+          title="Edit cross"
+          description={
+            original
+              ? `Day ${original.day}, ${formatTime(original.time)}, judge ${original.judgeNumber}, as it was saved. Change the day, time, judge, dogs or points; saving replaces the cross and recalculates the standings.`
+              : 'Loading the cross'
+          }
+          meta={huntExists && huntType === 'DUAL' ? <StakeBadge stake="DUAL" /> : null}
+        />
+      ) : (
+        <PageHeader
+          title="Enter scores"
+          description="Record one cross at a time: the judge, the time, and the dogs in the order they crossed."
+          meta={huntExists && huntType === 'DUAL' ? <StakeBadge stake="DUAL" /> : null}
+        />
+      )}
 
       {!huntLoading && !huntExists && (
         <Alert tone="warning" title="No hunt loaded" className="mb-6">
@@ -428,30 +631,25 @@ function ScoreEntry() {
                 hint={!error.startTime ? (dayStarted ? `Fixed by the first cross of day ${selectedDay}.` : 'The first cross of the day sets it.') : undefined}
               >
                 {({ id, invalid }) => (
-                  <Input
+                  <TimeInput
                     id={id}
-                    type="time" placeholder="HH:MM"
                     invalid={invalid}
                     value={startTime}
                     readOnly={dayStarted}
-                    onChange={(e) => setStartTime(e.target.value)}
+                    onChange={setStartTime}
                     onKeyDown={(e) => handleKeyDown(e, 'startTime')}
                     ref={setRef('startTime')}
-                    className="tabular read-only:bg-sunken read-only:text-ink-muted"
+                    className="read-only:bg-sunken read-only:text-ink-muted"
                   />
                 )}
               </Field>
-              <Field
-                label="Cross time"
-                required
-                error={error.crossTime}
-                hint={earlierThanLast ? <span className="text-warning-700">Earlier than judge {judge}&apos;s last cross at {judgesLastCross.time.slice(0, 5)}.</span> : undefined}
-              >
+              <Field label="Cross time" required error={error.crossTime} hint={crossTimeHint}>
                 {({ id, invalid }) => (
-                  <Input id={id} type="time" placeholder="HH:MM" invalid={invalid} value={crossTime} onChange={(e) => setCrossTime(e.target.value)} onKeyDown={(e) => handleKeyDown(e, 'crossTime')} ref={setRef('crossTime')} className="tabular" autoFocus />
+                  <TimeInput id={id} invalid={invalid} value={crossTime} onChange={setCrossTime} onKeyDown={(e) => handleKeyDown(e, 'crossTime')} ref={setRef('crossTime')} autoFocus />
                 )}
               </Field>
             </div>
+            <p className="-mt-2 text-small text-ink-muted">Times can be typed without the colon: 0600 or 1300.</p>
             <Field label="Judge number" required error={error.judge}>
               {({ id, invalid }) => (
                 <Input id={id} type="number" numeric min={1} invalid={invalid} value={judge} onChange={(e) => setJudge(e.target.value)} onKeyDown={(e) => handleKeyDown(e, 'judge')} ref={setRef('judge')} placeholder="Judge" />
@@ -469,16 +667,23 @@ function ScoreEntry() {
                 )}
               </Field>
             </div>
-            <p className="text-small text-ink-muted">
-              Scoring interval: <span className="tabular text-ink">{scoringInterval} min</span>. Only a dog&apos;s highest cross in each interval counts.
-            </p>
+            <div className="flex flex-col gap-1 text-small text-ink-muted">
+              <p>
+                Scoring interval: <span className="tabular text-ink">{scoringInterval} min</span>. Only a dog&apos;s highest cross in each interval counts.
+              </p>
+              {hunt?.packScoring && (
+                <p>
+                  Pack scoring: points stop at <span className="tabular text-ink">{lowest}</span>, and every dog after that also gets {lowest}.
+                </p>
+              )}
+            </div>
           </PanelBody>
         </Panel>
 
-        <Panel>
+        <Panel className="self-start">
           <PanelHeader
             title="Dogs in the cross"
-            description="In crossing order. Points fill in automatically and can be changed."
+            description="In crossing order. Points fill in automatically and can be changed. Enter moves to the next dog; on an empty row it moves to Save."
             actions={
               <Button size="sm" icon={LuPlus} onClick={addRow}>
                 Add dog
@@ -521,12 +726,14 @@ function ScoreEntry() {
                         numeric
                         min={0}
                         aria-label={`Dog ${index + 1} points`}
-                        value={customPoints[index] !== null ? customPoints[index] : calculatePoints(index)}
+                        title={customPoints[index] !== null ? 'Typed in. Empty the box to go back to the proposed points.' : undefined}
+                        value={pointsFor(index)}
                         invalid={Boolean(error[`scores${index}`])}
                         disabled={isSkipped}
                         onChange={(e) => handleCustomPointsChange(index, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, `points-${index}`)}
                         ref={setRef(`points-${index}`)}
+                        className={customPoints[index] !== null ? 'font-semibold' : ''}
                       />
                     </td>
                     <td className="px-3 py-1.5 text-small">
@@ -543,14 +750,16 @@ function ScoreEntry() {
                             <LuTriangleAlert size={14} aria-hidden />
                             {serverError || dogErrors[index]}
                           </span>
-                          <span className="inline-flex gap-2">
-                            <Button size="sm" variant="primary" onClick={() => openRegister(index)}>
-                              Register dog {dogs[index]}
-                            </Button>
-                            <Button size="sm" onClick={() => setSkippedAt(index, true)}>
-                              Skip
-                            </Button>
-                          </span>
+                          {unknown && (
+                            <span className="inline-flex gap-2">
+                              <Button size="sm" variant="primary" onClick={() => openRegister(index)}>
+                                Register dog {dogs[index]}
+                              </Button>
+                              <Button size="sm" onClick={() => setSkippedAt(index, true)}>
+                                Skip
+                              </Button>
+                            </span>
+                          )}
                         </span>
                       ) : dogs[index] && dogStakes[index] ? (
                         <span className="inline-flex items-center gap-2">
@@ -570,25 +779,34 @@ function ScoreEntry() {
             </tbody>
           </table>
           <PanelFooter>
-            <Button variant="secondary" onClick={resetForm} onKeyDown={(e) => handleKeyDown(e, 'resetButton')} ref={setRef('resetButton')} disabled={saving}>
-              Clear
-            </Button>
-            <Button variant="primary" onClick={handleSubmit} onKeyDown={(e) => handleKeyDown(e, 'submitButton')} ref={setRef('submitButton')} disabled={!huntExists} loading={saving}>
-              Save cross
+            {editing && (
+              <Button variant="danger" icon={LuTrash2} onClick={() => setConfirmDelete(true)} disabled={saving || !original} className="mr-auto">
+                Delete cross
+              </Button>
+            )}
+            {editing ? (
+              <Button variant="secondary" onClick={() => navigate(backTo)} onKeyDown={(e) => handleKeyDown(e, 'resetButton')} ref={setRef('resetButton')} disabled={saving}>
+                Cancel
+              </Button>
+            ) : (
+              <Button variant="secondary" onClick={resetForm} onKeyDown={(e) => handleKeyDown(e, 'resetButton')} ref={setRef('resetButton')} disabled={saving}>
+                Clear
+              </Button>
+            )}
+            <Button variant="primary" onClick={handleSubmit} onKeyDown={(e) => handleKeyDown(e, 'submitButton')} ref={setRef('submitButton')} disabled={!huntExists || (editing && !original)} loading={saving}>
+              {editing ? 'Save changes' : 'Save cross'}
             </Button>
           </PanelFooter>
         </Panel>
       </div>
 
-      {recent.length > 0 && (
+      {!editing && lastEntered.length > 0 && (
         <Panel className="mt-6">
           <PanelHeader
-            title={`Last crosses of day ${selectedDay}`}
-            description={
-              huntType === 'DUAL'
-                ? 'Newest first, each dog tagged with its stake, so the two point ladders of a cross can be checked at a glance.'
-                : 'Newest first, so the sheet can be checked against what was saved.'
-            }
+            title="Last crosses entered"
+            description={`The crosses typed in most recently, newest first, whatever their day or cross time. Check them against the judge's card${
+              huntType === 'DUAL' ? '; each dog is tagged with its stake so the two point ladders can be told apart' : ''
+            }.`}
             actions={
               <Link to="/score-entry/view" className="text-small font-medium text-pine-700 hover:underline">
                 All scores
@@ -596,31 +814,43 @@ function ScoreEntry() {
             }
           />
           <ul className="divide-y divide-line">
-            {recent.slice(0, 3).map((group) => (
-              <li key={group.key} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-5 py-2.5 text-body">
-                <span className="w-16 tabular font-medium">{group.time.slice(0, 5)}</span>
-                <span className="w-20 text-ink-muted">Judge {group.judge}</span>
-                <span className="flex flex-wrap gap-x-3 gap-y-1 tabular">
-                  {group.dogs.map((score) => {
-                    const dog = dogsByNumber[String(score.dogNumber)];
-                    return (
-                      <span
-                        key={score.id}
-                        className={`inline-flex items-center gap-1 ${score.counted ? '' : 'text-ink-faint'}`}
-                        title={`${dog ? `${dog.name}. ` : ''}${score.counted ? 'Counted' : 'Not counted: a higher cross in the same interval'}`}
-                      >
-                        {score.dogNumber}
-                        {dog && showsStake(hunt, dog.stake) && <StakeBadge stake={dog.stake} />}
-                        <span className="text-ink-muted">({score.points})</span>
-                      </span>
-                    );
-                  })}
+            {lastEntered.map((cross, index) => (
+              <li key={cross.id} className={`flex flex-wrap items-baseline gap-x-4 gap-y-1 px-5 py-2.5 text-body ${index === 0 ? 'bg-brass-100/40' : ''}`}>
+                <span className="w-14 text-ink-muted">Day {cross.day}</span>
+                <span className="w-14 tabular font-medium">{formatTime(cross.time)}</span>
+                <span className="w-20 text-ink-muted">Judge {cross.judgeNumber}</span>
+                <span className="min-w-0 flex-1">
+                  <CrossDogs cross={cross} hunt={hunt} />
                 </span>
+                {index === 0 && <Badge tone="brass">Last entered</Badge>}
+                <Link
+                  to={`/score-entry/view/${cross.id}`}
+                  state={{ from: '/score-entry/enter' }}
+                  className="inline-flex items-center gap-1 text-small font-medium text-pine-700 hover:underline"
+                >
+                  <LuPencil size={13} aria-hidden />
+                  Edit
+                </Link>
               </li>
             ))}
           </ul>
         </Panel>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={deleteCross}
+        busy={deleting}
+        danger
+        title="Delete this cross?"
+        description={
+          original
+            ? `Day ${original.day}, ${formatTime(original.time)}, judge ${original.judgeNumber}, ${original.scores.length} ${original.scores.length === 1 ? 'dog' : 'dogs'}. Every score in it is removed and the standings are recalculated.`
+            : ''
+        }
+        confirmLabel="Delete cross"
+      />
 
       <Dialog
         open={registering !== null}
@@ -682,13 +912,23 @@ function ScoreEntry() {
         }
       >
         <form id="change-start-form" onSubmit={saveStartTime} noValidate>
-          <Field label="New start time" required error={changeError}>
-            {({ id, invalid }) => <Input id={id} type="time" placeholder="HH:MM" invalid={invalid} value={newStart} onChange={(e) => setNewStart(e.target.value)} className="tabular" autoFocus />}
+          <Field label="New start time" required error={changeError} hint="With or without the colon: 0600 or 06:00.">
+            {({ id, invalid }) => <TimeInput id={id} invalid={invalid} value={newStart} onChange={setNewStart} autoFocus />}
           </Field>
         </form>
       </Dialog>
     </>
   );
+}
+
+ScoreEntry.propTypes = {
+  crossId: PropTypes.string,
+};
+
+/** Route wrapper for correcting a saved cross; a fresh page for every cross. */
+export function EditCross() {
+  const { crossId } = useParams();
+  return <ScoreEntry key={crossId} crossId={crossId} />;
 }
 
 export default ScoreEntry;

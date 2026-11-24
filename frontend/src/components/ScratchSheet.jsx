@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { LuFlag } from 'react-icons/lu';
 import { useHunt } from '../hooks/useHunt';
 import { huntDays, SCRATCH_REASONS } from '../lib/hunt';
+import { TIME_HELP, formatTime, parseTime } from '../lib/time';
 import DogService from '../services/DogService';
-import { Alert, Button, DataTable, EmptyState, Field, Input, PageHeader, Panel, PanelBody, PanelFooter, PanelHeader, SearchInput, Select, useToast } from './ui';
+import { Alert, Button, DataTable, EmptyState, Field, Input, PageHeader, Panel, PanelBody, PanelFooter, PanelHeader, SearchInput, Select, TimeInput, useToast } from './ui';
 
 const emptyScratch = { dogNumber: '', day: 1, time: '', judgeNumber: '', reason: SCRATCH_REASONS[0], otherReason: '' };
 
@@ -48,11 +49,17 @@ function ScratchSheet() {
       setErrors({ reason: 'Say why the dog was scratched.' });
       return;
     }
+    // The time may be typed without the colon; it is sent as HH:MM.
+    const time = parseTime(values.time);
+    if (values.time.trim() && !time) {
+      setErrors({ time: TIME_HELP });
+      return;
+    }
     setSaving(true);
     const response = await DogService.postScratch({
       dogNumber: values.dogNumber.trim(),
       day: Number(values.day),
-      time: values.time,
+      time: time || '',
       judgeNumber: Number(values.judgeNumber),
       reason,
     });
@@ -75,7 +82,7 @@ function ScratchSheet() {
     { key: 'day', header: 'Day', numeric: true, width: '4rem', render: (scratch) => scratch.day ?? 1 },
     { key: 'dogNumber', header: 'Dog', numeric: true, width: '5rem', cellClassName: 'font-semibold' },
     { key: 'dogName', header: 'Name', render: (scratch) => scratch.dogName || <span className="text-ink-faint">unknown</span> },
-    { key: 'time', header: 'Time', width: '6rem', cellClassName: 'tabular' },
+    { key: 'time', header: 'Time', width: '6rem', cellClassName: 'tabular', render: (scratch) => formatTime(scratch.time) },
     { key: 'judgeNumber', header: 'Judge', numeric: true, width: '5rem' },
     { key: 'reason', header: 'Reason' },
   ];
@@ -126,8 +133,8 @@ function ScratchSheet() {
                     </Select>
                   )}
                 </Field>
-                <Field label="Time" required error={errors.time}>
-                  {({ id, invalid }) => <Input id={id} type="time" placeholder="HH:MM" invalid={invalid} value={values.time} onChange={set('time')} className="tabular" />}
+                <Field label="Time" required error={errors.time} hint={errors.time ? undefined : '0600 or 06:00'}>
+                  {({ id, invalid }) => <TimeInput id={id} invalid={invalid} value={values.time} onChange={(value) => set('time')({ target: { value } })} />}
                 </Field>
               </div>
               <Field label="Judge number" required error={errors.judgeNumber}>

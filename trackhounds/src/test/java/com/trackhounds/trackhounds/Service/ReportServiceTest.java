@@ -45,6 +45,8 @@ class ReportServiceTest {
   private DaysRepository daysRepository;
   @Autowired
   private HuntRepository huntRepository;
+  @Autowired
+  private AwardService awardService;
 
   @BeforeEach
   void setUp() {
@@ -168,6 +170,44 @@ class ReportServiceTest {
     assertEquals(1, placings.size());
     assertEquals(StakeType.ALL_AGE, placings.get(0).get("stake"));
     assertEquals(38, placings.get(0).get("totalPoints"), "35 speed and drive plus 3 endurance on day 1");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void huntSummaryCarriesTheHuntDetailsThePackSettingAndTheAwards() {
+    HuntEntity hunt = new HuntEntity("Detailed hunt", "2026", StakeType.ALL_AGE, 5);
+    hunt.setCity("Ocala");
+    hunt.setState("FL");
+    hunt.setPresident("Pat President");
+    hunt.setMasterOfHounds("Morgan Master");
+    hunt.setPackScoring(true);
+    huntRepository.save(hunt);
+    dogService.createDogs(List.of(new DogEntity("7", "Seven", StakeType.ALL_AGE, "Owner", "S", "D")));
+    awardService.createAward(new com.trackhounds.trackhounds.Entity.Award("Best Mouth", "7", null));
+
+    Map<String, Object> summary = reportService.getHuntSummary();
+    Map<String, Object> facts = (Map<String, Object>) summary.get("hunt");
+    assertEquals("Ocala", facts.get("city"));
+    assertEquals("FL", facts.get("state"));
+    assertEquals("Pat President", facts.get("president"));
+    assertEquals("Morgan Master", facts.get("masterOfHounds"));
+    assertEquals(true, facts.get("packScoring"));
+    assertEquals(15, facts.get("packMinimumPoints"));
+    List<Map<String, Object>> awards = (List<Map<String, Object>>) summary.get("awards");
+    assertEquals(1, awards.size());
+    assertEquals("Best Mouth", awards.get(0).get("title"));
+    assertEquals("Seven", awards.get(0).get("dogName"));
+  }
+
+  @Test
+  void twoCrossesAtTheSameTimeByOneJudgeAreCountedAsTwo() {
+    huntRepository.save(new HuntEntity("All age hunt", "2026", StakeType.ALL_AGE, 5));
+    dogService.createDogs(List.of(
+        new DogEntity("7", "Seven", StakeType.ALL_AGE, "O", "S", "D"),
+        new DogEntity("8", "Eight", StakeType.ALL_AGE, "O", "S", "D")));
+    dogService.createScore(new ScoreDto(1, "08:00:00", 1, "08:10:00", new String[] { "7" }, new int[] { 35 }, 5));
+    dogService.createScore(new ScoreDto(1, "08:00:00", 1, "08:10:00", new String[] { "8" }, new int[] { 35 }, 5));
+    assertEquals(2, reportService.getJudgeSummary().get(0).get("totalCrosses"));
   }
 
   @Test
