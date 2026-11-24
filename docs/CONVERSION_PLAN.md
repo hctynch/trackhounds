@@ -6,9 +6,9 @@ the next iterations are**. Keep it up to date: when an iteration finishes, move 
 note anything that was learned.
 
 - Status legend: ✅ done · 🔄 in progress · ⏳ planned · 💡 idea / needs a decision
-- Last updated: 2026-11-24 (iterations 1-3, 5-9 and 11 done, 4 waiting on a second PC, 10 partly done by
-  decision, 12 in progress: everything asked for is built, confirmed by the author and on `main`; what is
-  left is the author's own run-through in the real window and the upgrade check on the first hunt's data)
+- Last updated: 2026-11-24 (iterations 1-3, 5-9, 11 and 12 done; 12 is released as `v3.1.0`. 4 is
+  waiting on a second PC and 10 is partly done by decision. Open from 12: the upgrade has not been seen
+  on the first hunt's real data yet)
 
 ---
 
@@ -703,7 +703,7 @@ Decisions taken 2026-09-14 (the recommended option in each case):
    order, the judge's card transcribed) is the likely fifth.
 4. Column reordering with up and down buttons first; drag and drop only if that proves too slow to use.
 
-### 🔄 Iteration 12: notes from the first test hunt
+### ✅ Iteration 12: notes from the first test hunt
 
 Context from the author (2026-11-24): the application was used at a first test hunt and the notes that
 came back are in [FIRST_NOTES.md](FIRST_NOTES.md): five groups, all implemented here. The rule
@@ -837,17 +837,25 @@ Done since (2026-11-24):
 Noticed: `docs/samples/README.md` describes `sample-hunt.db`, but `.gitignore` has `*.db`, so the file
 was never committed and is not in the repository.
 
-Next, in this order:
+Released as `v3.1.0` (2026-11-24):
 
-1. **The author tries it in the real window**: a cross typed with Enter only and a time without the
-   colon, correcting and deleting a cross from View scores, an award, and printing the hunt summary and
-   the Special awards sheet. The Enter flow has only been driven in Edge so far.
-2. **Upgrade check on real data.** The author brings `trackhounds.db` (or a downloaded backup) from the
-   hunt computer. The new jar is started on a copy in a scratch folder; the overall standings must be
-   identical before and after, every score must belong to a cross, and the crosses on View scores must
-   read like the judges' cards.
-3. **Release** once 1 and 2 pass: a release candidate tag for the CI-built installer, which is also the
-   install test still open under iteration 4.
+- The author tried the build in the real window and found it good, and asked for the release.
+- `main` was pushed; Build and Test passed on Ubuntu for both commits of the iteration (`4493aa6`,
+  `acf5677`), smoke script included.
+- The tag is `v3.1.0`, a full release by the author's choice (the other options were a release
+  candidate first, or `v3.0.2`). The latest release before it was `v3.0.1`, so the installer upgrades
+  an installed copy in place, and installed copies are offered it by Check for updates.
+
+Still open after the release:
+
+- **The upgrade has not been seen on the first hunt's real data.** That check was planned before the
+  release and was not run: the data is on the hunt computer and no copy was brought over. It rests on
+  the migration test (a 3.0 database with scores turned into crosses) and on this machine's empty
+  installed database. The first start of 3.1.0 on the hunt computer writes
+  `backups/trackhounds-before-upgrade-<stamp>.db` before it changes anything; keep that file until the
+  crosses on View scores have been compared with the judges' cards and the standings with the printed
+  sheets. If something is wrong, that file is the hunt as 3.0.1 left it.
+- The install test on a machine without Java (iteration 4) is as open as before.
 
 ### 💡 Ideas / parking lot
 
@@ -876,7 +884,7 @@ cd trackhounds
 ./mvnw spring-boot:run -Dspring-boot.run.arguments=--server   # server only (UI dev with `npm run dev`)
 ./mvnw package -DskipTests -Papp-image         # target/dist/TrackHounds/TrackHounds.exe
 ./mvnw package -DskipTests -Papp-image,win-installer   # + target/dist/TrackHounds-<version>.exe (WiX)
-git tag v3.0.0 && git push origin v3.0.0       # CI builds and publishes the release
+git tag v3.1.0 && git push origin v3.1.0       # CI builds and publishes the release (v3.1.0 was 2026-11-24)
 ```
 
 Runtime switches: `--server`, `--trackhounds.data-dir=<dir>`, `--trackhounds.port=<port>`,
