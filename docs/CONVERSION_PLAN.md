@@ -7,8 +7,8 @@ note anything that was learned.
 
 - Status legend: ✅ done · 🔄 in progress · ⏳ planned · 💡 idea / needs a decision
 - Last updated: 2026-11-24 (iterations 1-3, 5-9 and 11 done, 4 waiting on a second PC, 10 partly done by
-  decision, 12 in progress: built, checked and confirmed by the author, with two award print places still
-  to add; it is in the working tree and not committed yet)
+  decision, 12 in progress: everything asked for is built, confirmed by the author and on `main`; what is
+  left is the author's own run-through in the real window and the upgrade check on the first hunt's data)
 
 ---
 
@@ -817,25 +817,45 @@ Confirmed by the author (2026-11-24), twelve questions, all answered:
   builder can use (Q29).
 - The first test hunt's data is on another computer; the author brings a copy for the upgrade check.
 
+Done since (2026-11-24):
+
+- The work above was committed and pushed by the author (`4493aa6`).
+- **Awards in two more places (Q29).** The `dogs` dataset has an `awards` column: a dog's award titles
+  on one line ("Best Mouth, Classiest Hound"), nothing for a dog without one. That makes it a column the
+  report builder offers for any dog sheet. Overall speed and drive and Top dogs overall carry it right
+  after the name with a new column option, `whenFilled`: the column is left out while no row on the
+  sheet has a value, so the standings printed before the awards are decided look exactly as before. The
+  builder shows the option as a toggle on each column in print order (the crossed-out eye), so a club can
+  use it on its own sheets or switch it off. Checked by `ReportDatasetServiceTest` (140 backend tests
+  pass) and, from the jar, by 15 browser checks: the column present with awards and absent without on
+  both sheets, the daily sheet unchanged, and the builder offering, toggling and printing it.
+- `npm ci` inside the Maven build failed a second time with `ENOTEMPTY` (two of the three full builds
+  of the day), again leaving `frontend/node_modules` incomplete until `npm ci` was run by hand. The jar
+  for the awards check was therefore built the other way: `npm run build`, `frontend/dist` copied into
+  `target/classes/static`, then `./mvnw verify -DskipFrontend=true`. See the parking lot.
+
+Noticed: `docs/samples/README.md` describes `sample-hunt.db`, but `.gitignore` has `*.db`, so the file
+was never committed and is not in the repository.
+
 Next, in this order:
 
-1. **Commit** the work as it stands, which is the state that was verified above.
-2. **Awards in two more places.** An `awards` column in the `dogs` dataset (the dog's award titles,
-   comma separated), which makes it available in the report builder. Overall speed and drive and Top dogs
-   overall carry it right after the name, left out when no dog on the sheet has an award, so a sheet
-   printed before the awards are decided looks as it does today (a column option beside `auto`). Tests in
-   `ReportDatasetServiceTest`, a check from the jar, second commit.
-3. **The author tries it in the real window**: a cross typed with Enter only and a time without the
+1. **The author tries it in the real window**: a cross typed with Enter only and a time without the
    colon, correcting and deleting a cross from View scores, an award, and printing the hunt summary and
    the Special awards sheet. The Enter flow has only been driven in Edge so far.
-4. **Upgrade check on real data.** The author brings `trackhounds.db` (or a downloaded backup) from the
+2. **Upgrade check on real data.** The author brings `trackhounds.db` (or a downloaded backup) from the
    hunt computer. The new jar is started on a copy in a scratch folder; the overall standings must be
    identical before and after, every score must belong to a cross, and the crosses on View scores must
    read like the judges' cards.
-5. **Release** once 3 and 4 pass: a release candidate tag for the CI-built installer, which is also the
+3. **Release** once 1 and 2 pass: a release candidate tag for the CI-built installer, which is also the
    install test still open under iteration 4.
 
 ### 💡 Ideas / parking lot
+
+- The Maven build runs `npm ci` every time, which deletes `frontend/node_modules` before reinstalling
+  it. On this Windows machine that fails now and then (`ENOTEMPTY`, most likely another program holding
+  a file in the folder) and leaves the folder broken. CI needs `npm ci`; a developer build does not.
+  Options: run `npm ci` only when `CI` is set and `npm install` otherwise, or skip the install when
+  `node_modules` is newer than `package-lock.json`.
 
 - Replace `int[]`/`StakeType[]` columns on `HuntEntity` with explicit columns for readability of the
   database file in external tools.
@@ -875,3 +895,6 @@ every page from the JavaFX window and quits.
 - One writer at a time (SQLite): fine for a single operator; not designed for several scorers entering
   data at once from different computers.
 - Data from version 2 (Docker volume) is not migrated.
+- A database that this version has opened (schema version 2) should not go back to an installed 3.0.0.
+  Not tried, but by the code the old version would still start and the crosses it saves would have no
+  row in `crosses`, so they would be missing from View scores afterwards.

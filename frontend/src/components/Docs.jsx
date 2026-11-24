@@ -126,7 +126,7 @@ function Docs() {
                   <span className="font-medium">Enter the special awards</span> on the <Link to="/awards" className="font-medium text-pine-700 hover:underline">Awards</Link> page: the name of the award (Best Mouth, Classiest Hound, or your own) and the number of the dog that won it.
                 </li>
                 <li>
-                  <span className="font-medium">Print the final sheets</span>: Hunt summary (one page with the hunt details, settings, entries, placings, special awards and scratches), Overall speed and drive, All dogs all days, Special awards, Scratches and Judge summary.
+                  <span className="font-medium">Print the final sheets</span>: Hunt summary (one page with the hunt details, settings, entries, placings, special awards and scratches), Overall speed and drive, All dogs all days, Special awards, Scratches and Judge summary. Once awards are entered they also show beside the dog on Overall speed and drive and Top dogs overall, and the report builder has an Awards column for your own sheets.
                 </li>
                 <li>
                   <span className="font-medium">Save a backup</span> on the <Link to="/data" className="font-medium text-pine-700 hover:underline">Backups</Link> page, or download a copy to another drive. The same page keeps finished hunts as past hunts, so a hunt can be opened again later.

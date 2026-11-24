@@ -126,6 +126,7 @@ public class ReportDatasetService {
     columns.add(column("sire", "Sire", false, null));
     columns.add(column("dam", "Dam", false, null));
     columns.add(column("scratched", "Scratched", false, null));
+    columns.add(column("awards", "Awards", false, null));
     if (day != null) {
       columns.add(column("daySpeedAndDrive", "S&D", true, "Day " + day));
       columns.add(column("dayEndurance", "Endurance", true, "Day " + day));
@@ -164,6 +165,11 @@ public class ReportDatasetService {
     dogs.removeIf(d -> stake != null && d.getStake() != stake);
     dogs.sort(Comparator.comparing((DogEntity d) -> placeOf.getOrDefault(d.getNumber(), Integer.MAX_VALUE))
         .thenComparing(DogEntity::getNumber, DogEntity.NUMBER_ORDER));
+    // The special awards of each dog, in the order the award service lists them (by title).
+    Map<String, List<String>> awardsOf = new HashMap<>();
+    for (Map<String, Object> award : awardService.getAwards()) {
+      awardsOf.computeIfAbsent(String.valueOf(award.get("dogNumber")), number -> new ArrayList<>()).add(String.valueOf(award.get("title")));
+    }
 
     List<Map<String, Object>> rows = new ArrayList<>();
     for (DogEntity dog : dogs) {
@@ -177,6 +183,9 @@ public class ReportDatasetService {
       row.put("sire", dog.getSire());
       row.put("dam", dog.getDam());
       row.put("scratched", dog.isScratched());
+      // "Best Mouth, Classiest Hound"; nothing for a dog without an award, so a sheet can leave the column out.
+      List<String> awards = awardsOf.get(dog.getNumber());
+      row.put("awards", awards == null ? null : String.join(", ", awards));
       int sdTotal = 0;
       int enduranceTotal = 0;
       int lastDay = 0;

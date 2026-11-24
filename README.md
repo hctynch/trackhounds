@@ -172,7 +172,8 @@ Dogs withdrawn from the hunt, with the time, the judge and the reason, and the f
 #### Awards
 
 Special awards given to a dog outside the scoring, such as Best Mouth or Classiest Hound: the name of the award, the
-dog that won it and an optional note. They print on the Special awards sheet and on the hunt summary.
+dog that won it and an optional note. They print on the Special awards sheet, on the hunt summary and beside the dog
+on the final standings; the report builder has an Awards column for custom sheets.
 
 #### Backups
 

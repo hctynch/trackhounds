@@ -191,6 +191,30 @@ class ReportDatasetServiceTest {
   }
 
   @Test
+  void dogsCarryTheirAwardsSoTheStandingsCanShowThem() {
+    dualHunt();
+    Map<String, Object> before = datasets.dataset("dogs", null, null, null, null, null);
+    assertTrue(columnKeys(before).contains("awards"), "the column is always offered to the report builder");
+    assertTrue(rows(before).stream().allMatch(row -> row.get("awards") == null), "and empty until an award is given");
+
+    awardService.createAward(new com.trackhounds.trackhounds.Entity.Award("Classiest Hound", "2", null));
+    awardService.createAward(new com.trackhounds.trackhounds.Entity.Award("Best Mouth", "2", null));
+    awardService.createAward(new com.trackhounds.trackhounds.Entity.Award("Best Mouth", "101", null));
+
+    List<Map<String, Object>> overall = rows(datasets.dataset("dogs", null, null, null, null, null));
+    assertEquals("2", overall.get(0).get("number"));
+    assertEquals("Best Mouth, Classiest Hound", overall.get(0).get("awards"), "a dog's awards on one line, by title");
+    assertEquals("Best Mouth", overall.get(1).get("awards"));
+    assertNull(overall.get(2).get("awards"), "nothing for a dog without an award");
+
+    // The same on a day's ranking and within one stake.
+    List<Map<String, Object>> derbyDayOne = rows(datasets.dataset("dogs", 1, StakeType.DERBY, null, null, null));
+    assertEquals(2, derbyDayOne.size());
+    Map<String, Object> charlie = derbyDayOne.stream().filter(row -> "101".equals(row.get("number"))).findFirst().orElseThrow();
+    assertEquals("Best Mouth", charlie.get("awards"));
+  }
+
+  @Test
   void awardsDatasetListsEveryAwardWithItsDog() {
     dualHunt();
     awardService.createAward(new com.trackhounds.trackhounds.Entity.Award("Classiest Hound", "101", "Unanimous"));

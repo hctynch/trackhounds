@@ -123,9 +123,20 @@ export function expandColumns(definitionColumns, catalogue, { dual, stake }) {
     }
     const entry = known.get(column.key);
     if (!entry) return;
-    result.push({ ...entry, label: column.label || entry.label, bold: Boolean(column.bold) });
+    result.push({ ...entry, label: column.label || entry.label, bold: Boolean(column.bold), whenFilled: Boolean(column.whenFilled) });
   });
   return result;
+}
+
+const isBlank = (value) => value === null || value === undefined || value === '' || value === false;
+
+/**
+ * Drop the columns marked `whenFilled` that have nothing in any of the rows being printed, such as
+ * Awards on the standings before any award has been given. The sheet then looks as if the column
+ * had never been asked for.
+ */
+export function dropEmptyColumns(columns, rows) {
+  return columns.filter((column) => !column.whenFilled || rows.some((row) => !isBlank(row[column.key])));
 }
 
 const formatValue = (column, value) => {
@@ -198,7 +209,7 @@ async function runOnce(definition, filters, stake) {
   if (filters.scoredOnly && definition.dataset === 'dogs') rows = rows.filter((row) => row.place !== null && row.place !== undefined);
   rows = sortRows(rows, definition.sort, catalogue);
   if (filters.limit) rows = rows.slice(0, filters.limit);
-  const columns = expandColumns(definition.columns, catalogue, { dual: dataset.dual, stake });
+  const columns = dropEmptyColumns(expandColumns(definition.columns, catalogue, { dual: dataset.dual, stake }), rows);
   return {
     dual: Boolean(dataset.dual),
     columns: columns.map((column) => column.label),

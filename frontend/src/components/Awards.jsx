@@ -11,8 +11,8 @@ const emptyAward = { title: '', dogNumber: '', notes: '' };
 
 /**
  * Special awards: distinctions the hunt gives to a dog outside the scoring, such as Best Mouth or
- * Classiest Hound. Each award is a name and a dog; they print on the Special awards sheet and on
- * the hunt summary.
+ * Classiest Hound. Each award is a name and a dog; they print on the Special awards sheet, on the
+ * hunt summary and beside the dog on the final standings.
  */
 function Awards() {
   const toast = useToast();
@@ -151,7 +151,7 @@ function Awards() {
     <>
       <PageHeader
         title="Special awards"
-        description="Awards given to a dog outside the scoring, such as Best Mouth or Classiest Hound. They print on the Special awards sheet and on the hunt summary."
+        description="Awards given to a dog outside the scoring, such as Best Mouth or Classiest Hound. They print on the Special awards sheet, on the hunt summary, and beside the dog on the final standings."
         actions={
           <>
             <Link to="/reports/special-awards" className="inline-flex h-9 items-center gap-2 rounded-md border border-line-strong bg-surface px-3.5 text-body font-medium text-ink transition-colors hover:border-pine-300 hover:bg-pine-50">

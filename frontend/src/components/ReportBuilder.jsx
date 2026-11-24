@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuArrowDown, LuArrowUp, LuSave, LuX } from 'react-icons/lu';
+import { LuArrowDown, LuArrowUp, LuEyeOff, LuSave, LuX } from 'react-icons/lu';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useHunt } from '../hooks/useHunt';
 import { huntDays, isDualHunt } from '../lib/hunt';
@@ -172,6 +172,14 @@ function ReportBuilder() {
   const relabel = (index, label) => {
     setDefinition((current) => {
       const columns = current.columns.map((column, i) => (i === index ? { ...column, label: label || undefined } : column));
+      return { ...current, columns };
+    });
+  };
+
+  // Leave a column out of the printed sheet when no row has a value for it (Awards before any is given).
+  const setWhenFilled = (index, whenFilled) => {
+    setDefinition((current) => {
+      const columns = current.columns.map((column, i) => (i === index ? { ...column, whenFilled: whenFilled || undefined } : column));
       return { ...current, columns };
     });
   };
@@ -448,6 +456,15 @@ function ReportBuilder() {
                             <span className="min-w-0 flex-1 truncate text-body font-medium" title={labelOf(column)}>
                               {labelOf(column)}
                             </span>
+                            {!column.key.endsWith('*') && (
+                              <IconButton
+                                icon={LuEyeOff}
+                                label={column.whenFilled ? 'Left out when no row has a value. Click to always print it.' : 'Always printed. Click to leave it out when no row has a value.'}
+                                aria-pressed={Boolean(column.whenFilled)}
+                                className={column.whenFilled ? 'bg-pine-100 text-pine-800' : ''}
+                                onClick={() => setWhenFilled(index, !column.whenFilled)}
+                              />
+                            )}
                             <IconButton icon={LuArrowUp} label="Move up" onClick={() => moveColumn(index, -1)} disabled={index === 0} />
                             <IconButton icon={LuArrowDown} label="Move down" onClick={() => moveColumn(index, 1)} disabled={index === definition.columns.length - 1} />
                             <IconButton icon={LuX} label={`Remove ${labelOf(column)}`} onClick={() => toggleColumn(column)} />
@@ -461,6 +478,7 @@ function ReportBuilder() {
                               onChange={(event) => relabel(index, event.target.value)}
                             />
                           )}
+                          {column.whenFilled && <p className="mt-1 text-small text-ink-muted">Left out when no row on the sheet has a value.</p>}
                         </li>
                       );
                     })}

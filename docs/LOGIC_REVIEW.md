@@ -79,7 +79,7 @@ who answered all of them on 2026-11-24:
 | Q26 | **Enter skips the points boxes**: time, judge, then down the dog numbers. Tab and the arrow keys reach the points. | `ScoreEntry.enterTarget`. As built. |
 | Q27 | A cross is corrected or deleted **as a whole**; there is no delete button per dog. | View scores has Edit and Delete on the cross only. As built. |
 | Q28 | "The last cross entered" is the **last three crosses typed in, on any day**, newest first. | Score entry, `lastEntered`. As built. |
-| Q29 | Special awards print in **four places**: their own sheet, the hunt summary, next to the dog on the final standings, and as a column the report builder can place on any dog sheet. | The first two are built. The last two are to do (section 5). |
+| Q29 | Special awards print in **four places**: their own sheet, the hunt summary, next to the dog on the final standings, and as a column the report builder can place on any dog sheet. | All four are built. The `dogs` dataset has an `awards` column (a dog's award titles on one line); Overall speed and drive and Top dogs overall carry it after the name with `whenFilled`, which leaves the column out while no dog on the sheet has an award. |
 | Q30 | President and Master of Hounds print on the **hunt summary only**; the location prints on every sheet. | `HuntSummaryReport` facts; `ReportGenerator` header. As built. |
 
 ## 3. Questions still open
@@ -131,9 +131,6 @@ decisions Q21 to Q30 above. New questions go here with the code location they af
 - `Score` still carries its own copy of the day, time and judge next to `crosses`. They are written together and cannot
   drift today, but one of the two should go.
 - `GET /dogs/{number}` answers `400` for an unknown dog; `404` would be the honest answer.
-- **Awards on the final standings and in the report builder** (Q29): the `dogs` dataset needs an `awards` column
-  (the dog's award titles), and Overall speed and drive and Top dogs overall should carry it next to the name,
-  left out when no dog on the sheet has an award.
 
 ## 6. User-flow notes (to smooth out)
 

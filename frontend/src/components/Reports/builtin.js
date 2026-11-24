@@ -3,7 +3,9 @@ import { ASK } from '../../lib/reports';
 /**
  * The built-in sheets, as definitions over the report datasets. Each can be opened in the builder
  * ("Customise") as the starting point of a custom sheet. A column with `auto` is shown only when a
- * dual hunt is printed with both stakes; a key ending in "*" expands to every day of the hunt.
+ * dual hunt is printed with both stakes; a column with `whenFilled` is left out when no row on the
+ * sheet has a value for it (Awards before any award is given); a key ending in "*" expands to every
+ * day of the hunt.
  */
 const define = (id, group, definition) => ({ id, group, builtin: true, description: '', ...definition });
 
@@ -47,7 +49,7 @@ const builtinReports = [
   }),
   define('overall-speed-and-drive', 'Whole hunt', {
     name: 'Overall speed and drive',
-    description: 'Speed and drive totals across the hunt with the daily breakdown, the final sheet.',
+    description: 'Speed and drive totals across the hunt with the daily breakdown, the final sheet. Special awards are shown beside the dog once they are entered.',
     dataset: 'dogs',
     columns: [
       { key: 'place' },
@@ -55,6 +57,7 @@ const builtinReports = [
       { key: 'sdDay*' },
       { key: 'number' },
       { key: 'name' },
+      { key: 'awards', whenFilled: true },
       { key: 'stake', auto: true },
       { key: 'owner' },
     ],
@@ -64,13 +67,14 @@ const builtinReports = [
   }),
   define('top-dogs-overall', 'Whole hunt', {
     name: 'Top dogs overall',
-    description: 'The leading dogs across the whole hunt, for any number of places and stake.',
+    description: 'The leading dogs across the whole hunt, for any number of places and stake. Special awards are shown beside the dog once they are entered.',
     dataset: 'dogs',
     columns: [
       { key: 'place' },
       { key: 'total', label: 'Score' },
       { key: 'number' },
       { key: 'name' },
+      { key: 'awards', whenFilled: true },
       { key: 'stake', auto: true },
       { key: 'sire' },
       { key: 'dam' },

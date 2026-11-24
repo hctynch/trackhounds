@@ -103,7 +103,9 @@ standings as scores come in. In a dual hunt, switch Home between **Both stakes**
 **Awards** → **Add award**. Name the award (**Best Mouth** and **Classiest Hound** are offered; any
 other name can be typed) and enter the number of the dog that won it, with an optional note. The same
 award can go to more than one dog, for instance one per stake. Awards print on the **Special awards**
-sheet and on the hunt summary.
+sheet, on the hunt summary, and beside the dog's name on **Overall speed and drive** and **Top dogs
+overall** (the Awards column appears on those two once an award is entered). The report builder has an
+**Awards** column for custom dog sheets.
 
 ![Special awards](screenshots/awards.png)
 
@@ -112,7 +114,7 @@ sheet and on the hunt summary.
 | Report                    | What it is                                                                             |
 | ------------------------- | -------------------------------------------------------------------------------------- |
 | Hunt summary              | One page: hunt details, settings, entries, each day, top placings per stake, special awards, scratches. |
-| Overall speed and drive   | The final standings with the daily breakdown, for all dogs or one stake.               |
+| Overall speed and drive   | The final standings with the daily breakdown, for all dogs or one stake, with each dog's special awards. |
 | All dogs, all days        | Speed and drive and endurance for every dog on every day.                              |
 | Special awards            | Every award with the dog that won it and its owner.                                    |
 | Scratches                 | Every withdrawn dog with the judge and reason.                                         |
